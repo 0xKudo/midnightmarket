@@ -1,0 +1,11 @@
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\bin\Debug\net8.0\ArmsFair.Shared.deps.json
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\bin\Debug\net8.0\ArmsFair.Shared.dll
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\bin\Debug\net8.0\ArmsFair.Shared.pdb
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\obj\Debug\net8.0\ArmsFair.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\obj\Debug\net8.0\ArmsFair.Shared.AssemblyInfoInputs.cache
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\obj\Debug\net8.0\ArmsFair.Shared.AssemblyInfo.cs
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\obj\Debug\net8.0\ArmsFair.Shared.csproj.CoreCompileInputs.cache
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\obj\Debug\net8.0\ArmsFair.Shared.dll
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\obj\Debug\net8.0\refint\ArmsFair.Shared.dll
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\obj\Debug\net8.0\ArmsFair.Shared.pdb
+C:\Users\lsgra\Desktop\arms-fair\ArmsFair.Shared\obj\Debug\net8.0\ref\ArmsFair.Shared.dll
