@@ -1,5 +1,6 @@
 using ArmsFair.Server.Data;
 using ArmsFair.Server.Hubs;
+using ArmsFair.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,6 +17,13 @@ builder.Services.AddDbContext<ArmsFairDb>(opt =>
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
     ConnectionMultiplexer.Connect(
         builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379"));
+
+// ── HTTP clients ────────────────────────────────────────────────────────────
+builder.Services.AddHttpClient("acled");
+builder.Services.AddHttpClient("gpi");
+
+// ── App services ─────────────────────────────────────────────────────────────
+builder.Services.AddSingleton<SeedService>();
 
 // ── SignalR ─────────────────────────────────────────────────────────────────
 builder.Services.AddSignalR();
