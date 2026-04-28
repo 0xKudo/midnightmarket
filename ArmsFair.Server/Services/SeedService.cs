@@ -177,34 +177,81 @@ public class SeedService(
 
     // ── ACLED ────────────────────────────────────────────────────────────────
 
+    private const string AcledTokenCacheKey = "seed:acled:token";
+
+    private async Task<string?> GetAcledTokenAsync(CancellationToken ct)
+    {
+        var db = redis.GetDatabase();
+
+        // Return cached token if still valid
+        var cached = await db.StringGetAsync(AcledTokenCacheKey);
+        if (cached.HasValue) return cached!;
+
+        var email    = config["Acled:Email"];
+        var password = config["Acled:Password"];
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) return null;
+
+        try
+        {
+            var client = httpFactory.CreateClient("acled");
+            var form   = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["username"]   = email,
+                ["password"]   = password,
+                ["grant_type"] = "password",
+                ["client_id"]  = "acled",
+                ["scope"]      = "authenticated"
+            });
+
+            using var resp = await client.PostAsync("https://acleddata.com/oauth/token", form, ct);
+            resp.EnsureSuccessStatusCode();
+
+            var body  = await resp.Content.ReadFromJsonAsync<AcledTokenResponse>(cancellationToken: ct);
+            var token = body?.AccessToken;
+            if (token is null) return null;
+
+            // Cache for 23 hours (token valid 24h — leave 1h buffer)
+            await db.StringSetAsync(AcledTokenCacheKey, token, TimeSpan.FromHours(23));
+            return token;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "SeedService: ACLED token fetch failed");
+            return null;
+        }
+    }
+
     private async Task<HashSet<string>> FetchAcledAsync(CancellationToken ct)
     {
-        var key    = config["Acled:ApiKey"];
-        var email  = config["Acled:Email"];
-        if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(email))
+        var token = await GetAcledTokenAsync(ct);
+        if (token is null)
         {
-            logger.LogWarning("SeedService: ACLED credentials not configured — using empty conflict list");
+            logger.LogWarning("SeedService: ACLED credentials not configured or token fetch failed — using empty conflict list");
             return new HashSet<string>();
         }
 
         try
         {
-            var client = httpFactory.CreateClient("acled");
-            // Fetch last 90 days of conflict events, grouped by ISO country code
-            var url = $"https://api.acleddata.com/acled/read?key={key}&email={email}" +
-                      $"&event_date={DateTime.UtcNow.AddDays(-90):yyyy-MM-dd}|{DateTime.UtcNow:yyyy-MM-dd}" +
-                      "&event_date_where=BETWEEN&limit=0&fields=iso3&count=true";
+            var client  = httpFactory.CreateClient("acled");
+            var fromDate = DateTime.UtcNow.AddDays(-90).ToString("yyyy-MM-dd");
+            var toDate   = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var url      = $"https://acleddata.com/api/acled/read?_format=json" +
+                           $"&event_date={fromDate}|{toDate}&event_date_where=BETWEEN" +
+                           "&fields=iso3&limit=5000";
 
-            using var resp = await client.GetAsync(url, ct);
+            using var req  = new HttpRequestMessage(HttpMethod.Get, url);
+            req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            using var resp = await client.SendAsync(req, ct);
             resp.EnsureSuccessStatusCode();
 
             var body = await resp.Content.ReadFromJsonAsync<AcledResponse>(cancellationToken: ct);
-            return body?.Data?.Select(x => x.Iso3).Where(x => x is not null).ToHashSet()!
+            return body?.Data?.Select(x => x.Iso3).Where(x => !string.IsNullOrEmpty(x)).ToHashSet()!
                    ?? new HashSet<string>();
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "SeedService: ACLED fetch failed — using empty conflict list");
+            logger.LogWarning(ex, "SeedService: ACLED data fetch failed — using empty conflict list");
             return new HashSet<string>();
         }
     }
@@ -314,6 +361,9 @@ public class SeedService(
 
     // ── JSON response shapes ─────────────────────────────────────────────────
 
+    private record AcledTokenResponse(
+        [property: JsonPropertyName("access_token")]  string? AccessToken,
+        [property: JsonPropertyName("refresh_token")] string? RefreshToken);
     private record AcledResponse([property: JsonPropertyName("data")] List<AcledRow>? Data);
     private record AcledRow([property: JsonPropertyName("iso3")] string Iso3);
     private record GpiEntry(
