@@ -24,6 +24,8 @@ builder.Services.AddHttpClient("gpi");
 
 // ── App services ─────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<SeedService>();
+builder.Services.AddSingleton<TickerService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<TickerService>());
 
 // ── SignalR ─────────────────────────────────────────────────────────────────
 builder.Services.AddSignalR();
