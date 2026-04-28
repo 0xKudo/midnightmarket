@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\ArmsFair.Server.props" />
-</Project>
