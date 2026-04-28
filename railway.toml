@@ -1,0 +1,12 @@
+[build]
+builder    = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand  = "dotnet ArmsFair.Server.dll"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+
+[[services]]
+name = "server"
