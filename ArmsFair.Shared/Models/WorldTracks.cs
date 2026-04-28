@@ -1,3 +1,5 @@
+using ArmsFair.Shared.Enums;
+
 namespace ArmsFair.Shared.Models;
 
 public record WorldTracks
@@ -8,13 +10,40 @@ public record WorldTracks
     public int SanctionsRisk { get; init; }
     public int GeoTension    { get; init; }
 
-    public static WorldTracks Initial() => new()
+    public static WorldTracks Initial(GameMode mode = GameMode.Realistic) => mode switch
     {
-        MarketHeat    = Balance.StartMarketHeat,
-        CivilianCost  = Balance.StartCivilianCost,
-        Stability     = Balance.StartStability,
-        SanctionsRisk = Balance.StartSanctionsRisk,
-        GeoTension    = Balance.StartGeoTension,
+        GameMode.EqualWorld => new()
+        {
+            MarketHeat    = Balance.EqualWorldMarketHeat,
+            CivilianCost  = Balance.EqualWorldCivilianCost,
+            Stability     = Balance.EqualWorldStability,
+            SanctionsRisk = Balance.EqualWorldSanctionsRisk,
+            GeoTension    = Balance.EqualWorldGeoTension,
+        },
+        GameMode.BlankSlate => new()
+        {
+            MarketHeat    = Balance.BlankSlateMarketHeat,
+            CivilianCost  = Balance.BlankSlateCivilianCost,
+            Stability     = Balance.BlankSlateStability,
+            SanctionsRisk = Balance.BlankSlateSanctionsRisk,
+            GeoTension    = Balance.BlankSlateGeoTension,
+        },
+        GameMode.HotWorld => new()
+        {
+            MarketHeat    = Balance.HotWorldMarketHeat,
+            CivilianCost  = Balance.HotWorldCivilianCost,
+            Stability     = Balance.HotWorldStability,
+            SanctionsRisk = Balance.HotWorldSanctionsRisk,
+            GeoTension    = Balance.HotWorldGeoTension,
+        },
+        _ => new()  // Realistic and Custom both start from Realistic defaults;
+        {           // Custom overrides individual values after construction.
+            MarketHeat    = Balance.StartMarketHeat,
+            CivilianCost  = Balance.StartCivilianCost,
+            Stability     = Balance.StartStability,
+            SanctionsRisk = Balance.StartSanctionsRisk,
+            GeoTension    = Balance.StartGeoTension,
+        }
     };
 
     public WorldTracks Clamp() => this with

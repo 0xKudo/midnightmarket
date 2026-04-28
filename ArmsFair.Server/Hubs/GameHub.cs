@@ -1,5 +1,6 @@
 using ArmsFair.Server.Data;
 using ArmsFair.Server.Data.Entities;
+using ArmsFair.Server.Services;
 using ArmsFair.Server.Simulation;
 using ArmsFair.Shared;
 using ArmsFair.Shared.Enums;
@@ -14,7 +15,7 @@ using System.Text.Json;
 namespace ArmsFair.Server.Hubs;
 
 [Authorize]
-public class GameHub(ArmsFairDb db) : Hub
+public class GameHub(ArmsFairDb db, SeedService seedService) : Hub
 {
     // In-memory game state keyed by gameId.
     // In a multi-server deployment this would live in Redis; single-server is fine for now.
@@ -57,13 +58,19 @@ public class GameHub(ArmsFairDb db) : Hub
         var gameId   = Guid.NewGuid().ToString();
         var playerId = GetPlayerId();
 
+        var mode      = settings.GameMode;
+        var countries = await seedService.GetCountriesAsync(mode, settings.CustomCountries);
+        var tracks    = settings.GameMode == GameMode.Custom && settings.CustomTracks is not null
+            ? settings.CustomTracks
+            : WorldTracks.Initial(mode);
+
         var state = new GameState
         {
             GameId    = gameId,
             Round     = 0,
             Phase     = GamePhase.WorldUpdate,
-            Tracks    = WorldTracks.Initial(),
-            Countries = new List<CountryState>(),
+            Tracks    = tracks,
+            Countries = countries,
             Players   = new List<PlayerProfile>()
         };
         _games[gameId] = state;

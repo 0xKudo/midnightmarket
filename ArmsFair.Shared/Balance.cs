@@ -7,11 +7,33 @@ public static class Balance
     public const int StartingReputation    = 75;
     public const int StartingSharePrice    = 100;
 
+    // Mode 1 — Realistic (default)
     public const int StartMarketHeat       = 30;
     public const int StartCivilianCost     = 20;
     public const int StartStability        = 25;
     public const int StartSanctionsRisk    = 10;
     public const int StartGeoTension       = 35;
+
+    // Mode 2 — Equal World
+    public const int EqualWorldMarketHeat    = 20;
+    public const int EqualWorldCivilianCost  = 10;
+    public const int EqualWorldStability     = 15;
+    public const int EqualWorldSanctionsRisk = 5;
+    public const int EqualWorldGeoTension    = 20;
+
+    // Mode 3 — Blank Slate
+    public const int BlankSlateMarketHeat    = 10;
+    public const int BlankSlateCivilianCost  = 5;
+    public const int BlankSlateStability     = 10;
+    public const int BlankSlateSanctionsRisk = 0;
+    public const int BlankSlateGeoTension    = 10;
+
+    // Mode 4 — Hot World
+    public const int HotWorldMarketHeat      = 55;
+    public const int HotWorldCivilianCost    = 45;
+    public const int HotWorldStability       = 50;
+    public const int HotWorldSanctionsRisk   = 30;
+    public const int HotWorldGeoTension      = 55;
 
     // ── Procurement costs ($M) ────────────────────────────────────────────
     public const int CostSmallArms   = 2;

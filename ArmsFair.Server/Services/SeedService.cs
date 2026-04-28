@@ -1,5 +1,6 @@
 using ArmsFair.Shared.Enums;
 using ArmsFair.Shared.Models;
+using ArmsFair.Shared.Models.Messages;
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -7,78 +8,171 @@ using System.Text.Json.Serialization;
 namespace ArmsFair.Server.Services;
 
 public class SeedService(
-    IHttpClientFactory  httpFactory,
+    IHttpClientFactory     httpFactory,
     IConnectionMultiplexer redis,
-    IConfiguration      config,
-    ILogger<SeedService> logger)
+    IConfiguration         config,
+    ILogger<SeedService>   logger)
 {
-    private const string CacheKey  = "seed:countries";
+    private const string RealisticCacheKey = "seed:countries:realistic";
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(24);
 
-    public async Task<List<CountryState>> GetCountriesAsync(CancellationToken ct = default)
+    /// <summary>
+    /// Returns the seeded country list for the given game mode.
+    /// Realistic mode fetches ACLED + GPI (cached 24h). All other modes are instant.
+    /// Custom mode applies per-country overrides on top of the Realistic base.
+    /// </summary>
+    public async Task<List<CountryState>> GetCountriesAsync(
+        GameMode mode,
+        List<CustomCountryConfig>? customOverrides = null,
+        CancellationToken ct = default)
+    {
+        return mode switch
+        {
+            GameMode.EqualWorld => SeedEqualWorld(),
+            GameMode.BlankSlate => SeedBlankSlate(),
+            GameMode.HotWorld   => SeedHotWorld(),
+            GameMode.Custom     => await SeedCustomAsync(customOverrides, ct),
+            _                   => await SeedRealisticAsync(ct)
+        };
+    }
+
+    // ── Mode 1: Realistic ─────────────────────────────────────────────────────
+
+    private async Task<List<CountryState>> SeedRealisticAsync(CancellationToken ct)
     {
         var db  = redis.GetDatabase();
-        var raw = await db.StringGetAsync(CacheKey);
+        var raw = await db.StringGetAsync(RealisticCacheKey);
         if (raw.HasValue)
         {
-            logger.LogInformation("SeedService: returning cached country list");
+            logger.LogInformation("SeedService: returning cached Realistic country list");
             return JsonSerializer.Deserialize<List<CountryState>>(raw!) ?? new();
         }
 
-        logger.LogInformation("SeedService: fetching fresh seed data");
-        var countries = await BuildCountryListAsync(ct);
-        var json      = JsonSerializer.Serialize(countries);
-        await db.StringSetAsync(CacheKey, json, CacheTtl);
+        logger.LogInformation("SeedService: fetching fresh Realistic seed data from ACLED + GPI");
+        var countries = await BuildRealisticListAsync(ct);
+        await db.StringSetAsync(RealisticCacheKey, JsonSerializer.Serialize(countries), CacheTtl);
         return countries;
     }
 
-    private async Task<List<CountryState>> BuildCountryListAsync(CancellationToken ct)
+    private async Task<List<CountryState>> BuildRealisticListAsync(CancellationToken ct)
     {
         var acledTask = FetchAcledAsync(ct);
         var gpiTask   = FetchGpiAsync(ct);
         await Task.WhenAll(acledTask, gpiTask);
 
-        var acledIsos  = await acledTask;  // iso3 codes of active conflict countries
-        var gpiScores  = await gpiTask;    // iso3 → GPI score (lower = more peaceful)
+        var acledIsos = await acledTask;
+        var gpiScores = await gpiTask;
 
-        // Base country list — all ~195 UN-recognised states
-        var all = BaseCountryList();
-
-        return all.Select(c =>
+        return BaseCountryList().Select(c =>
         {
             bool isConflict = acledIsos.Contains(c.Iso);
-            gpiScores.TryGetValue(c.Iso, out float gpi); // 0 if not found
+            gpiScores.TryGetValue(c.Iso, out float gpi);
 
-            var stage = DetermineStage(isConflict, gpi);
-
-            // Tension: conflict countries start high, peaceful start low
-            int tension = isConflict ? Random.Shared.Next(60, 90)
+            var stage = DetermineRealisticStage(isConflict, gpi);
+            int tension = isConflict        ? Random.Shared.Next(60, 90)
                         : gpi > 0 && gpi < 1.5f ? Random.Shared.Next(10, 30)
                         : Random.Shared.Next(25, 55);
 
-            return c with
-            {
-                Stage             = stage,
-                Tension           = tension,
-                InitialStage2Plus = (int)stage >= 2
-            };
+            return c with { Stage = stage, Tension = tension, InitialStage2Plus = (int)stage >= 2 };
         }).ToList();
     }
 
-    private static CountryStage DetermineStage(bool isConflict, float gpi)
+    private static CountryStage DetermineRealisticStage(bool isConflict, float gpi)
     {
         if (isConflict)
-            // High GPI score in a conflict zone → Humanitarian Crisis, else Hot War
             return gpi >= 3.0f ? CountryStage.HumanitarianCrisis : CountryStage.HotWar;
-
-        if (gpi == 0) return CountryStage.Simmering;     // no GPI data → assume low-level instability
-
+        if (gpi == 0) return CountryStage.Simmering;
         return gpi switch
         {
             < 1.5f => CountryStage.Dormant,
             < 2.5f => CountryStage.Simmering,
             _      => CountryStage.Active
         };
+    }
+
+    // ── Mode 2: Equal World ───────────────────────────────────────────────────
+
+    private List<CountryState> SeedEqualWorld()
+    {
+        logger.LogInformation("SeedService: seeding Equal World");
+        return BaseCountryList().Select(c => c with
+        {
+            Stage             = CountryStage.Simmering,
+            Tension           = 25,
+            DemandType        = "covert",   // covert-only demand at start
+            InitialStage2Plus = false
+        }).ToList();
+    }
+
+    // ── Mode 3: Blank Slate ───────────────────────────────────────────────────
+
+    private List<CountryState> SeedBlankSlate()
+    {
+        logger.LogInformation("SeedService: seeding Blank Slate");
+        return BaseCountryList().Select(c => c with
+        {
+            Stage             = CountryStage.Dormant,
+            Tension           = 5,
+            DemandType        = "none",
+            InitialStage2Plus = false
+        }).ToList();
+    }
+
+    // ── Mode 4: Hot World ─────────────────────────────────────────────────────
+
+    private List<CountryState> SeedHotWorld()
+    {
+        logger.LogInformation("SeedService: seeding Hot World");
+        return BaseCountryList().Select(c =>
+        {
+            var (stage, tension) = HotWorldRegion(c.Iso);
+            return c with { Stage = stage, Tension = tension, InitialStage2Plus = (int)stage >= 2 };
+        }).ToList();
+    }
+
+    // Conflict-prone: Stage 3, Tension 70
+    private static readonly HashSet<string> _hotRegion = new()
+    {
+        "AFG","IRQ","SYR","YEM","SDN","SSD","SOM","MLI","BFA","NER","CAF","COD",
+        "MMR","PAK","LBY","ETH","NGA","MOZ","CMR","TCD","HTI","UKR","PSE"
+    };
+    // Politically volatile: Stage 2, Tension 50
+    private static readonly HashSet<string> _warmRegion = new()
+    {
+        "IRN","LBN","VEN","COL","MEX","GTM","HND","SLV","NIC","ZWE","BDI","RWA",
+        "UGA","AGO","ZMB","MWI","MDG","GIN","GNB","SLE","LBR","CIV","TGO","BEN",
+        "GEO","ARM","AZE","KAZ","KGZ","TJK","TKM","UZB","BLR","SRB","BIH","ALB",
+        "MKD","MNE","XKX","BGD","NPL","LKA","IDN","PHL","TLS"
+    };
+
+    private static (CountryStage stage, int tension) HotWorldRegion(string iso)
+    {
+        if (_hotRegion.Contains(iso))  return (CountryStage.HotWar, 70);
+        if (_warmRegion.Contains(iso)) return (CountryStage.Active,  50);
+        return (CountryStage.Active, 35);   // stable regions — still Stage 2 in Hot World
+    }
+
+    // ── Mode 5: Custom ────────────────────────────────────────────────────────
+
+    private async Task<List<CountryState>> SeedCustomAsync(
+        List<CustomCountryConfig>? overrides, CancellationToken ct)
+    {
+        logger.LogInformation("SeedService: seeding Custom scenario");
+        // Start from Realistic base (cached if available), then apply host overrides
+        var base_ = await SeedRealisticAsync(ct);
+        if (overrides is null || overrides.Count == 0) return base_;
+
+        var overrideMap = overrides.ToDictionary(o => o.Iso);
+        return base_.Select(c =>
+        {
+            if (!overrideMap.TryGetValue(c.Iso, out var ov)) return c;
+            return c with
+            {
+                Stage             = ov.Stage,
+                Tension           = ov.Tension,
+                InitialStage2Plus = (int)ov.Stage >= 2
+            };
+        }).ToList();
     }
 
     // ── ACLED ────────────────────────────────────────────────────────────────

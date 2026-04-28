@@ -1,4 +1,5 @@
 using ArmsFair.Shared.Enums;
+using ArmsFair.Shared.Models;
 
 namespace ArmsFair.Shared.Models.Messages;
 
@@ -33,8 +34,15 @@ public record PeacekeepingMessage(string TargetCountryIso);
 public record ProcurementMessage(WeaponCategory Weapon, string SupplierId, int Quantity);
 
 public record LobbySettingsMessage(
-    int    PlayerSlots,
-    string TimerPreset,
-    bool   VoiceEnabled,
-    bool   AiFillIn,
-    bool   IsPrivate);
+    int          PlayerSlots,
+    string       TimerPreset,
+    bool         VoiceEnabled,
+    bool         AiFillIn,
+    bool         IsPrivate,
+    GameMode     GameMode     = GameMode.Realistic,
+    string?      ScenarioCode = null,           // Mode 5: load a saved scenario
+    WorldTracks? CustomTracks = null,           // Mode 5: manual starting tracks
+    List<CustomCountryConfig>? CustomCountries = null); // Mode 5: per-country overrides
+
+// Mode 5 per-country configuration sent from the lobby map editor
+public record CustomCountryConfig(string Iso, CountryStage Stage, int Tension);
