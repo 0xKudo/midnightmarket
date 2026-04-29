@@ -76,9 +76,11 @@ def build_countries(features: list, simplify_tol: float) -> tuple[list, dict]:
             print(f"  WARN: skipping {iso} ({name}) — geometry error: {e}")
             continue
 
+        centroid = simplified.centroid
         countries.append({
             "iso":      iso,
             "name":     name,
+            "centroid": [round(centroid.x, 4), round(centroid.y, 4)],
             "geometry": mapping(simplified),
         })
         shapes[iso] = geom  # un-buffered for now; buffer applied in adjacency step
