@@ -39,13 +39,99 @@ Each player creates an arms brokerage at game start:
 - **Starting supplier relationships:** 2 unlocked suppliers (determined by home nation)
 - **Starting stock portfolio:** empty
 
-### 3.3 World Initialization
-On game launch, the server fetches current data from ACLED and the Global Peace Index to seed:
-- **Active conflict zones** — countries with ongoing armed conflict. Start at Stage 3 (Hot War) or Stage 4 (Humanitarian Crisis) on the escalation ladder.
-- **Tension zones** — countries with political instability, intercommunal violence, or contested elections. Start at Stage 2 (Active).
-- **Stable countries** — all remaining nations. Start at Stage 1 (Simmering) or Stage 0 (Dormant).
+### 3.3 Game Modes — World Initialization
 
-From round 2 onward, real-world data is no longer consulted. The simulation is fully autonomous.
+The host selects a game mode in the lobby before the game starts. The mode determines how the world is seeded at round 1. From round 2 onward, regardless of mode, the simulation runs fully autonomously from player actions alone — real-world data is never consulted again.
+
+---
+
+#### Mode 1 — Realistic (default)
+The world starts as a snapshot of current reality, seeded from ACLED conflict event data and the Global Peace Index at game launch.
+
+- Active conflict countries (high ACLED fatalities + low GPI score) start at Stage 3–4
+- Politically unstable countries start at Stage 2
+- Stable countries start at Stage 0–1
+- Track starting values: Market Heat 30, Civilian Cost 20, Stability 25, Sanctions Risk 10, Geo Tension 35
+
+This mode is the most politically resonant — players are operating in a recognizable version of the real world. The asymmetry is intentional: some markets are immediately profitable, others require manufactured demand. Experienced players may have geographic strategies ready from the opening screen.
+
+**Best for:** politically-engaged groups, experienced players, maximum realism
+
+---
+
+#### Mode 2 — Equal World
+Every country starts at Stage 1 (Simmering) with an identical tension score of 25/100. No country has any advantage or disadvantage at game start. All demand is covert-only until players push countries upward. Track starting values are lower across the board.
+
+- All countries: Stage 1, Tension 25
+- Track starting values: Market Heat 20, Civilian Cost 10, Stability 15, Sanctions Risk 5, Geo Tension 20
+- No external data is fetched — this mode is fully self-contained
+- First round is necessarily slower — all sales are covert, profits are lower, players must invest early to create profitable markets
+
+The strategic character shifts dramatically. Geography matters more in this mode — players choose which regions to destabilize rather than inheriting the real world's existing hotspots. Coalition dynamics emerge differently because no player has a geographic head start.
+
+**Best for:** competitive play, new players learning mechanics, fair-start tournaments
+
+---
+
+#### Mode 3 — Blank Slate
+Every country starts at Stage 0 (Dormant). There is no arms market anywhere. Players cannot sell a single weapon in round 1 — they must first invest in manufactured demand, fund coups, or wait for the world update to create organic tension.
+
+- All countries: Stage 0, Tension 5
+- Track starting values: Market Heat 10, Civilian Cost 5, Stability 10, Sanctions Risk 0, Geo Tension 10
+- No external data fetched
+- Peace Broker actions in a Blank Slate game cost nothing (the world is already at peace) but earn Peace Credits, creating an unusual early dynamic where peace-building and war-starting are the only two options
+
+This is the most strategically unusual mode. The first player to successfully ignite a conflict has a first-mover market advantage — but also holds the public record of having started the world's first war. The reputational cost of manufacturing demand is visible to all. Players who hold back benefit from others' destabilization efforts without incurring the cost. This creates a classic free-rider problem in the opening rounds.
+
+**Best for:** advanced players, role-playing groups, exploring the game's political thesis most explicitly
+
+---
+
+#### Mode 4 — Hot World
+Every country starts at Stage 2–3 based on geographic region. The world is already in widespread conflict. Profits are immediately high but so are all track values — Total War and Global Sanctions are both within reach from round 1. This is a fast, high-pressure mode.
+
+- Conflict-prone regions (Middle East, Sub-Saharan Africa, South/Southeast Asia): Stage 3, Tension 70
+- Politically volatile regions (Eastern Europe, Central Asia, Latin America): Stage 2, Tension 50
+- Stable regions (Western Europe, North America, Oceania): Stage 2, Tension 35
+- Track starting values: Market Heat 55, Civilian Cost 45, Stability 50, Sanctions Risk 30, Geo Tension 55
+- No external data fetched — stages are assigned by pre-defined regional groupings
+
+The game moves faster in Hot World. Reconstruction contracts become available earlier. Company collapses are more common because blowback fires frequently from the start. Negotiated Peace is nearly impossible — players would need to simultaneously reduce tracks that are already dangerously high. The most likely endings are Market Saturation and Global Sanctions.
+
+**Best for:** experienced players who want a shorter, more intense game, stress-testing the endgame mechanics
+
+---
+
+#### Mode 5 — Custom / Scenario
+The host manually configures the starting world state in the lobby before launching. Any country can be set to any stage and any tension score. The five world tracks can also be set manually. This mode enables the creation of specific historical or hypothetical scenarios.
+
+- Host opens a world map editor in the lobby
+- Click any country to set its stage (0–4) and tension score (0–100)
+- Set starting track values manually
+- Save the configuration as a named scenario that can be shared with others via a scenario code
+- Scenarios can be loaded by any host using the code
+
+Example scenarios the community might create:
+- Cold War 1962 — Cuban Missile Crisis starting conditions
+- Post-WWII 1945 — most of Europe at Stage 4–5, reconstruction dominant
+- Near-future 2035 — speculative tensions based on current trajectories
+
+**Best for:** role-playing groups, educators, community scenario sharing
+
+---
+
+### 3.4 Mode Comparison Summary
+
+| Mode | Starting world | Market access | Pace | Difficulty | Real data? |
+|---|---|---|---|---|---|
+| Realistic | Current real world | Immediate in hot zones | Standard | Medium | Yes |
+| Equal World | All Stage 1 | Covert only at start | Slightly slower | Easy to learn | No |
+| Blank Slate | All Stage 0 | None at start | Slow opening | Hard | No |
+| Hot World | Widespread Stage 2–3 | Immediate everywhere | Fast | Hard | No |
+| Custom | Host-defined | Depends on config | Depends | Depends | No |
+
+### 3.5 World Initialization — Technical Note
+In Realistic mode, the server fetches ACLED and GPI data once when the room is created and caches the result for 24 hours. All other modes are fully self-contained — they use pre-defined seed functions with no external API calls. This means Equal World, Blank Slate, Hot World, and Custom games can start instantly regardless of API availability.
 
 ---
 
@@ -1078,11 +1164,13 @@ public class VoiceChatManager : MonoBehaviour
 Any authenticated player can create a game room. On creation, the host sets:
 - **Room name** (optional — defaults to host's username + "room")
 - **Player slots:** 2–6
+- **Game mode:** Realistic, Equal World, Blank Slate, Hot World, or Custom (see Section 3.3)
 - **Timer preset:** Standard (6.5 min/round), Fast (4 min/round), Async (24hr/round)
 - **Voice chat:** enabled/disabled, push-to-talk enforced or optional
 - **Profanity filter:** on/off
 - **AI fill-in:** enabled/disabled — if enabled, empty slots are filled with AI opponents
 - **Private room:** if checked, generates an invite code rather than appearing in the public lobby
+- **Scenario code** (Custom mode only): enter a saved scenario code to load a specific configuration
 
 ### 24.2 Joining a Room
 - **Public lobby browser** — shows open rooms with player count, timer setting, and host username

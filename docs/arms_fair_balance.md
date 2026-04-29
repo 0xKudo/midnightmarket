@@ -13,33 +13,70 @@ Each section explains the *reasoning* behind the numbers, not just the numbers t
 
 ## 1. Starting Values
 
-These are the world state values at round 1, after the ACLED/GPI seed is applied to country states but before any player actions.
+Starting values vary by game mode. The world tracks are set at game creation and do not change until player actions begin in round 1.
 
 ```typescript
 export const STARTING_VALUES = {
-  // World tracks — all 0-100
-  market_heat:    30,   // moderate baseline — market exists but isn't hot
-  civilian_cost:  20,   // some existing harm from seeded conflicts
-  stability:      25,   // world is tense but not spiraling
-  sanctions_risk: 10,   // low at start — no player actions yet
-  geo_tension:    35,   // elevated — great power rivalry is a real baseline
 
-  // Per-player starting values
+  // Per-player starting values — identical across all modes
   player: {
-    capital:        50,   // $50M — enough for ~3 procurement rounds without sales income
-    reputation:     75,   // starts healthy but not pristine — they're arms dealers
-    share_price:   100,   // index value — changes relative to this
+    capital:        50,   // $50M
+    reputation:     75,
+    share_price:   100,
     peace_credits:   0,
-    latent_risk:     0,   // hidden blowback exposure — starts clean
-  }
+    latent_risk:     0,
+  },
+
+  // World track starting values — varies by game mode
+  tracks: {
+    realistic: {
+      market_heat:    30,
+      civilian_cost:  20,
+      stability:      25,
+      sanctions_risk: 10,
+      geo_tension:    35,
+    },
+    equal_world: {
+      market_heat:    20,
+      civilian_cost:  10,
+      stability:      15,
+      sanctions_risk:  5,
+      geo_tension:    20,
+    },
+    blank_slate: {
+      market_heat:    10,
+      civilian_cost:   5,
+      stability:      10,
+      sanctions_risk:  0,
+      geo_tension:    10,
+    },
+    hot_world: {
+      market_heat:    55,
+      civilian_cost:  45,
+      stability:      50,
+      sanctions_risk: 30,
+      geo_tension:    55,
+    },
+    // Custom mode: host-defined — use equal_world as fallback default
+  },
+
+  // Country tension starting values — varies by mode
+  country_tension: {
+    realistic:   'acled_gpi_seeded',  // fetched from external APIs
+    equal_world: 25,                  // all countries identical
+    blank_slate:  5,                  // all countries identical
+    hot_world:   'regional_preset',   // pre-defined regional groupings
+    custom:      'host_defined',      // per-country in lobby editor
+  },
+
 } as const;
 ```
 
-**Tuning notes:**
-- If games feel too safe early, raise `stability` starting value toward 35–40.
-- If the news ticker feels irrelevant at game start, raise `civilian_cost` to 30.
-- If players feel cash-strapped in round 1, raise `capital` to 65–75.
-- `geo_tension` at 35 means great-power restrictions (at 70) are ~7 rounds away at moderate play — feels right as a mid-game pressure point.
+**Tuning notes by mode:**
+- Realistic: if the game feels immediately overwhelming in round 1, consider capping the maximum stage seeded from ACLED at 3 (not 4) to give players one round to orient before crisis level events.
+- Equal World: the lower starting tracks mean Total War is ~20% further away than Realistic, which gives newer players more time to understand the mechanics before the doomsday clock becomes urgent.
+- Blank Slate: with no market at start, round 1 profit is zero for all players. Starting capital may need to increase to $65M in this mode so players aren't cash-starved before any market exists.
+- Hot World: at these starting values, Global Sanctions (civilian cost 100) is only ~8 rounds away at average play. This mode should be communicated to players as a fast, high-pressure variant.
 
 ---
 
@@ -960,4 +997,5 @@ export const WORLD_PEACE = {
 | 0.1 | Initial values | Baseline — untested |
 | 0.2 | Engine changed to Unity | Platform requirements |
 | 0.3 | Added Legacy Score math, World Peace conditions | New feature additions |
+| 0.4 | Starting values expanded to cover all five game modes | Game mode feature |
 

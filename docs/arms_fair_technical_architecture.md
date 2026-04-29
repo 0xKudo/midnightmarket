@@ -3,7 +3,19 @@
 
 ---
 
-## Changelog from v0.1
+## Changelog
+
+### v0.3 (current)
+- Added Section 9: Authentication and Account System
+- Added Section 10: Player Statistics schema and server logic
+- Added Section 11: Text Chat — SignalR channels, persistence, moderation
+- Added Section 12: Voice Chat — Unity Vivox / Unity Gaming Services integration
+- Updated Section 2: Technology stack expanded for auth, voice, and UGS
+- Updated Section 3: Solution structure expanded for new scripts and services
+- Updated Section 4: Database schema expanded for accounts, stats, and chat history
+- Updated Section 5: SignalR protocol expanded with all chat message types
+
+### v0.2
 - Engine changed from Godot 4 to Unity 2023 LTS (URP)
 - Server changed from Node.js + TypeScript to ASP.NET Core 8 + SignalR
 - Database ORM changed from Prisma to Entity Framework Core
@@ -68,6 +80,10 @@ The same server handles all client platforms — browser (WebGL), Steam desktop,
 | View toggle | Camera switching + SceneManager.LoadSceneAdditive | Flat and globe scenes loaded simultaneously, cameras toggled |
 | UI system | Unity UI Toolkit (USS/UXML) | Procurement screens, panels, chat, debrief |
 | Networking | Microsoft.AspNetCore.SignalR.Client | Official SignalR client for Unity — NuGet package |
+| Text chat | SignalR — same hub connection as game | No separate connection needed — chat is a channel in GameHub |
+| Voice chat | Unity Gaming Services — Vivox | Free for indie scale, first-party Unity voice SDK |
+| Auth (browser) | JWT via REST — email/password or Google OAuth | Stored in PlayerPrefs, attached to SignalR connection |
+| Auth (Steam) | Steamworks session ticket → server JWT exchange | Same JWT system after exchange — server is auth-agnostic |
 | Steam | Steamworks.NET | Desktop build only — conditional compile via #if UNITY_STANDALONE |
 | Map data | Natural Earth GeoJSON 1:50m | Bundled as StreamingAssets — not fetched at runtime |
 | Shader language | HLSL (URP ShaderGraph or hand-written) | Country heat overlay, atmosphere, arc lines |
@@ -79,10 +95,13 @@ The same server handles all client platforms — browser (WebGL), Steam desktop,
 | Framework | ASP.NET Core 8 | Cross-platform, high performance, runs on Linux |
 | Language | C# 12 | Shared models with Unity client via ArmsFair.Shared |
 | Real-time | SignalR (Microsoft.AspNetCore.SignalR) | Manages WebSocket connections, groups, reconnection |
-| REST API | ASP.NET Core minimal APIs | Lobby creation, auth endpoints, health check |
+| REST API | ASP.NET Core minimal APIs | Lobby, auth, account registration, health check |
+| Auth tokens | JWT Bearer (System.IdentityModel.Tokens.Jwt) | Stateless — token attached to every SignalR connection |
+| Password hashing | BCrypt.Net-Next | Never store plain passwords |
 | Database ORM | Entity Framework Core 8 + Npgsql | Type-safe DB access, code-first migrations |
-| Cache client | StackExchange.Redis | Fast active game state reads/writes |
+| Cache client | StackExchange.Redis | Fast active game state, chat rate limiting |
 | Geometry | NetTopologySuite | GeoJSON parsing, adjacency graph, point-in-polygon |
+| Voice | Vivox server-side token generation | Server mints Vivox access tokens — client uses them with UGS |
 | Process manager | systemd or Docker | Production process management |
 | Validation | FluentValidation | Runtime validation on all incoming SignalR messages |
 
@@ -114,20 +133,20 @@ The same server handles all client platforms — browser (WebGL), Steam desktop,
 
 ## 3. Solution Structure
 
-The project uses a single .NET solution with three projects. Unity references the Shared library via a local NuGet package or direct DLL reference copied into Assets/Plugins/.
+The project uses a single .NET solution with three projects. Unity references the Shared library via a compiled DLL copied into Assets/Plugins/.
 
 ```
 ArmsFair/                              # solution root
 ├── ArmsFair.sln
-├── CLAUDE.md                          # Claude Code context file
-├── docs/                              # all spec documents
+├── CLAUDE.md
+├── docs/
 │   ├── arms_fair_game_spec.md
 │   ├── arms_fair_technical_architecture.md
 │   └── arms_fair_balance.md
 │
-├── ArmsFair.Shared/                   # .NET 8 class library
+├── ArmsFair.Shared/
 │   ├── ArmsFair.Shared.csproj
-│   ├── Balance.cs                     # all tunable constants
+│   ├── Balance.cs
 │   ├── Enums/
 │   │   ├── SaleType.cs
 │   │   ├── WeaponCategory.cs
@@ -138,15 +157,18 @@ ArmsFair/                              # solution root
 │       ├── PlayerAction.cs
 │       ├── WorldTracks.cs
 │       ├── CountryState.cs
-│       └── Messages/                  # every SignalR message type
+│       ├── PlayerProfile.cs           # account + stats model
+│       ├── PlayerStats.cs             # lifetime statistics record
+│       └── Messages/
 │           ├── ServerMessages.cs      # server → client
-│           └── ClientMessages.cs      # client → server
+│           ├── ClientMessages.cs      # client → server
+│           └── ChatMessages.cs        # all chat message types
 │
-├── ArmsFair.Server/                   # ASP.NET Core 8
+├── ArmsFair.Server/
 │   ├── ArmsFair.Server.csproj
 │   ├── Program.cs
 │   ├── Hubs/
-│   │   └── GameHub.cs                 # SignalR hub
+│   │   └── GameHub.cs                 # SignalR hub — game + chat
 │   ├── Simulation/
 │   │   ├── TrackEngine.cs
 │   │   ├── SpreadEngine.cs
@@ -154,46 +176,67 @@ ArmsFair/                              # solution root
 │   │   ├── CoupEngine.cs
 │   │   └── EndingChecker.cs
 │   ├── Data/
-│   │   ├── AppDbContext.cs            # Entity Framework DbContext
+│   │   ├── AppDbContext.cs
 │   │   └── Repositories/
+│   │       ├── GameRepository.cs
+│   │       ├── AccountRepository.cs   # player accounts + stats
+│   │       └── ChatRepository.cs      # chat history persistence
 │   └── Services/
 │       ├── PhaseOrchestrator.cs
-│       ├── SeedService.cs             # ACLED + GPI fetch
-│       └── TickerService.cs           # news headline generation
+│       ├── SeedService.cs
+│       ├── TickerService.cs
+│       ├── AuthService.cs             # JWT mint/validate, bcrypt
+│       ├── StatsService.cs            # lifetime stat updates
+│       └── VivoxTokenService.cs       # mint Vivox access tokens
 │
-└── ArmsFair.Unity/                    # Unity 2023 LTS project
+└── ArmsFair.Unity/
     ├── Assets/
     │   ├── Plugins/
-    │   │   └── ArmsFair.Shared.dll    # copied from Shared build output
+    │   │   └── ArmsFair.Shared.dll
     │   ├── StreamingAssets/
     │   │   └── GeoData/
-    │   │       ├── countries.json     # preprocessed Natural Earth GeoJSON
-    │   │       └── adjacency.json     # pre-computed border adjacency graph
+    │   │       ├── countries.json
+    │   │       └── adjacency.json
     │   ├── Scripts/
     │   │   ├── Map/
-    │   │   │   ├── MapLoader.cs       # GeoJSON → Unity Mesh
+    │   │   │   ├── MapLoader.cs
     │   │   │   ├── FlatMapRenderer.cs
     │   │   │   ├── GlobeRenderer.cs
-    │   │   │   ├── ArcLineRenderer.cs # sale line animations
-    │   │   │   └── CountrySelector.cs # click/tap detection
+    │   │   │   ├── ArcLineRenderer.cs
+    │   │   │   └── CountrySelector.cs
     │   │   ├── Network/
-    │   │   │   ├── SignalRClient.cs   # hub connection management
-    │   │   │   └── MessageHandler.cs  # incoming message dispatch
+    │   │   │   ├── SignalRClient.cs
+    │   │   │   └── MessageHandler.cs
     │   │   ├── Game/
-    │   │   │   ├── GameManager.cs     # singleton — all game state
-    │   │   │   ├── PhaseManager.cs    # local phase UI/timer
-    │   │   │   └── SteamManager.cs    # conditional Steam calls
+    │   │   │   ├── GameManager.cs
+    │   │   │   ├── PhaseManager.cs
+    │   │   │   └── SteamManager.cs
+    │   │   ├── Auth/
+    │   │   │   ├── AccountManager.cs  # login, register, session restore
+    │   │   │   └── AuthApiClient.cs   # REST calls to /api/auth/*
+    │   │   ├── Chat/
+    │   │   │   ├── ChatManager.cs     # routes messages to correct panel
+    │   │   │   ├── ChatPanel.cs       # UI controller
+    │   │   │   └── ChatMessage.cs     # display component
+    │   │   ├── Voice/
+    │   │   │   ├── VoiceChatManager.cs  # Vivox connection + phase muting
+    │   │   │   └── VoiceUI.cs           # mic indicators, PTT button
     │   │   └── UI/
     │   │       ├── HUD.cs
     │   │       ├── ProcurementScreen.cs
     │   │       ├── NegotiationPanel.cs
     │   │       ├── RevealAnimator.cs
     │   │       ├── DebriefScreen.cs
-    │   │       └── Leaderboard.cs
+    │   │       ├── Leaderboard.cs
+    │   │       ├── ProfileScreen.cs   # username, stats display
+    │   │       └── LobbyScreen.cs     # room creation/join
     │   ├── Scenes/
-    │   │   ├── Main.unity             # persistent scene — UI and managers
-    │   │   ├── MapFlat.unity          # 2D flat map scene (additive)
-    │   │   └── MapGlobe.unity         # 3D globe scene (additive)
+    │   │   ├── Bootstrap.unity        # auth check before anything loads
+    │   │   ├── Login.unity            # login / register screen
+    │   │   ├── Lobby.unity            # room browser and creation
+    │   │   ├── Main.unity             # persistent scene — managers
+    │   │   ├── MapFlat.unity
+    │   │   └── MapGlobe.unity
     │   ├── Shaders/
     │   │   ├── CountryOverlay.shader
     │   │   ├── GlobeAtmosphere.shader
@@ -206,11 +249,87 @@ ArmsFair/                              # solution root
 
 ## 4. Database Schema
 
-Schema is unchanged from v0.1 — the database layer is fully server-side and not affected by the engine change. See original schema for all table definitions: players, games, game_players, world_state, country_state, player_actions, whistle_actions, treaties, treaty_signatories, game_events, supplier_relationships, reconstruction_contracts.
+### 4.1 Original Game Tables
+All original tables remain unchanged: games, game_players, world_state, country_state, player_actions, whistle_actions, treaties, treaty_signatories, game_events, supplier_relationships, reconstruction_contracts. See v0.1 for full SQL definitions.
 
-Entity Framework Core models mirror this schema exactly. Migrations are generated with:
+### 4.2 New Tables — Accounts, Stats, and Chat
+
+```sql
+-- Player accounts (expanded from v0.1 players table)
+CREATE TABLE players (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username          VARCHAR(20) UNIQUE NOT NULL,         -- 3-20 chars, unique globally
+  username_changed_at TIMESTAMPTZ,                       -- enforce 30-day change cooldown
+  email             VARCHAR(255) UNIQUE,                 -- null for Steam-only accounts
+  password_hash     VARCHAR(255),                        -- bcrypt, null for Steam-only
+  steam_id          VARCHAR(32) UNIQUE,                  -- null for email accounts
+  home_nation_iso   VARCHAR(3) NOT NULL DEFAULT 'USA',   -- default flag/avatar
+  created_at        TIMESTAMPTZ DEFAULT NOW(),
+  last_login_at     TIMESTAMPTZ,
+  is_banned         BOOLEAN DEFAULT FALSE
+);
+
+-- Player lifetime statistics (1:1 with players)
+CREATE TABLE player_stats (
+  player_id               UUID PRIMARY KEY REFERENCES players(id),
+  games_played            INTEGER DEFAULT 0,
+  games_won               INTEGER DEFAULT 0,
+  wars_started            INTEGER DEFAULT 0,
+  failed_states_caused    INTEGER DEFAULT 0,
+  small_arms_sold         INTEGER DEFAULT 0,
+  vehicles_sold           INTEGER DEFAULT 0,
+  air_defense_sold        INTEGER DEFAULT 0,
+  drones_sold             INTEGER DEFAULT 0,
+  total_profit_earned     BIGINT DEFAULT 0,               -- $M lifetime
+  total_civilian_cost     BIGINT DEFAULT 0,               -- lifetime civ cost contribution
+  ceasefires_brokered     INTEGER DEFAULT 0,
+  coups_funded            INTEGER DEFAULT 0,
+  coups_succeeded         INTEGER DEFAULT 0,
+  times_whistleblown      INTEGER DEFAULT 0,
+  times_whistleblower     INTEGER DEFAULT 0,
+  total_war_participations INTEGER DEFAULT 0,
+  world_peace_achieved    INTEGER DEFAULT 0,
+  company_collapses       INTEGER DEFAULT 0,
+  reconstruction_wins     INTEGER DEFAULT 0,
+  legacy_score_total      BIGINT DEFAULT 0,               -- cumulative legacy score
+  updated_at              TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Chat messages (persisted for debrief and moderation)
+CREATE TABLE chat_messages (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  game_id         UUID REFERENCES games(id),
+  sender_id       UUID REFERENCES players(id),
+  recipient_id    UUID REFERENCES players(id),           -- null = global channel
+  message_text    VARCHAR(280) NOT NULL,
+  is_private      BOOLEAN DEFAULT FALSE,
+  is_system       BOOLEAN DEFAULT FALSE,                 -- system announcements
+  sent_at         TIMESTAMPTZ DEFAULT NOW(),
+  round_number    INTEGER,                               -- which round it was sent in
+  phase           VARCHAR(16)                            -- which phase it was sent in
+);
+CREATE INDEX idx_chat_game ON chat_messages(game_id, sent_at);
+CREATE INDEX idx_chat_private ON chat_messages(game_id, sender_id, recipient_id)
+  WHERE is_private = TRUE;
+
+-- Mute list (player mutes another player — game-scoped)
+CREATE TABLE player_mutes (
+  game_id         UUID REFERENCES games(id),
+  muter_id        UUID REFERENCES players(id),
+  muted_id        UUID REFERENCES players(id),
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY(game_id, muter_id, muted_id)
+);
+
+-- Chat rate limiting (tracks per-player message count)
+-- Handled in Redis (not PostgreSQL) for performance:
+-- Key: chat_rate:{game_id}:{player_id}  Value: message count  TTL: 10 seconds
+-- If count >= 5: reject message, return rate limit error to client
 ```
-dotnet ef migrations add InitialCreate --project ArmsFair.Server
+
+Entity Framework Core models mirror this schema. Generate migrations with:
+```
+dotnet ef migrations add AddAccountsAndChat --project ArmsFair.Server
 dotnet ef database update --project ArmsFair.Server
 ```
 
@@ -311,12 +430,11 @@ public class GameHub : Hub
 
 ```csharp
 // ArmsFair.Shared/Models/Messages/ServerMessages.cs
-// Used by BOTH Unity client and ASP.NET server — defined once
-
 public record PhaseStartMessage(
     GamePhase Phase,
     int Round,
-    long EndsAt          // unix timestamp ms — client renders countdown
+    long EndsAt,
+    bool VoiceEnabled           // whether voice is active this phase
 );
 
 public record WorldUpdateMessage(
@@ -329,7 +447,7 @@ public record WorldUpdateMessage(
 
 public record RevealMessage(
     List<RevealedAction> Actions,
-    List<ArcAnimation> Animations    // sequenced animation data for Unity
+    List<ArcAnimation> Animations
 );
 
 public record ConsequencesMessage(
@@ -345,10 +463,10 @@ public record ConsequencesMessage(
 public record WhistleResultMessage(
     int Level,
     string TargetName,
-    string? WeaponCategory,          // Level 1: only weapon category revealed
-    ProcurementRecord? Procurement,  // Level 2: full procurement revealed
-    SealedAction? Action,            // Level 3: full sealed action revealed
-    bool IsAidFraud                  // Level 3: was it an aid cover lie?
+    string? WeaponCategory,
+    ProcurementRecord? Procurement,
+    SealedAction? Action,
+    bool IsAidFraud
 );
 
 public record GameEndingMessage(
@@ -357,9 +475,49 @@ public record GameEndingMessage(
     List<FinalScore>? FinalScores
 );
 
-public record StateSync(
-    GameState FullState              // complete state on reconnect
+public record StateSync(GameState FullState);
+
+// ArmsFair.Shared/Models/Messages/ChatMessages.cs
+// Chat — server → client
+public record ChatMessageReceived(
+    string MessageId,
+    string SenderId,
+    string SenderUsername,
+    string SenderColor,          // player's assigned color hex
+    string Text,
+    bool IsPrivate,
+    bool IsSystem,
+    string? RecipientId,         // null = global
+    long SentAt,                 // unix ms
+    int RoundNumber,
+    string Phase
 );
+
+// Chat — client → server
+public record SendChatMessage(
+    string Text,
+    string? RecipientId          // null = global, string = DM target player ID
+);
+
+// Mute — client → server
+public record MutePlayerMessage(string TargetPlayerId);
+
+// Voice token — server → client (sent at phase start when voice is active)
+public record VivoxTokenMessage(
+    string AccessToken,          // Vivox JWT minted by server
+    string ChannelUri,           // Vivox channel to join
+    bool PushToTalkRequired      // room setting
+);
+
+// Voice state change — server → client (broadcasts when phase changes voice state)
+public record VoiceStateMessage(
+    bool IsActive,
+    string Reason                // "negotiation_phase" | "sealed_phase" | "reveal_delay" etc.
+);
+
+// Player speaking indicator — client → server → all clients
+// Vivox handles this natively — no custom message needed
+// Use Vivox's IParticipantUpdatedEvent instead
 ```
 
 ---
@@ -706,9 +864,9 @@ public class GameManager : MonoBehaviour
 
 ## 8. Data Pipeline — Seed and Ticker
 
-### 8.1 World Seed on Game Launch (Server-side)
+### 8.1 World Seed — All Game Modes
 
-The server fetches ACLED and GPI data once when a game room is created. After round 1, no external data is fetched. The simulation runs autonomously from round 2 onward.
+The `SeedService` handles all five game modes. Only Realistic mode makes external API calls. All other modes are self-contained and instantaneous.
 
 ```csharp
 // SeedService.cs
@@ -716,79 +874,216 @@ public class SeedService
 {
     private readonly HttpClient _http;
     private readonly IConfiguration _config;
+    private readonly IRedisCache _cache;
 
-    public async Task<WorldSeed> FetchWorldSeedAsync()
+    public async Task<WorldSeed> BuildSeedAsync(GameMode mode,
+        CustomScenarioConfig? customConfig = null)
     {
+        return mode switch
+        {
+            GameMode.Realistic   => await BuildRealisticSeedAsync(),
+            GameMode.EqualWorld  => BuildEqualWorldSeed(),
+            GameMode.BlankSlate  => BuildBlankSlateSeed(),
+            GameMode.HotWorld    => BuildHotWorldSeed(),
+            GameMode.Custom      => BuildCustomSeed(customConfig!),
+            _ => throw new ArgumentException($"Unknown game mode: {mode}")
+        };
+    }
+
+    // --- Mode 1: Realistic ---
+    private async Task<WorldSeed> BuildRealisticSeedAsync()
+    {
+        // Check Redis cache first — valid for 24 hours
+        const string cacheKey = "world_seed:realistic";
+        var cached = await _cache.GetAsync<WorldSeed>(cacheKey);
+        if (cached != null) return cached;
+
         var acledTask = FetchACLEDAsync();
         var gpiTask   = FetchGPIAsync();
         await Task.WhenAll(acledTask, gpiTask);
 
-        return BuildCountryTensions(await acledTask, await gpiTask);
-    }
-
-    private async Task<List<ACLEDEvent>> FetchACLEDAsync()
-    {
-        var key   = _config["ACLED:ApiKey"];
-        var email = _config["ACLED:Email"];
-        var since = DateTime.UtcNow.AddMonths(-6).ToString("yyyy-MM-DD");
-
-        var url = $"https://api.acleddata.com/acled/read" +
-                  $"?key={key}&email={email}" +
-                  $"&event_date={since}|{DateTime.UtcNow:yyyy-MM-dd}" +
-                  $"&event_date_where=BETWEEN" +
-                  $"&fields=country,fatalities,event_type,event_date&limit=5000";
-
-        var response = await _http.GetFromJsonAsync<ACLEDResponse>(url);
-        return response?.Data ?? new();
-    }
-
-    private async Task<List<GPIRecord>> FetchGPIAsync()
-    {
-        // GPI dataset hosted as static JSON on your own server
-        // Download from visionofhumanity.org and host it yourself
-        // (GPI doesn't have a public API — use the annual CSV export)
-        var url = _config["GPI:DataUrl"];
-        return await _http.GetFromJsonAsync<List<GPIRecord>>(url) ?? new();
-    }
-
-    private WorldSeed BuildCountryTensions(List<ACLEDEvent> acled, List<GPIRecord> gpi)
-    {
-        var tensions = new Dictionary<string, float>();
-
-        // GPI baseline: scale 1.0-3.0 → 0-60 tension
-        foreach (var r in gpi)
-            tensions[r.Iso3] = (r.Score - 1f) / 2f * 60f;
-
-        // ACLED fatality overlay: adds up to +40 tension
-        var byCountry = acled.GroupBy(e => e.Country);
-        foreach (var group in byCountry)
+        var seed = BuildCountryTensions(await acledTask, await gpiTask);
+        seed.StartingTracks = new WorldTracks
         {
-            var totalFatalities = group.Sum(e => e.Fatalities);
-            var bonus = Mathf.Min(40f, Mathf.Log(totalFatalities + 1) * 5f);
-            var iso = CountryNameToIso(group.Key);
-            if (iso != null && tensions.ContainsKey(iso))
-                tensions[iso] = Mathf.Min(100f, tensions[iso] + bonus);
-        }
+            MarketHeat    = 30,
+            CivilianCost  = 20,
+            Stability     = 25,
+            SanctionsRisk = 10,
+            GeoTension    = 35
+        };
 
+        await _cache.SetAsync(cacheKey, seed, TimeSpan.FromHours(24));
+        return seed;
+    }
+
+    // --- Mode 2: Equal World ---
+    private WorldSeed BuildEqualWorldSeed()
+    {
         return new WorldSeed
         {
-            Countries = tensions.Select(kvp => new CountrySeed
+            Mode = GameMode.EqualWorld,
+            Countries = GetAllCountryISOs().Select(iso => new CountrySeed
             {
-                Iso         = kvp.Key,
-                Tension     = (int)kvp.Value,
-                Stage       = TensionToStage(kvp.Value),
-                DemandType  = kvp.Value > 40 ? (kvp.Value > 70 ? "open" : "covert") : "none"
+                Iso        = iso,
+                Tension    = 25,
+                Stage      = 1,          // Simmering
+                DemandType = "covert"    // covert-only at start
             }).ToList(),
-            FetchedAt = DateTime.UtcNow
+            StartingTracks = new WorldTracks
+            {
+                MarketHeat    = 20,
+                CivilianCost  = 10,
+                Stability     = 15,
+                SanctionsRisk = 5,
+                GeoTension    = 20
+            }
         };
     }
 
-    private static int TensionToStage(float tension) =>
-        tension >= 85 ? 4 :
-        tension >= 65 ? 3 :
-        tension >= 40 ? 2 :
-        tension >= 20 ? 1 : 0;
+    // --- Mode 3: Blank Slate ---
+    private WorldSeed BuildBlankSlateSeed()
+    {
+        return new WorldSeed
+        {
+            Mode = GameMode.BlankSlate,
+            Countries = GetAllCountryISOs().Select(iso => new CountrySeed
+            {
+                Iso        = iso,
+                Tension    = 5,
+                Stage      = 0,          // Dormant
+                DemandType = "none"
+            }).ToList(),
+            StartingTracks = new WorldTracks
+            {
+                MarketHeat    = 10,
+                CivilianCost  = 5,
+                Stability     = 10,
+                SanctionsRisk = 0,
+                GeoTension    = 10
+            }
+        };
+    }
+
+    // --- Mode 4: Hot World ---
+    private WorldSeed BuildHotWorldSeed()
+    {
+        return new WorldSeed
+        {
+            Mode = GameMode.HotWorld,
+            Countries = GetAllCountryISOs().Select(iso => new CountrySeed
+            {
+                Iso        = iso,
+                Tension    = HOT_WORLD_TENSIONS.GetValueOrDefault(iso, 35),
+                Stage      = HOT_WORLD_TENSIONS.GetValueOrDefault(iso, 35) >= 70 ? 3 :
+                             HOT_WORLD_TENSIONS.GetValueOrDefault(iso, 35) >= 50 ? 2 : 2,
+                DemandType = "open"
+            }).ToList(),
+            StartingTracks = new WorldTracks
+            {
+                MarketHeat    = 55,
+                CivilianCost  = 45,
+                Stability     = 50,
+                SanctionsRisk = 30,
+                GeoTension    = 55
+            }
+        };
+    }
+
+    // --- Mode 5: Custom ---
+    private WorldSeed BuildCustomSeed(CustomScenarioConfig config)
+    {
+        // Merge custom config over a blank slate base
+        var base_ = BuildBlankSlateSeed();
+        foreach (var override_ in config.CountryOverrides)
+        {
+            var country = base_.Countries.FirstOrDefault(c => c.Iso == override_.Iso);
+            if (country != null)
+            {
+                country.Tension    = override_.Tension;
+                country.Stage      = override_.Stage;
+                country.DemandType = override_.Stage >= 2 ? "open"
+                                   : override_.Stage == 1 ? "covert" : "none";
+            }
+        }
+        base_.StartingTracks = config.StartingTracks ?? base_.StartingTracks;
+        base_.Mode = GameMode.Custom;
+        base_.ScenarioName = config.ScenarioName;
+        return base_;
+    }
+
+    // Pre-defined regional tension values for Hot World mode
+    private static readonly Dictionary<string, int> HOT_WORLD_TENSIONS = new()
+    {
+        // Middle East — Stage 3
+        { "SYR", 70 }, { "YEM", 70 }, { "IRQ", 70 }, { "PSE", 70 }, { "LBY", 70 },
+        // Sub-Saharan Africa — Stage 3
+        { "SDN", 70 }, { "SSD", 70 }, { "ETH", 70 }, { "COD", 70 }, { "MLI", 70 },
+        { "NER", 70 }, { "BFA", 70 }, { "SOM", 70 }, { "MOZ", 70 }, { "CAF", 70 },
+        // South/Southeast Asia — Stage 3
+        { "AFG", 70 }, { "MMR", 70 }, { "PAK", 70 },
+        // Eastern Europe — Stage 2
+        { "UKR", 50 }, { "GEO", 50 }, { "MDA", 50 }, { "ARM", 50 }, { "AZE", 50 },
+        // Central Asia — Stage 2
+        { "TJK", 50 }, { "KGZ", 50 },
+        // Latin America — Stage 2
+        { "VEN", 50 }, { "COL", 50 }, { "MEX", 50 }, { "HND", 50 }, { "GTM", 50 },
+        // North Korea / Taiwan tension — Stage 2
+        { "PRK", 50 },
+        // All others default to 35 (Stage 2) via GetValueOrDefault above
+    };
 }
+```
+
+### 8.2 GameMode Enum (ArmsFair.Shared)
+
+```csharp
+// ArmsFair.Shared/Enums/GameMode.cs
+public enum GameMode
+{
+    Realistic  = 0,   // ACLED + GPI seeded
+    EqualWorld = 1,   // all Stage 1, tension 25
+    BlankSlate = 2,   // all Stage 0, tension 5
+    HotWorld   = 3,   // regional Stage 2-3 by pre-defined groupings
+    Custom     = 4    // host-configured
+}
+```
+
+### 8.3 CustomScenarioConfig
+
+```csharp
+// ArmsFair.Shared/Models/CustomScenarioConfig.cs
+public class CustomScenarioConfig
+{
+    public string ScenarioName { get; set; } = "Custom Scenario";
+    public string? ScenarioCode { get; set; }     // shareable code e.g. "SCN-4X7K"
+    public List<CountryOverride> CountryOverrides { get; set; } = new();
+    public WorldTracks? StartingTracks { get; set; }
+}
+
+public class CountryOverride
+{
+    public string Iso     { get; set; } = string.Empty;
+    public int    Stage   { get; set; }
+    public int    Tension { get; set; }
+}
+```
+
+### 8.4 Scenario Sharing
+
+Custom scenarios can be saved to the database and shared via a 8-character code. Any host can load a saved scenario by entering the code in the lobby.
+
+```sql
+-- Scenarios table (new)
+CREATE TABLE scenarios (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    creator_id    UUID REFERENCES players(id),
+    scenario_code VARCHAR(8) UNIQUE NOT NULL,  -- e.g. "SCN-4X7K"
+    name          VARCHAR(64) NOT NULL,
+    config        JSONB NOT NULL,              -- serialized CustomScenarioConfig
+    play_count    INTEGER DEFAULT 0,
+    created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+```
 ```
 
 ### 8.2 News Ticker
@@ -1063,3 +1358,539 @@ Unity builds are handled locally using Unity's build pipeline or Unity Cloud Bui
 *End of Technical Architecture v0.2*
 *Engine: Unity 2023 LTS | Server: ASP.NET Core 8 + SignalR*
 *Next documents: UI/UX wireframe spec*
+
+---
+
+## 9. Authentication and Account System
+
+### 9.1 Overview
+Authentication uses JWT (JSON Web Tokens). Every client — whether browser or Steam — authenticates once via REST before connecting to the SignalR hub. The JWT is attached to the hub connection and validated on every message. The server never trusts the client's claimed identity — the JWT is the only authority.
+
+### 9.2 REST Auth Endpoints
+
+```csharp
+// Program.cs — minimal API auth endpoints
+app.MapPost("/api/auth/register", async (RegisterRequest req, AuthService auth) =>
+{
+    var result = await auth.RegisterAsync(req.Username, req.Email, req.Password);
+    return result.Success
+        ? Results.Ok(new AuthResponse(result.Token, result.Profile))
+        : Results.BadRequest(result.Error);
+});
+
+app.MapPost("/api/auth/login", async (LoginRequest req, AuthService auth) =>
+{
+    var result = await auth.LoginAsync(req.UsernameOrEmail, req.Password);
+    return result.Success
+        ? Results.Ok(new AuthResponse(result.Token, result.Profile))
+        : Results.Unauthorized();
+});
+
+app.MapPost("/api/auth/steam", async (SteamAuthRequest req, AuthService auth) =>
+{
+    // Validates Steam session ticket with Steam Web API
+    // then finds or creates a player account linked to that Steam ID
+    var result = await auth.LoginSteamAsync(req.SessionTicket, req.SteamId);
+    return result.Success
+        ? Results.Ok(new AuthResponse(result.Token, result.Profile))
+        : Results.Unauthorized();
+});
+
+app.MapGet("/api/auth/me", async (HttpContext ctx, IAccountRepository repo) =>
+{
+    var playerId = ctx.User.FindFirst("sub")?.Value;
+    if (playerId == null) return Results.Unauthorized();
+    var profile = await repo.GetProfileWithStatsAsync(playerId);
+    return Results.Ok(profile);
+}).RequireAuthorization();
+
+app.MapPatch("/api/auth/username", async (ChangeUsernameRequest req,
+    HttpContext ctx, AuthService auth) =>
+{
+    var playerId = ctx.User.FindFirst("sub")?.Value;
+    var result = await auth.ChangeUsernameAsync(playerId, req.NewUsername);
+    return result.Success ? Results.Ok() : Results.BadRequest(result.Error);
+}).RequireAuthorization();
+```
+
+### 9.3 AuthService
+
+```csharp
+// AuthService.cs
+public class AuthService
+{
+    private readonly IAccountRepository _repo;
+    private readonly IConfiguration _config;
+
+    public async Task<AuthResult> RegisterAsync(string username, string email, string password)
+    {
+        // Validate username: 3-20 chars, alphanumeric + underscore + hyphen
+        if (!Regex.IsMatch(username, @"^[a-zA-Z0-9_-]{3,20}$"))
+            return AuthResult.Fail("Invalid username format");
+
+        // Check uniqueness
+        if (await _repo.UsernameExistsAsync(username))
+            return AuthResult.Fail("Username already taken");
+
+        if (await _repo.EmailExistsAsync(email))
+            return AuthResult.Fail("Email already registered");
+
+        // Hash password — never store plain text
+        var hash = BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
+
+        var player = await _repo.CreatePlayerAsync(username, email, hash);
+        var token = MintJwt(player.Id, player.Username);
+
+        return AuthResult.Ok(token, player.ToProfile());
+    }
+
+    public async Task<AuthResult> LoginSteamAsync(string sessionTicket, string steamId)
+    {
+        // Validate ticket with Steam Web API
+        var isValid = await ValidateSteamTicketAsync(sessionTicket, steamId);
+        if (!isValid) return AuthResult.Fail("Invalid Steam session");
+
+        // Find existing account or create new one
+        var player = await _repo.FindBySteamIdAsync(steamId)
+                  ?? await _repo.CreateSteamPlayerAsync(steamId);
+
+        var token = MintJwt(player.Id, player.Username);
+        return AuthResult.Ok(token, player.ToProfile());
+    }
+
+    public async Task<AuthResult> ChangeUsernameAsync(string playerId, string newUsername)
+    {
+        var player = await _repo.GetByIdAsync(playerId);
+
+        // Enforce 30-day cooldown
+        if (player.UsernameChangedAt.HasValue &&
+            DateTime.UtcNow - player.UsernameChangedAt.Value < TimeSpan.FromDays(30))
+            return AuthResult.Fail("Username can only be changed once every 30 days");
+
+        if (await _repo.UsernameExistsAsync(newUsername))
+            return AuthResult.Fail("Username already taken");
+
+        await _repo.UpdateUsernameAsync(playerId, newUsername);
+        return AuthResult.Ok();
+    }
+
+    private string MintJwt(string playerId, string username)
+    {
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_config["JWT:Secret"]));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            claims: new[]
+            {
+                new Claim("sub", playerId),
+                new Claim("username", username)
+            },
+            expires: DateTime.UtcNow.AddDays(30),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}
+```
+
+### 9.4 SignalR Hub — JWT Attachment
+
+```csharp
+// SignalRClient.cs (Unity) — attach JWT to connection
+_connection = new HubConnectionBuilder()
+    .WithUrl($"wss://api.armsfair.game/gamehub?room={roomCode}", options =>
+    {
+        options.AccessTokenProvider = () =>
+            Task.FromResult(PlayerPrefs.GetString("auth_token"));
+    })
+    .WithAutomaticReconnect()
+    .Build();
+```
+
+```csharp
+// GameHub.cs (server) — extract player identity from JWT
+public override async Task OnConnectedAsync()
+{
+    var playerId = Context.UserIdentifier; // set automatically from JWT sub claim
+    var username = Context.User?.FindFirst("username")?.Value;
+
+    var roomCode = Context.GetHttpContext()?.Request.Query["room"].ToString();
+    if (roomCode == null) { Context.Abort(); return; }
+
+    var game = await _games.FindByRoomCodeAsync(roomCode);
+    if (game == null) { Context.Abort(); return; }
+
+    // Store context for use in hub methods
+    Context.Items["gameId"] = game.Id;
+    Context.Items["playerId"] = playerId;
+
+    await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
+    await base.OnConnectedAsync();
+}
+```
+
+---
+
+## 10. Player Statistics — Server Implementation
+
+### 10.1 Stats Update Flow
+Stats are updated server-side at game end, during the debrief phase. The client never writes stats directly — all stat changes come through the server after game state is fully resolved.
+
+```csharp
+// StatsService.cs
+public class StatsService
+{
+    private readonly IAccountRepository _repo;
+
+    public async Task UpdateAllPlayerStatsAsync(string gameId)
+    {
+        var game = await _repo.GetCompletedGameAsync(gameId);
+        var actions = await _repo.GetAllActionsAsync(gameId);
+        var events = await _repo.GetAllEventsAsync(gameId);
+
+        foreach (var player in game.Players)
+        {
+            var result = BuildGameResult(player, game, actions, events);
+            await UpdateSinglePlayerStatsAsync(player.PlayerId, result);
+        }
+    }
+
+    private async Task UpdateSinglePlayerStatsAsync(string playerId, GameResult result)
+    {
+        // EF Core — load, update, save in a single transaction
+        var stats = await _repo.GetOrCreateStatsAsync(playerId);
+
+        stats.GamesPlayed++;
+        stats.GamesWon              += result.IsWinner ? 1 : 0;
+        stats.WarsStarted           += result.WarsStartedThisGame;
+        stats.FailedStatesCaused    += result.FailedStatesCausedThisGame;
+        stats.SmallArmsSold         += result.SmallArmsSoldThisGame;
+        stats.VehiclesSold          += result.VehiclesSoldThisGame;
+        stats.AirDefenseSold        += result.AirDefenseSoldThisGame;
+        stats.DronesSold            += result.DronesSoldThisGame;
+        stats.TotalProfitEarned     += result.ProfitThisGame;
+        stats.TotalCivilianCost     += result.CivilianCostThisGame;
+        stats.CeasefiresBrokered    += result.CeasefiresBrokeredThisGame;
+        stats.CoupsFunded           += result.CoupsFundedThisGame;
+        stats.CoupsSucceeded        += result.CoupsSucceededThisGame;
+        stats.TimesWhistleblown     += result.TimesWhistleblownThisGame;
+        stats.TimesWhistleblower    += result.TimesWhistleblowerThisGame;
+        stats.TotalWarParticipations += result.EndingType == "total_war" ? 1 : 0;
+        stats.WorldPeaceAchieved    += result.EndingType == "world_peace" ? 1 : 0;
+        stats.CompanyCollapses      += result.CompanyCollapsedThisGame ? 1 : 0;
+        stats.ReconstructionWins    += result.ReconstructionWinsThisGame;
+        stats.LegacyScoreTotal      += result.LegacyScoreThisGame;
+        stats.UpdatedAt = DateTime.UtcNow;
+
+        await _repo.SaveStatsAsync(stats);
+    }
+
+    private GameResult BuildGameResult(GamePlayer player, CompletedGame game,
+        List<PlayerAction> actions, List<GameEvent> events)
+    {
+        var playerActions = actions.Where(a => a.GamePlayerId == player.Id).ToList();
+
+        return new GameResult
+        {
+            IsWinner              = game.WinnerPlayerId == player.PlayerId,
+            ProfitThisGame        = player.Capital - 50, // net from starting $50M
+            CivilianCostThisGame  = CalculateCivCostContribution(player.Id, playerActions),
+            SmallArmsSoldThisGame = playerActions.Count(a => a.WeaponCategory == "small_arms"),
+            // ... all other fields
+            LegacyScoreThisGame   = CalculateLegacyScore(player, game, playerActions),
+            EndingType            = game.EndingType
+        };
+    }
+}
+```
+
+---
+
+## 11. Text Chat — Server Architecture
+
+### 11.1 GameHub Chat Methods
+
+```csharp
+// GameHub.cs — chat methods added to existing hub
+public async Task SendChat(SendChatMessage msg)
+{
+    var gameId   = Context.Items["gameId"] as string;
+    var playerId = Context.Items["playerId"] as string;
+    var player   = await _games.GetPlayerAsync(gameId, playerId);
+
+    // Validate
+    if (string.IsNullOrWhiteSpace(msg.Text) || msg.Text.Length > 280) return;
+
+    // Rate limit check — Redis
+    var rateLimitKey = $"chat_rate:{gameId}:{playerId}";
+    var count = await _redis.StringIncrementAsync(rateLimitKey);
+    if (count == 1) await _redis.KeyExpireAsync(rateLimitKey, TimeSpan.FromSeconds(10));
+    if (count > 5)
+    {
+        await Clients.Caller.SendAsync("Error", new { code = "RATE_LIMITED",
+            message = "Slow down — maximum 5 messages per 10 seconds" });
+        return;
+    }
+
+    // Profanity filter if room has it enabled
+    var game = await _games.GetGameAsync(gameId);
+    var text = game.Settings.ProfanityFilterEnabled
+        ? _profanityFilter.Clean(msg.Text)
+        : msg.Text;
+
+    // Persist to database
+    var saved = await _chatRepo.SaveMessageAsync(new ChatMessageRecord
+    {
+        GameId      = gameId,
+        SenderId    = playerId,
+        RecipientId = msg.RecipientId,
+        Text        = text,
+        IsPrivate   = msg.RecipientId != null,
+        RoundNumber = game.CurrentRound,
+        Phase       = game.CurrentPhase.ToString()
+    });
+
+    var outgoing = new ChatMessageReceived(
+        MessageId:       saved.Id,
+        SenderId:        playerId,
+        SenderUsername:  player.Username,
+        SenderColor:     player.ColorHex,
+        Text:            text,
+        IsPrivate:       msg.RecipientId != null,
+        IsSystem:        false,
+        RecipientId:     msg.RecipientId,
+        SentAt:          DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        RoundNumber:     game.CurrentRound,
+        Phase:           game.CurrentPhase.ToString()
+    );
+
+    if (msg.RecipientId != null)
+    {
+        // Private DM — send only to recipient and sender
+        await Clients.User(msg.RecipientId).SendAsync("ChatMsg", outgoing);
+        await Clients.Caller.SendAsync("ChatMsg", outgoing);
+    }
+    else
+    {
+        // Global — broadcast to entire room
+        await Clients.Group(gameId).SendAsync("ChatMsg", outgoing);
+    }
+}
+
+public async Task MutePlayer(MutePlayerMessage msg)
+{
+    var gameId   = Context.Items["gameId"] as string;
+    var playerId = Context.Items["playerId"] as string;
+
+    await _chatRepo.SaveMuteAsync(gameId, playerId, msg.TargetPlayerId);
+    // Mute is client-enforced — server records it but filtering happens on Unity side
+    await Clients.Caller.SendAsync("MuteConfirmed", new { msg.TargetPlayerId });
+}
+```
+
+### 11.2 Chat History for Debrief
+
+```csharp
+// ChatRepository.cs
+public async Task<List<ChatMessageRecord>> GetGameChatHistoryAsync(
+    string gameId,
+    bool includePrivate = false)
+{
+    var query = _db.ChatMessages
+        .Where(m => m.GameId == gameId)
+        .Where(m => !m.IsPrivate || includePrivate)
+        .OrderBy(m => m.SentAt);
+
+    return await query.ToListAsync();
+}
+```
+
+Global chat history is sent to all players in the debrief `StateSync`. Private chat history is not included — it remains private even after the game ends.
+
+### 11.3 System Messages
+
+The server sends system messages (IsSystem = true) for key game events. These appear in the chat panel in a distinct style:
+
+```csharp
+// Helper used by PhaseOrchestrator and event handlers
+private async Task BroadcastSystemMessageAsync(string gameId, string text)
+{
+    await _chatRepo.SaveMessageAsync(new ChatMessageRecord
+    {
+        GameId   = gameId,
+        Text     = text,
+        IsSystem = true,
+        Phase    = _currentPhase.ToString()
+    });
+
+    await Clients.Group(gameId).SendAsync("ChatMsg", new ChatMessageReceived(
+        MessageId: Guid.NewGuid().ToString(),
+        SenderId: "system",
+        SenderUsername: "Game",
+        SenderColor: "#AAAAAA",
+        Text: text,
+        IsPrivate: false,
+        IsSystem: true,
+        RecipientId: null,
+        SentAt: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        RoundNumber: _currentRound,
+        Phase: _currentPhase.ToString()
+    ));
+}
+
+// Example system messages:
+// "Round 3 has begun. Procurement phase opens now."
+// "Meridian Arms has been sanctioned by the UN Security Council."
+// "A ceasefire has been declared in Sudan."
+// "WARNING: Global stability has reached 80. Conflicts are spreading faster."
+```
+
+---
+
+## 12. Voice Chat — Vivox Architecture
+
+### 12.1 Overview
+Voice chat uses Unity Gaming Services (UGS) Vivox. The server generates signed Vivox access tokens for each player when they need to join a voice channel. The client uses these tokens to authenticate with Vivox's infrastructure directly — audio data never passes through your game server.
+
+```
+Player → Game Server → (mint Vivox JWT) → Player
+Player → Vivox infrastructure (audio)
+Game Server → (voice state messages via SignalR) → Player
+```
+
+### 12.2 UGS Setup Required
+Before voice chat works, you need:
+1. Create a Unity Gaming Services project at dashboard.unity3d.com
+2. Enable Vivox in the UGS dashboard
+3. Add your Vivox API key and secret to your server environment variables
+4. Initialize UGS in Unity via `await UnityServices.InitializeAsync()`
+
+### 12.3 Server — Vivox Token Generation
+
+```csharp
+// VivoxTokenService.cs
+public class VivoxTokenService
+{
+    private readonly string _vivoxKey;
+    private readonly string _vivoxIssuer;
+    private readonly string _vivoxDomain;
+
+    public VivoxTokenService(IConfiguration config)
+    {
+        _vivoxKey    = config["Vivox:ApiKey"];
+        _vivoxIssuer = config["Vivox:Issuer"];      // your Vivox domain
+        _vivoxDomain = config["Vivox:Domain"];
+    }
+
+    // Called when player requests to join voice for a game room
+    public string MintChannelToken(string playerId, string roomCode, string action)
+    {
+        // action: "join" or "leave"
+        var channelUri = $"sip:confctl-g-{roomCode}@{_vivoxDomain}";
+
+        var claims = new Dictionary<string, object>
+        {
+            { "iss", _vivoxIssuer },
+            { "exp", DateTimeOffset.UtcNow.AddSeconds(90).ToUnixTimeSeconds() },
+            { "vxa", action },          // vivox action
+            { "vxi", Guid.NewGuid().ToString() },  // unique per token
+            { "f",   $"sip:.{_vivoxIssuer}.{playerId}.@{_vivoxDomain}" }, // from
+            { "t",   channelUri }       // to (channel)
+        };
+
+        return JWT.Encode(claims, _vivoxKey, JwtHashAlgorithm.HS256);
+    }
+}
+```
+
+```csharp
+// GameHub.cs — voice token request handler
+public async Task RequestVoiceToken(string action)
+{
+    var gameId   = Context.Items["gameId"] as string;
+    var playerId = Context.Items["playerId"] as string;
+    var game     = await _games.GetGameAsync(gameId);
+
+    // Only issue tokens during appropriate phases
+    if (game.CurrentPhase == GamePhase.Sales)
+    {
+        await Clients.Caller.SendAsync("Error",
+            new { code = "VOICE_BLOCKED", message = "Voice disabled during sealed phase" });
+        return;
+    }
+
+    var token = _vivoxTokens.MintChannelToken(playerId, game.RoomCode, action);
+    var channelUri = $"sip:confctl-g-{game.RoomCode}@{_vivoxDomain}";
+
+    await Clients.Caller.SendAsync("VivoxToken", new VivoxTokenMessage(
+        AccessToken:       token,
+        ChannelUri:        channelUri,
+        PushToTalkRequired: game.Settings.PushToTalkRequired
+    ));
+}
+```
+
+### 12.4 Phase-Based Voice State Broadcasting
+
+The PhaseOrchestrator broadcasts voice state changes to all clients when a phase transition occurs. Clients use these messages to show/hide the voice UI and enforce muting.
+
+```csharp
+// PhaseOrchestrator.cs — voice state broadcast on phase transition
+private async Task BroadcastVoiceStateAsync(string gameId, GamePhase phase, GameSettings settings)
+{
+    var (isActive, reason) = phase switch
+    {
+        GamePhase.WorldUpdate  => (false, "world_update"),
+        GamePhase.Procurement  => (settings.VoiceInProcurement, "procurement_phase"),
+        GamePhase.Negotiation  => (true,  "negotiation_phase"),
+        GamePhase.Sales        => (false, "sealed_phase"),
+        GamePhase.Reveal       => (false, "reveal_animation"),
+        GamePhase.Consequences => (true,  "consequences_phase"),
+        _ => (false, "unknown")
+    };
+
+    await _hub.Clients.Group(gameId).SendAsync("VoiceState",
+        new VoiceStateMessage(isActive, reason));
+
+    // For reveal phase: send a second "active" message after 15 seconds
+    if (phase == GamePhase.Reveal)
+    {
+        await Task.Delay(15_000);
+        await _hub.Clients.Group(gameId).SendAsync("VoiceState",
+            new VoiceStateMessage(true, "reveal_complete"));
+    }
+}
+```
+
+### 12.5 Environment Variables Required for Voice
+
+Add to server .env / Railway environment:
+```
+Vivox__ApiKey     — your Vivox API key from UGS dashboard
+Vivox__Issuer     — your Vivox issuer (domain identifier)
+Vivox__Domain     — your Vivox FQDN (e.g. mt1s.vivox.com)
+```
+
+---
+
+## 13. Updated Open Technical Questions
+
+1. **SignalR WebGL compatibility for voice token requests.** The Vivox token is requested via SignalR. Ensure the Unity WebGL build's SignalR client correctly handles the `VivoxToken` message and that the Vivox Unity SDK initializes correctly in a WebGL context. Vivox's WebGL support is less mature than desktop — test early.
+
+2. **Chat persistence during async games.** In async mode (24-hour phases), chat messages span multiple days. Ensure the chat history endpoint paginates efficiently — a 20-round async game could have thousands of messages. Add cursor-based pagination to `GetGameChatHistoryAsync`.
+
+3. **Username profanity check on registration.** The `AuthService.RegisterAsync` validates format but not content. Add a profanity check against a word list before saving. Consider using a maintained .NET package like `ProfanityDetector` rather than a manual word list.
+
+4. **Steam account username generation.** When a Steam player authenticates for the first time, they need a username generated for them (they may not have set one). Generate a username from their Steam display name, slugified and deduplicated: `commander_steel` → `commander_steel_1` if taken. Prompt them to change it in the profile screen.
+
+5. **Vivox free tier limits.** Vivox on UGS free tier supports up to 100 concurrent voice users. For a 6-player game this is more than sufficient at indie scale. Check current UGS pricing before launch — the limit and cost structure may have changed.
+
+6. **Chat moderation.** Consider whether you need a reporting system (players report abusive chat to a moderation queue) or whether muting is sufficient. For a small indie game, muting is likely enough — a full moderation system is significant server-side work.
+
+---
+
+*End of Technical Architecture v0.3*
+*Engine: Unity 2023 LTS | Server: ASP.NET Core 8 + SignalR*
+*New in v0.3: Auth (Section 9), Stats (Section 10), Text Chat (Section 11), Voice Chat (Section 12)*

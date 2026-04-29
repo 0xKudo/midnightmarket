@@ -50,8 +50,8 @@ def load_geojson(path: str) -> dict:
 
 
 def extract_iso(props: dict) -> str:
-    # Natural Earth uses ADM0_A3 as the primary ISO-3 code field
-    return props.get("ADM0_A3") or props.get("ISO_A3") or props.get("iso_a3") or "UNK"
+    return (props.get("ADM0_A3") or props.get("ISO_A3") or props.get("iso_a3")
+            or props.get("ISO3166-1-Alpha-3") or "UNK")
 
 
 def build_countries(features: list, simplify_tol: float) -> tuple[list, dict]:
