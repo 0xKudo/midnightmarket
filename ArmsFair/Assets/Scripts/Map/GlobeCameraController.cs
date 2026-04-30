@@ -4,20 +4,28 @@ using UnityEngine.InputSystem;
 namespace ArmsFair.Map
 {
     // Attach to the globe camera. Drag to orbit, scroll/pinch to zoom.
+    // Exposes WasClick so GlobeRenderer can distinguish tap from drag.
     public class GlobeCameraController : MonoBehaviour
     {
         [SerializeField] private Transform target;
-        [SerializeField] private float orbitSpeed   = 0.3f;
-        [SerializeField] private float zoomSpeed    = 1.0f;
-        [SerializeField] private float minDistance  = 6f;
-        [SerializeField] private float maxDistance  = 20f;
+        [SerializeField] private float orbitSpeed    = 0.3f;
+        [SerializeField] private float zoomSpeed     = 1.0f;
+        [SerializeField] private float minDistance   = 6f;
+        [SerializeField] private float maxDistance   = 20f;
         [SerializeField] private float autoSpinSpeed = 2f;
+        [SerializeField] private float clickDragThreshold = 5f; // pixels
+
+        // True on the frame the mouse was released without dragging
+        public bool WasClick { get; private set; }
+        public Vector2 ClickScreenPos { get; private set; }
 
         private float   _distance;
         private float   _yaw;
         private float   _pitch;
+        private Vector2 _mouseDownPos;
         private Vector2 _lastMousePos;
-        private bool    _dragging;
+        private bool    _mouseHeld;
+        private bool    _wasDrag;
         private float   _idleTimer;
 
         private void Start()
@@ -30,6 +38,8 @@ namespace ArmsFair.Map
 
         private void Update()
         {
+            WasClick = false;
+
             var mouse = Mouse.current;
             var touch = Touchscreen.current;
 
@@ -45,32 +55,53 @@ namespace ArmsFair.Map
             {
                 if (mouse.leftButton.wasPressedThisFrame)
                 {
-                    _lastMousePos = mouse.position.ReadValue();
-                    _dragging     = true;
+                    _mouseDownPos = mouse.position.ReadValue();
+                    _lastMousePos = _mouseDownPos;
+                    _mouseHeld    = true;
+                    _wasDrag      = false;
                     _idleTimer    = 0f;
                 }
-                if (mouse.leftButton.wasReleasedThisFrame)
-                    _dragging = false;
 
-                if (_dragging && mouse.leftButton.isPressed)
+                if (_mouseHeld && mouse.leftButton.isPressed)
                 {
                     var pos   = mouse.position.ReadValue();
                     var delta = pos - _lastMousePos;
-                    _yaw          += delta.x * orbitSpeed;
-                    _pitch        -= delta.y * orbitSpeed;
-                    _pitch         = Mathf.Clamp(_pitch, -85f, 85f);
-                    _lastMousePos  = pos;
-                    _idleTimer     = 0f;
+
+                    if (!_wasDrag && Vector2.Distance(pos, _mouseDownPos) > clickDragThreshold)
+                        _wasDrag = true;
+
+                    if (_wasDrag)
+                    {
+                        _yaw   += delta.x * orbitSpeed;
+                        _pitch -= delta.y * orbitSpeed;
+                        _pitch  = Mathf.Clamp(_pitch, -85f, 85f);
+                        _idleTimer = 0f;
+                    }
+
+                    _lastMousePos = pos;
+                }
+
+                if (mouse.leftButton.wasReleasedThisFrame && _mouseHeld)
+                {
+                    if (!_wasDrag)
+                    {
+                        WasClick       = true;
+                        ClickScreenPos = mouse.position.ReadValue();
+                    }
+                    _mouseHeld = false;
                 }
             }
 
             if (touch != null && touch.primaryTouch.press.isPressed)
             {
                 var delta = touch.primaryTouch.delta.ReadValue();
-                _yaw      += delta.x * orbitSpeed;
-                _pitch    -= delta.y * orbitSpeed;
-                _pitch     = Mathf.Clamp(_pitch, -85f, 85f);
-                _idleTimer = 0f;
+                if (delta.magnitude > 1f)
+                {
+                    _yaw      += delta.x * orbitSpeed;
+                    _pitch    -= delta.y * orbitSpeed;
+                    _pitch     = Mathf.Clamp(_pitch, -85f, 85f);
+                    _idleTimer = 0f;
+                }
             }
         }
 

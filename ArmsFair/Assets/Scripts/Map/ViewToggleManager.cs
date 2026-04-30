@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 namespace ArmsFair.Map
@@ -12,7 +13,6 @@ namespace ArmsFair.Map
 
         [SerializeField] private string flatSceneName  = "MapFlat";
         [SerializeField] private string globeSceneName = "MapGlobe";
-        [SerializeField] private KeyCode toggleKey     = KeyCode.G;
 
         public enum MapView { Flat, Globe }
         public MapView CurrentView { get; private set; } = MapView.Flat;
@@ -26,7 +26,8 @@ namespace ArmsFair.Map
 
         private void Update()
         {
-            if (UnityEngine.Input.GetKeyDown(toggleKey))
+            var kb = Keyboard.current;
+            if (kb != null && kb.gKey.wasPressedThisFrame)
                 ToggleView();
         }
 

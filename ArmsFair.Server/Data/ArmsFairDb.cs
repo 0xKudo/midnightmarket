@@ -5,12 +5,23 @@ namespace ArmsFair.Server.Data;
 
 public class ArmsFairDb(DbContextOptions<ArmsFairDb> options) : DbContext(options)
 {
+    public DbSet<PlayerEntity>      Players      { get; set; } = null!;
     public DbSet<GameSessionEntity> GameSessions { get; set; } = null!;
     public DbSet<PlayerStatEntity>  PlayerStats  { get; set; } = null!;
     public DbSet<AuditLogEntity>    AuditLogs    { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder b)
     {
+        b.Entity<PlayerEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Username).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Email).HasMaxLength(255);
+            e.HasIndex(x => x.Username).IsUnique();
+            e.HasIndex(x => x.Email).IsUnique().HasFilter("\"Email\" IS NOT NULL");
+            e.HasIndex(x => x.SteamId).IsUnique().HasFilter("\"SteamId\" IS NOT NULL");
+        });
+
         b.Entity<GameSessionEntity>(e =>
         {
             e.HasKey(x => x.Id);

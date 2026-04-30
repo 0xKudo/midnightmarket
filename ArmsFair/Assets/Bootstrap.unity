@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 1561410193}
   - component: {fileID: 1561410192}
   - component: {fileID: 1561410191}
+  - component: {fileID: 1561410194}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -215,6 +216,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59ec1d3fd8564b64c8fc64793b3a5b4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArmsFair.Network.UnityMainThreadDispatcher
+--- !u!114 &1561410194
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1561410189}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de750e0d9b18b5c45b168c25a53056b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArmsFair.Map.ViewToggleManager
+  flatSceneName: MapFlat
+  globeSceneName: MapGlobe
+  toggleKey: 103
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ArmsFair.Network;
+using ArmsFair.Shared.Models.Messages;
 using UnityEngine;
 
 namespace ArmsFair.Map
@@ -23,20 +24,20 @@ namespace ArmsFair.Map
                 return;
             }
 
-            _client.OnWorldUpdated.AddListener(OnWorldUpdated);
+            _client.OnWorldUpdate.AddListener(OnWorldUpdate);
         }
 
         private void OnDestroy()
         {
             if (_client != null)
-                _client.OnWorldUpdated.RemoveListener(OnWorldUpdated);
+                _client.OnWorldUpdate.RemoveListener(OnWorldUpdate);
         }
 
-        private void OnWorldUpdated(ArmsFair.Shared.Messages.WorldUpdateMessage msg)
+        private void OnWorldUpdate(WorldUpdateMessage msg)
         {
             var tensions = new Dictionary<string, float>();
-            foreach (var cs in msg.Countries)
-                tensions[cs.Iso] = cs.Tension;
+            foreach (var cc in msg.CountryChanges)
+                tensions[cc.Iso] = cc.NewTension;
             _globe.UpdateCountryTensions(tensions);
         }
     }

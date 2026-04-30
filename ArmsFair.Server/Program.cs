@@ -23,6 +23,8 @@ builder.Services.AddHttpClient("acled");
 builder.Services.AddHttpClient("gpi");
 
 // ── App services ─────────────────────────────────────────────────────────────
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<PhaseOrchestrator>();
 builder.Services.AddSingleton<SeedService>();
 builder.Services.AddSingleton<TickerService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<TickerService>());
@@ -87,7 +89,58 @@ app.UseAuthorization();
 // ── Hubs ─────────────────────────────────────────────────────────────────────
 app.MapHub<GameHub>("/gamehub");
 
+// ── Auth endpoints ────────────────────────────────────────────────────────────
+app.MapPost("/api/auth/register", async (RegisterRequest req, AuthService auth) =>
+{
+    try
+    {
+        var (player, token) = await auth.RegisterAsync(req.Username, req.Email, req.Password);
+        return Results.Ok(new
+        {
+            token,
+            profile = new { id = player.Id, username = player.Username, homeNationIso = player.HomeNationIso }
+        });
+    }
+    catch (ArgumentException ex)       { return Results.BadRequest(new { error = ex.Message }); }
+    catch (InvalidOperationException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+
+app.MapPost("/api/auth/login", async (LoginRequest req, AuthService auth) =>
+{
+    var result = await auth.LoginAsync(req.UsernameOrEmail, req.Password);
+    if (result is null) return Results.Unauthorized();
+
+    var (player, token) = result.Value;
+    return Results.Ok(new
+    {
+        token,
+        profile = new { id = player.Id, username = player.Username, homeNationIso = player.HomeNationIso }
+    });
+});
+
+app.MapGet("/api/auth/me", async (HttpContext ctx, AuthService auth) =>
+{
+    var authHeader = ctx.Request.Headers.Authorization.FirstOrDefault();
+    var token = authHeader?.StartsWith("Bearer ") == true ? authHeader[7..] : null;
+    if (token is null) return Results.Unauthorized();
+
+    var player = await auth.ValidateTokenAsync(token);
+    if (player is null) return Results.Unauthorized();
+
+    return Results.Ok(new
+    {
+        id            = player.Id,
+        username      = player.Username,
+        homeNationIso = player.HomeNationIso,
+        createdAt     = player.CreatedAt
+    });
+}).RequireAuthorization();
+
 // ── Health check ─────────────────────────────────────────────────────────────
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.Run();
+
+// ── Request types ─────────────────────────────────────────────────────────────
+record RegisterRequest(string Username, string Email, string Password);
+record LoginRequest(string UsernameOrEmail, string Password);

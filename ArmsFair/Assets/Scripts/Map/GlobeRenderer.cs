@@ -74,31 +74,28 @@ namespace ArmsFair.Map
             globeRenderer.SetPropertyBlock(_props);
         }
 
+        private GlobeCameraController _cameraController;
+
         private void Update()
         {
-            HandleClick();
-        }
+            if (_cameraController == null)
+                _cameraController = Camera.main?.GetComponent<GlobeCameraController>();
 
-        private void HandleClick()
-        {
-            var mouse = UnityEngine.InputSystem.Mouse.current;
-            var touch = UnityEngine.InputSystem.Touchscreen.current;
+            if (_cameraController == null || !_cameraController.WasClick) return;
 
-            bool clicked = mouse != null && mouse.leftButton.wasPressedThisFrame;
-            bool tapped  = touch != null && touch.primaryTouch.press.wasPressedThisFrame;
-            if (!clicked && !tapped) return;
-
-            Vector2 screenPos = clicked
-                ? mouse.position.ReadValue()
-                : touch.primaryTouch.position.ReadValue();
-
-            var ray = Camera.main.ScreenPointToRay(screenPos);
+            var cam = Camera.main;
+            var ray = cam.ScreenPointToRay(_cameraController.ClickScreenPos);
             if (!Physics.Raycast(ray, out var hit)) return;
             if (hit.collider.gameObject != gameObject) return;
 
+            // Ignore clicks on the back hemisphere
+            var surfaceNormalWS = (hit.point - transform.position).normalized;
+            if (Vector3.Dot(surfaceNormalWS, ray.direction) > 0f) return;
+
             var local = transform.InverseTransformPoint(hit.point).normalized;
             float lat = Mathf.Asin(local.y) * Mathf.Rad2Deg;
-            float lng = Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
+            // Unity UV: u = 0.5 - atan2(z,x)/(2pi). Negate result to get geographic lng.
+            float lng = -Mathf.Atan2(-local.z, local.x) * Mathf.Rad2Deg;
 
             var iso = LatLngToIso(lat, lng);
             if (iso != null && iso != _selectedIso)
@@ -114,7 +111,7 @@ namespace ArmsFair.Map
             if (_centroids == null) return null;
 
             string nearest = null;
-            float  minDist = float.MaxValue;
+            float  minDist = 400f; // max squared degrees (~20° radius) — rejects open ocean
 
             foreach (var kvp in _centroids)
             {
