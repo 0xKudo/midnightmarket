@@ -25,6 +25,7 @@ builder.Services.AddHttpClient("gpi");
 // ── App services ─────────────────────────────────────────────────────────────
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PhaseOrchestrator>();
+builder.Services.AddSingleton<LobbyService>();
 builder.Services.AddSingleton<SeedService>();
 builder.Services.AddSingleton<TickerService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<TickerService>());
@@ -136,6 +137,62 @@ app.MapGet("/api/auth/me", async (HttpContext ctx, AuthService auth) =>
     });
 }).RequireAuthorization();
 
+// ── Lobby endpoints ───────────────────────────────────────────────────────────
+
+// GET /api/rooms — list open public rooms
+app.MapGet("/api/rooms", (LobbyService lobby) =>
+    Results.Ok(lobby.ListOpen()))
+    .RequireAuthorization();
+
+// GET /api/rooms/{id} — get a specific room (also accepts invite code)
+app.MapGet("/api/rooms/{id}", (string id, LobbyService lobby) =>
+{
+    var room = lobby.GetByRoomId(id) ?? lobby.GetByInviteCode(id);
+    return room is null ? Results.NotFound() : Results.Ok(room);
+}).RequireAuthorization();
+
+// POST /api/rooms — create a room
+app.MapPost("/api/rooms", (CreateRoomRequest req, HttpContext ctx, LobbyService lobby, AuthService auth) =>
+{
+    var playerId = ctx.User.FindFirst("sub")?.Value;
+    if (playerId is null) return Results.Unauthorized();
+
+    var username = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                   ?? ctx.User.FindFirst("name")?.Value
+                   ?? "Unknown";
+
+    var room = lobby.CreateRoom(
+        hostPlayerId : playerId,
+        hostUsername : username,
+        roomName     : req.RoomName ?? "",
+        playerSlots  : Math.Clamp(req.PlayerSlots, 2, 6),
+        timerPreset  : req.TimerPreset ?? "standard",
+        voiceEnabled : req.VoiceEnabled,
+        aiFillIn     : req.AiFillIn,
+        isPrivate    : req.IsPrivate,
+        gameMode     : req.GameMode);
+
+    return Results.Ok(room);
+}).RequireAuthorization();
+
+// POST /api/rooms/{id}/join — join a room by id or invite code
+app.MapPost("/api/rooms/{id}/join", (string id, HttpContext ctx, LobbyService lobby) =>
+{
+    var playerId = ctx.User.FindFirst("sub")?.Value;
+    if (playerId is null) return Results.Unauthorized();
+
+    var room = lobby.GetByRoomId(id) ?? lobby.GetByInviteCode(id);
+    if (room is null) return Results.NotFound(new { error = "Room not found." });
+    if (room.IsStarted) return Results.BadRequest(new { error = "Game already started." });
+    if (room.PlayerIds.Count >= room.PlayerSlots)
+        return Results.BadRequest(new { error = "Room is full." });
+
+    var joined = lobby.TryJoin(room.RoomId, playerId);
+    return joined
+        ? Results.Ok(lobby.GetByRoomId(room.RoomId))
+        : Results.Conflict(new { error = "Could not join room — try again." });
+}).RequireAuthorization();
+
 // ── Health check ─────────────────────────────────────────────────────────────
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
@@ -144,3 +201,11 @@ app.Run();
 // ── Request types ─────────────────────────────────────────────────────────────
 record RegisterRequest(string Username, string Email, string Password);
 record LoginRequest(string UsernameOrEmail, string Password);
+record CreateRoomRequest(
+    string?  RoomName,
+    int      PlayerSlots,
+    string?  TimerPreset,
+    bool     VoiceEnabled,
+    bool     AiFillIn,
+    bool     IsPrivate,
+    ArmsFair.Shared.Enums.GameMode GameMode = ArmsFair.Shared.Enums.GameMode.Realistic);

@@ -213,7 +213,38 @@ public class PhaseOrchestrator(
             }
         }
 
-        state = state with { Tracks = tracks };
+        // Apply all deltas back to authoritative PlayerProfile list
+        var updatedPlayers = state.Players.Select(p =>
+        {
+            var profit = profitUpdates.Where(u => u.PlayerId == p.Id).Sum(u => u.ProfitEarned);
+            var repDelta = repUpdates.Where(u => u.PlayerId == p.Id).Sum(u => u.Delta);
+            // PeaceBroker costs $2M and earns 1 peace credit
+            var peaceBrokerActs = pendingActions.Count(a =>
+                a.PlayerId == p.Id && a.SaleType == SaleType.PeaceBroker);
+            var peaceCost = peaceBrokerActs * Balance.PeaceCostToPlayer;
+            var peaceCredits = peaceBrokerActs * Balance.PeaceCreditEarned;
+            // Latent risk from covert/gray sales
+            var latentGain = pendingActions
+                .Where(a => a.PlayerId == p.Id)
+                .Sum(a => a.SaleType == SaleType.Covert
+                    ? (a.IsProxyRouted ? Balance.LatentPerGrayChannel : Balance.LatentPerCovert)
+                    : 0);
+
+            return p with
+            {
+                Capital      = p.Capital + profit - peaceCost,
+                Reputation   = Math.Clamp(p.Reputation + repDelta
+                                  + (peaceBrokerActs > 0 ? Balance.RepGainPeaceBroker * peaceBrokerActs : 0)
+                                  + (pendingActions.Any(a => a.PlayerId == p.Id
+                                         && a.SaleType == SaleType.Open) ? Balance.RepLossOpenSale : 0),
+                               0, 100),
+                PeaceCredits = p.PeaceCredits + peaceCredits,
+                LatentRisk   = p.LatentRisk   + latentGain,
+                Status       = p.Reputation + repDelta <= Balance.CollapseThreshold ? "collapsed" : p.Status
+            };
+        }).ToList();
+
+        state = state with { Tracks = tracks, Players = updatedPlayers };
 
         await hub.Clients.Group(gameId).SendAsync("Consequences", new ConsequencesMessage(
             profitUpdates,

@@ -5,7 +5,17 @@
 
 ## Changelog
 
-### v0.3 (current)
+### v0.4 (current) — 2026-04-29
+- **IMPLEMENTED:** PhaseOrchestrator — single authority for phase transitions, absorbed from GameHub.AdvancePhase and TickerService. Runs SpreadEngine on WorldUpdate, Reveal/Consequences logic on Reveal entry, EndingChecker after every advance.
+- **IMPLEMENTED:** AuthService — JWT mint/validate (HS256, 7-day expiry), BCrypt password hashing (work factor 12), register/login/validateToken.
+- **IMPLEMENTED:** PlayerEntity — persistent player account EF entity. players table with username (unique, 3-20 chars), email, password_hash, steam_id, home_nation_iso, created_at, last_login_at, is_banned.
+- **IMPLEMENTED:** REST auth endpoints — POST /api/auth/register, POST /api/auth/login, GET /api/auth/me.
+- **IMPLEMENTED:** adjacency.json copied to ArmsFair.Server/GeoData — server-side spread engine uses it.
+- **NOT YET:** EF Core migrations not run. DB schema must be created before deployment.
+- **NOT YET:** StatsService, ChatRepository, AccountRepository, VivoxTokenService — deferred.
+- **NOT YET:** Consequences do not yet mutate PlayerProfile.Capital/Reputation in GameState (deltas computed, broadcast, but not applied back to state).
+
+### v0.3
 - Added Section 9: Authentication and Account System
 - Added Section 10: Player Statistics schema and server logic
 - Added Section 11: Text Chat — SignalR channels, persistence, moderation
@@ -681,9 +691,30 @@ public class MapLoader : MonoBehaviour
 }
 ```
 
-### 7.3 Unity 3D Globe — Country Overlay Shader
+### 7.3 Unity 3D Globe — WPM Globe Edition Lite
 
-The globe uses a UV-sphere mesh. A custom URP shader maps lat/lng coordinates to country colors based on a pre-baked country ID texture and a per-country tension array updated each round.
+The globe uses **World Political Map Globe Edition Lite** (WPMapGlobeEditionLite asset). WPM provides built-in country borders, labels, click detection, auto-rotation, and zoom. A custom bridge script (`WPMGlobeBridge.cs`) connects WPM events to game logic.
+
+**Key WPM settings applied at runtime (WPMGlobeBridge.Start):**
+- `mouseWheelSensitivity = 0.5f` — slowed from default for comfortable zoom
+- `autoRotationSpeed` — cached and restored after idle (2s delay)
+- `showCursor = false` — hides WPM's crosshair cursor lines
+
+**Click detection:** Poll `_map.countryLastClicked` each Update(). WPM returns an index into `_map.countries[]`. Country name is resolved to ISO alpha-3 via a name→ISO dictionary loaded from `StreamingAssets/GeoData/countries.json`.
+
+**Zoom clamping (WPMGlobeBridge.Update):**
+- Zoom-in limit: `GetZoomLevel() < 0.3f` → clamp to 0.3
+- Zoom-out limit: camera distance from globe center clamped to `1.75f` units
+
+**Auto-rotation:** Paused while `mouseIsOver || GetMouseButton(0)`. Resumes after 2s idle.
+
+**Input system:** `ProjectSettings activeInputHandler = 2` (Both old + new input systems) required so WPM's `OnMouseEnter`/`OnMouseExit` fire correctly alongside Unity's New Input System.
+
+**WPMInternal.cs patch:** Scroll wheel is read unconditionally (not gated on `mouseIsOver`) so zoom works regardless of cursor position.
+
+**Tension colors:** `UpdateCountryTensions(Dictionary<string, float>)` calls `ToggleCountrySurface()` per country with one of 6 stage colors (Stable → Failed).
+
+### 7.3.1 Country Overlay Shader (legacy — superseded by WPM)
 
 ```hlsl
 // CountryOverlay.shader (URP Unlit ShaderGraph-compatible HLSL)
