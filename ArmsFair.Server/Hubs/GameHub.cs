@@ -15,7 +15,7 @@ using System.Text.Json;
 namespace ArmsFair.Server.Hubs;
 
 [Authorize]
-public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator phaseOrchestrator) : Hub
+public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator phaseOrchestrator, TickerService ticker) : Hub
 {
     // In-memory game state keyed by gameId.
     private static readonly ConcurrentDictionary<string, GameState>       _games           = new();
@@ -61,6 +61,24 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
             ? settings.CustomTracks
             : WorldTracks.Initial(mode);
 
+        var hostEntity = Guid.TryParse(playerId, out var hostGuid)
+            ? await db.Players.FindAsync(hostGuid)
+            : null;
+
+        var hostProfile = hostEntity is not null
+            ? new PlayerProfile
+            {
+                Id         = playerId,
+                Username   = hostEntity.Username,
+                HomeNation = hostEntity.HomeNationIso
+            }
+            : new PlayerProfile
+            {
+                Id         = playerId,
+                Username   = "Host",
+                HomeNation = "USA"
+            };
+
         var state = new GameState
         {
             GameId    = gameId,
@@ -68,7 +86,7 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
             Phase     = GamePhase.WorldUpdate,
             Tracks    = tracks,
             Countries = countries,
-            Players   = new List<PlayerProfile>()
+            Players   = new List<PlayerProfile> { hostProfile }
         };
         _games[gameId] = state;
 
@@ -86,6 +104,19 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
         await Clients.Caller.SendAsync("StateSync", new StateSync(state));
+    }
+
+    public async Task StartGame(string gameId)
+    {
+        if (!_games.TryGetValue(gameId, out var state))
+        { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
+
+        var hostId = GetPlayerId();
+        if (state.Players.Count > 0 && state.Players[0].Id != hostId)
+        { await SendError("NOT_HOST", "Only the host can start the game."); return; }
+
+        ticker.StartGame(gameId);
+        await Clients.Group(gameId).SendAsync("StateSync", new StateSync(state));
     }
 
     public async Task SubmitAction(string gameId, SubmitActionMessage msg)
