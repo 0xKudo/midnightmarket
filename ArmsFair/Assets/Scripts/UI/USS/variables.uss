@@ -1,0 +1,80 @@
+/* Arms Fair — design tokens */
+:root {
+    /* Backgrounds */
+    --color-bg:               #0d0d0d;
+    --color-surface:          #111108;
+    --color-surface-deep:     #0f0f08;
+    --color-surface-deeper:   #0d0d08;
+    --color-surface-section:  #0a0a06;
+
+    /* Borders */
+    --color-border:           #3a3a2a;
+    --color-border-active:    #4a4a30;
+    --color-border-focus:     #8a8660;
+    --color-border-accent:    #5a5a3a;
+    --color-border-host:      #6a6650;
+    --color-border-danger:    #5a2a2a;
+    --color-border-divider:   #2a2a1a;
+
+    /* Text */
+    --color-text:             #d4cfb8;
+    --color-text-alt:         #e8e4d4;
+    --color-text-muted:       #8a8670;
+    --color-text-dim:         #6a6450;
+    --color-text-ghost:       #5a5850;
+    --color-text-empty:       #3a3a2a;
+    --color-text-dark:        #0d0d0d;
+
+    /* Accents */
+    --color-accent-host:      #c0a840;
+    --color-accent-danger:    #c09090;
+    --color-accent-ready:     #6a9650;
+    --color-accent-waiting:   #8a8670;
+    --color-star:             #c0a840;
+
+    /* Game track colors (HUD — unchanged) */
+    --color-track-safe:       #40c080;
+    --color-track-warn:       #f0c040;
+    --color-track-danger:     #f04040;
+
+    /* Toast colors (unchanged) */
+    --color-toast-info:       #4a90d9;
+    --color-toast-success:    #40c080;
+    --color-toast-warning:    #f0c040;
+    --color-toast-danger:     #f04040;
+
+    /* Font sizes — desktop */
+    --font-size-xs:           9px;
+    --font-size-sm:           10px;
+    --font-size-md:           13px;
+    --font-size-lg:           15px;
+    --font-size-xl:           18px;
+    --font-size-xxl:          24px;
+
+    /* Spacing */
+    --spacing-xs:             4px;
+    --spacing-sm:             8px;
+    --spacing-md:             12px;
+    --spacing-lg:             20px;
+    --spacing-xl:             32px;
+
+    /* Button transition */
+    --btn-transition:         0.15s;
+
+    /* HUD legacy */
+    --timer-urgent-threshold-ms: 10000;
+}
+
+/* Mobile overrides — applied via .mobile-layout class on root */
+.mobile-layout {
+    --font-size-xs:   11px;
+    --font-size-sm:   13px;
+    --font-size-md:   15px;
+    --font-size-lg:   17px;
+    --font-size-xl:   20px;
+    --spacing-xs:     6px;
+    --spacing-sm:     10px;
+    --spacing-md:     16px;
+    --spacing-lg:     24px;
+    --spacing-xl:     40px;
+}

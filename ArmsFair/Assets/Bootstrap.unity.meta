@@ -1,4 +1,4 @@
-fileFormatVersion: 2
+i want you to commit the current version to a different branch, name it something like failed build, then i want you to pull the version from the attached git. here is the hash for the commit i want you to revert to 7ab8f83361d586315bf983f6e81413c1c8ed2184fileFormatVersion: 2
 guid: 69a961d4f2b05404d883c2cfb575fd39
 DefaultImporter:
   externalObjects: {}
