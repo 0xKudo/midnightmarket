@@ -1,100 +1,126 @@
 # Arms Fair — Session Handoff
 
-## Last updated: 2026-04-29
+## Last updated: 2026-05-06
 
 ---
 
 ## Current State
 
-### Server (ArmsFair.Server) — commit 7ff999d
-The server is fully scaffolded and the core simulation loop is complete. 61/61 tests passing.
+### Server (ArmsFair.Server) — builds clean, 0 errors
 
 **Done:**
-- Solution structure: ArmsFair.Shared, ArmsFair.Server, ArmsFair.Server.Tests
-- Shared: enums, Balance.cs, all models, all SignalR message types
-- Simulation engines: TrackEngine, SpreadEngine, BlowbackEngine, CoupEngine, ProfitEngine, EndingChecker
-- GameHub: full SignalR hub (join, action, reveal, consequences, endings, coup, treaty, whistle, peacekeeping)
-- SeedService: ACLED + GPI fetch, 195-country base list, Redis cache, all 5 game modes
-- TickerService: background phase timer, 1s tick, registered as hosted service
-- **PhaseOrchestrator**: single authority for phase transitions — runs SpreadEngine on WorldUpdate, Reveal/Consequences logic on Reveal entry, EndingChecker after every advance. GameHub delegates entirely to it.
-- **AuthService**: JWT mint/validate + BCrypt (work factor 12). Register, login, session restore.
-- **PlayerEntity**: `players` table — username, email, password hash, Steam ID, home nation. Unique indexes on username/email/steamId. Added to ArmsFairDb.
-- **REST auth endpoints**: POST /api/auth/register, POST /api/auth/login, GET /api/auth/me
-- EF Core entities: GameSession, PlayerStat, AuditLog
-- Dockerfile, railway.toml, appsettings.Production.json
-- `ArmsFair.Server/GeoData/adjacency.json` — server-side copy for spread engine
+- GameStateService singleton — owns all in-memory game state (extracted from GameHub static fields)
+- PhaseOrchestrator — single authority for phase transitions, uses IServiceScopeFactory for scoped DB access
+- TickerService — calls PhaseOrchestrator.AdvanceForGameAsync on expiry, does NOT send PhaseStart directly
+- GameHub — all state via GameStateService, no static fields
+- AuthService — JWT + BCrypt, register/login/me endpoints
+- LobbyService — create/join/list rooms
+- SeedService — ACLED + GPI, all 5 game modes, Redis cache
+- Program.cs — correct singleton/scoped lifetimes
 
-**NOT yet done (server):**
-- EF Core migrations (no `dotnet ef migrations add` has been run — DB schema not created yet)
-- StatsService — lifetime stat updates at game end
-- ChatRepository — persist chat messages to DB
-- AccountRepository — CRUD wrapper around PlayerEntity
-- VivoxTokenService — mint Vivox access tokens for voice chat
-- PhaseOrchestrator: treaty system (signatories, compliance checks) is stubbed (0 values)
-- PhaseOrchestrator: player capital/reputation mutation on Consequences (profitUpdates computed but not applied back to PlayerProfile in GameState)
-- Lobby REST endpoints (room browser, create/join room via HTTP before SignalR)
+**Known gaps (server):**
+- EF Core migrations never run — DB schema not created
+- StatsService — lifetime stat updates at game end not wired
+- ChatRepository — chat not persisted to DB
+- Treaty system stubbed (0 values in PhaseOrchestrator)
 
-### Unity Client (ArmsFair/) — various commits
-The globe scene is functional. Click detection, zoom, and country highlighting work via WPMapGlobeEditionLite.
+---
+
+### Unity Client — Bootstrap scene, auth layer, UIManager wired
 
 **Done:**
-- MapGlobe scene: WPM globe, click detection, auto-rotation, zoom
-- Bootstrap scene: entry point
-- GlobeRenderer, GlobeCameraController, GlobeTensionBridge, ViewToggleManager
-- CountryOverlay shader, CountryID texture, adjacency/countries GeoData
-- WPMGlobeBridge.cs: bridge between WPM and game logic
+- AuthApiClient.cs — UnityWebRequest REST wrapper (login, register, getMe)
+- AccountManager.cs — singleton, PlayerPrefs token persistence, OnLoggedIn/OnLoggedOut events
+- GameClient.cs — SignalR singleton, all server→client events wired
+- UnityMainThreadDispatcher.cs — marshals SignalR callbacks to main thread
+- UIManager.cs — singleton navigation (GoTo/Push/Pop), DefaultExecutionOrder(-100)
+- IScreen.cs — interface all screens implement
+- NetworkManagerBootstrap.cs — calls TryAutoLoginAsync, routes to Login or MainMenu, DefaultExecutionOrder(100)
+- LoginScreen.uxml + LoginScreen.cs — terminal-styled login screen, registers as "Login"
+
+**Bootstrap scene hierarchy:**
+```
+NetworkManager
+  ├── AccountManager
+  ├── UIManager
+  ├── GameClient
+  ├── UnityMainThreadDispatcher
+  ├── NetworkManagerBootstrap
+  ├── ViewToggleManager
+  ├── LoginScreen    (UIDocument → LoginScreen.uxml + PanelSettings, LoginScreen.cs)
+  └── RegisterScreen (UIDocument → RegisterScreen.uxml + PanelSettings, RegisterScreen.cs)
+```
+
+**CRITICAL — one UIDocument per screen:**
+Each screen is its own child GameObject with its own UIDocument. Do NOT share a UIDocument between screens — if two screens use `FindFirstObjectByType<UIDocument>()` and share one document, whichever screen runs Awake second will query the wrong UXML and fail to find its root element. Always use `GetComponent<UIDocument>()` (which works because each screen has its own).
+
+**Adding a new screen (follow every time):**
+1. Create `UXML/XxxScreen.uxml` — include `<ui:Style>` for variables.uss + terminal.uss, hardcoded RGB inline styles
+2. Create `Screens/XxxScreen.cs` — copy LoginScreen.cs pattern (docRoot fill to 100%, StyleButton, StyleLabels, Register)
+3. Add child GameObject `XxxScreen` under NetworkManager
+4. Add UIDocument component → assign XxxScreen.uxml + Assets/PanelSettings.asset
+5. Add XxxScreen MonoBehaviour to same GameObject
+6. Save scene, check console before entering play mode
+
+**USS / Styling:**
+- variables.uss — CSS custom properties (NOTE: Unity UI Toolkit does NOT reliably inherit CSS vars — use hardcoded RGB in terminal.uss instead)
+- terminal.uss — all hardcoded RGB values, no var() references. Top rule sets font via `* { -unity-font: resource("Fonts & Materials/SourceCodePro-Medium"); }`
+- scrollbar.uss — Unity-compatible scrollbar selectors (no webkit)
+- ArmsFair.tss — imports all three USS files, assigned to PanelSettings.themeUss
+
+**Font setup (critical):**
+- UI Toolkit requires font set via USS `* { -unity-font: resource("Fonts & Materials/SourceCodePro-Medium"); }` in terminal.uss
+- The TTF lives at `Assets/TextMesh Pro/Resources/Fonts & Materials/SourceCodePro-Medium.ttf` — `resource()` resolves from any Resources folder
+- PanelSettings → Panel Text Settings: assigned `ArmsFairTextSettings.asset` (Assets/Settings/)
+- TMP_FontAsset cannot be dragged into PanelTextSettings — they are different types. Font must be set via USS resource() reference to the .ttf directly
+- rootVisualElement height fix: LoginScreen.cs sets `docRoot.style.height = Length.Percent(100)` — without this the TemplateContainer has h=0
+
+**LoginScreen status: WORKING** ✓
+- Centered panel, correct terminal styling, text visible, inputs functional
+
+**RegisterScreen status: WORKING** ✓
+- Same terminal styling as LoginScreen
+- Username, Email, Password fields functional
+- On success navigates back to Login (temporary — change to MainMenu after Phase 7)
+- Back button returns to Login
 
 **NOT yet done (Unity):**
-- SignalRClient.cs — WebSocket connection to server
-- MessageHandler.cs — routes incoming SignalR messages
-- GameManager.cs, PhaseManager.cs — game state on client
-- AccountManager.cs, AuthApiClient.cs — login/register UI + REST calls
-- ChatManager.cs, ChatPanel.cs — chat UI
-- VoiceChatManager.cs — Vivox voice
-- All UI: HUD, ProcurementScreen, NegotiationPanel, RevealAnimator, DebriefScreen, Leaderboard, LobbyScreen, ProfileScreen
-- FlatMapRenderer.cs, ArcLineRenderer.cs
-- Scenes: Login, Lobby, Main, MapFlat
-- GlobeAtmosphere.shader, ArcLine.shader
+- MainMenuScreen (Phase 7) — after which RegisterScreen's GoTo("Login") becomes GoTo("MainMenu")
+- CreateRoomScreen + LobbyApiClient (Phase 8)
+- RoomListScreen (Phase 9)
+- ProfileScreen (Phase 10)
+- PreGameLobbyScreen (Phase 11)
+- HUD + all game screens (Phases 12–24)
 
 ---
 
 ## Known Issues / Gotchas
 
+### CSS Custom Properties Don't Inherit in Unity UI Toolkit
+`var(--color-text)` etc. defined on `VisualElement {}` in variables.uss do NOT reliably propagate to child elements. Always use hardcoded RGB values in terminal.uss. Keep variables.uss as a reference document only.
+
+### Button Label Color in Unity UI Toolkit
+Unity wraps Button text in an internal Label. To style it, target `.unity-button > .unity-label` or set color on the Button element directly. The `.term-btn` color property may not cascade into the internal label.
+
+### UIManager Execution Order
+- UIManager: DefaultExecutionOrder(-100) — initialises first
+- Screen MonoBehaviours: default order 0 — register in Awake
+- NetworkManagerBootstrap: DefaultExecutionOrder(100) — calls GoTo after all screens registered
+
 ### WPM Scroll Wheel Patch
-`WPMInternal.cs` line ~553: scroll wheel read must be unconditional (not gated on `mouseIsOver`).
-```csharp
-{
-    float wheel = input.GetAxis("Mouse ScrollWheel");
-    wheelAccel += wheel;
-}
-```
+`WPMInternal.cs` line ~553: scroll wheel read must be unconditional.
 
-### PhaseOrchestrator — Consequences Not Applied to PlayerProfile
-`PhaseOrchestrator.RunRevealAsync` computes `profitUpdates` and `repUpdates` but does NOT mutate `PlayerProfile.Capital` or `PlayerProfile.Reputation` in the returned `GameState`. This needs to be wired up — the Consequences message is broadcast correctly but the authoritative state is not updated.
-
-### No EF Migrations
-The `players` table and the existing game tables have never had `dotnet ef migrations add` run. Before deploying, run:
-```
-dotnet ef migrations add InitialSchema --project ArmsFair.Server
-dotnet ef database update --project ArmsFair.Server
-```
-
-### PlayerStatEntity vs PlayerEntity
-`PlayerStatEntity` = per-game stats snapshot (existing).
-`PlayerEntity` = persistent player account (new, added this session).
-These are separate — `PlayerEntity` has no FK to `PlayerStatEntity` yet.
+### EF Core Migrations Never Run
+Before deploying: `dotnet ef migrations add InitialSchema --project ArmsFair.Server && dotnet ef database update`
 
 ---
 
 ## Pending Work (priority order)
 
-1. **EF Core migrations** — must happen before any real deployment
-2. **Apply Consequences to GameState** — PhaseOrchestrator needs to update PlayerProfile.Capital/Reputation after computing profit/rep deltas
-3. **Lobby REST endpoints** — room browser, create/join room (currently only possible via SignalR)
-4. **StatsService** — update lifetime stats at game end
-5. **Unity: SignalRClient + MessageHandler** — the networking layer that makes the client functional
-6. **Unity: AccountManager + AuthApiClient** — login/register flow
-7. **Unity: GameManager + PhaseManager** — client-side game state machine
-8. **Unity: UI screens** — LobbyScreen, ProcurementScreen, NegotiationPanel, RevealAnimator, DebriefScreen
-9. **ChatRepository + chat persistence** — save messages to DB
-10. **VivoxTokenService** — voice chat token minting
+1. **Phase 6: RegisterScreen**
+3. **Phase 7: MainMenuScreen**
+4. **Phase 8: CreateRoomScreen + LobbyApiClient**
+5. **Phase 9: RoomListScreen**
+6. **Phase 10: ProfileScreen**
+7. **Phase 11: PreGameLobbyScreen**
+8. **Phase 12+: HUD and game screens**

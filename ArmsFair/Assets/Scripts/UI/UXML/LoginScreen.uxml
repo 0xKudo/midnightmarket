@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+  <ui:Style src="../USS/variables.uss" />
+  <ui:Style src="../USS/terminal.uss" />
+  <ui:VisualElement name="LoginScreen" class="screen-root" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background-color:rgb(13,13,13);">
+    <ui:VisualElement class="term-panel term-panel--narrow" style="background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px; flex-direction:column; width:320px;">
+      <ui:Label text="THE ARMS FAIR" class="term-title" style="font-size:15px; color:rgb(212,207,184); -unity-font-style:bold; margin-bottom:4px;" />
+      <ui:Label text="SECURE TERMINAL ACCESS" class="term-subtitle" style="font-size:9px; color:rgb(138,134,112); margin-bottom:16px;" />
+      <ui:VisualElement class="term-divider" style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
+      <ui:Label text="USERNAME" class="term-field-label" style="font-size:9px; color:rgb(138,134,112); margin-bottom:4px;" />
+      <ui:TextField name="UsernameField" class="term-input" style="margin-bottom:12px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px;" />
+      <ui:Label text="PASSWORD" class="term-field-label" style="font-size:9px; color:rgb(138,134,112); margin-bottom:4px;" />
+      <ui:TextField name="PasswordField" password="true" class="term-input" style="margin-bottom:12px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px;" />
+      <ui:Label name="ErrorLabel" text="" class="term-error hidden" style="color:rgb(192,144,144); font-size:10px; display:none; margin-bottom:8px;" />
+      <ui:Button name="LoginBtn" text="AUTHENTICATE" class="term-btn" style="color:rgb(212,207,184); -unity-text-color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center; -unity-font-style:normal;" />
+      <ui:VisualElement class="term-divider" style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
+      <ui:Button name="RegisterBtn" text="CREATE ACCOUNT" class="term-btn" style="color:rgb(212,207,184); -unity-text-color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center; -unity-font-style:normal;" />
+    </ui:VisualElement>
+  </ui:VisualElement>
+</ui:UXML>

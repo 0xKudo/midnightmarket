@@ -1,0 +1,29 @@
+{
+  "name": "com.unity.ai.assistant",
+  "displayName": "Assistant",
+  "version": "2.7.0-pre.1",
+  "unity": "6000.0",
+  "description": "Assistant is a generative AI tool integrated into the Unity Editor to explore ideas, answer questions, and perform actions directly in the project. Use natural-language prompts to interact with Assistant in a conversation-based interface. Depending on the mode you choose, Assistant can either provide guidance or take action in your scene and assets.\n\nAsk\nFocuses on explanation and guidance. Assistant answers questions, suggests workflows, and inspects your project using read-only tools without modifying your content.\n\nAgent\nFocuses on action. Assistant can create, modify, or remove objects and assets by calling the Unity Editor tools. All actions respect your permission settings and require approval when needed.\n\nAssistant is designed to be project-aware, helping you work more efficiently without leaving the Unity Editor. It also provides tools for adding generative AI to Unity asset workflows.",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1",
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "com.unity.modules.uielements": "1.0.0",
+    "com.unity.2d.sprite": "1.0.0",
+    "com.unity.cloud.gltfast": "6.14.1",
+    "com.unity.mathematics": "1.3.2"
+  },
+  "unityRelease": "60f1",
+  "_upm": {
+    "changelog": "### Added\n\n- Expanded view for chat elements.\n- Figma Access Token configuration in Project Settings with API verification.\n- Figma-to-UI agent tools for listing screens and importing design assets from Figma projects.\n- Generic CredentialSet relay channel for storing and deleting credentials in the OS keychain.\n- Plan mode can now read console logs and query package info when producing an implementation plan.\n- Public AssistantApi surface (Run, PromptThenRun, RunHeadless, AttachedContext, VirtualAttachment, IAgent).\n- RunReadOnlyCommand tool to plan mode.\n\n### Changed\n\n- \"Beta\" chip label on the New Chat screen.\n- Add more fields to gateway and MCP analytics.\n- Attachment view redesign.\n- Feedback redesign.\n- Redesign session status banners to show context-specific messaging and actions based on user license type and points status.\n- Todo progress widget header renamed from \"Executing Plan\" to \"Task List\".\n\n### Fixed\n\n- Async fire-and-forget tasks could block the calling thread before the first await in WithExceptionLogging.\n- Attachment drag-and-drop animation.\n- Autorun state now tracked in analytics for plan mode.\n- Autorun toggle now enabled in plan mode.\n- Changed all user-facing mentions of \"points\" to \"credits\" in Assistant window and AI button.\n- ChatElementBase is no longer redundantly re-added to the root VisualElement on every SetupChatElement call.\n- CheckpointEnabled (and other Assistant preferences) no longer revert to defaults after restoring a checkpoint in projects that gitignore `ProjectSettings/Packages/`.\n- Conversation no longer hangs on \"Preparing...\" after domain reloads triggered by parallel `CodeEdit` tool calls.\n- Fix What's New banner clipping behind centered footer in empty state.\n- Fixed soft-lock of graph creation on large projects.\n- GetFileContent now enforces a 2 MB size limit and rejects binary files, preventing editor hangs when large or binary assets are read.\n- Increase \"Summarizing...\" timeout from 3s to 6s to reduce false positives during streaming.\n- NullReferenceException in Chat Window.\n- NullReferenceException in RunCommandTool when agent script uses an unauthorized namespace (System.Reflection, System.Net, etc.); agent now receives a specific error message naming the blocked namespace.\n- Reasoning blocks no longer visually interrupt continuous text in chat responses.\n- Removed unnecessary empty space below the text in the Details block of the Unity_RunCommand tool in the Unity MCP Project Settings section.\n- RunCommand tool on Unity 6.5+.\n- Show \"Awaiting input...\" in the progress indicator when a tool is waiting for user response.\n- The **Refresh Project Overview** button is now hidden for non-Unity (ACP) providers, where it had no effect.\n- Todo panel collapsed state is now preserved across domain reloads and conversation switches.\n- Undo/Redo keyboard shortcuts now work in prompt text fields.\n- When adding context via the `+` button, the input field shouldn't add the file name.\n- `BaseInteraction.CancelInteraction()` now fires `OnCompleted` so interaction queue entries are properly cleaned up on cancel.\n- `BaseInteraction<T>` and `DialogToolUiContainer` no longer throw `InvalidOperationException` on double-cancel races, preventing the UI ghost-panel state.\n\n### Security\n\n- Prevent API keys and tokens from leaking into relay logs and trace files."
+  },
+  "upmCi": {
+    "footprint": "cd970a6b666e52b3382e84641b7f9b31898b1776"
+  },
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.ai.assistant@2.7/manual/index.html",
+  "repository": {
+    "url": "https://github.cds.internal.unity3d.com/unity/muse-editor.git",
+    "type": "git",
+    "revision": "14dadd76e388bb5fc9f1cd577a7e62a44fb9ad82"
+  },
+  "_fingerprint": "84e99ed7b906a24b491baaf910de5d56c1d0cd94"
+}

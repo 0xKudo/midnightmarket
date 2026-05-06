@@ -12,5 +12,8 @@ EditorBuildSettings:
     path: Assets/Scenes/MapFlat.unity
     guid: e6a29ceb651f6c34cab05ac07a2630cf
   m_configObjects:
+    com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: 1f8ac0f7957f5aa47a84593d930dd1b2, type: 2}
+    com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 6313ebce5d1ad6b42902a1c68ceed29c, type: 2}
+    com.unity.adaptiveperformance.simulator.provider_settings: {fileID: 11400000, guid: cf677be6d4e3a6348b7890aff1641f6f, type: 2}
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

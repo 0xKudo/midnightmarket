@@ -7,6 +7,7 @@ using ArmsFair.Shared.Enums;
 using ArmsFair.Shared.Models;
 using ArmsFair.Shared.Models.Messages;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ArmsFair.Server.Services;
 
@@ -16,12 +17,31 @@ namespace ArmsFair.Server.Services;
 /// </summary>
 public class PhaseOrchestrator(
     IHubContext<GameHub> hub,
-    ArmsFairDb db,
+    IServiceScopeFactory scopeFactory,
+    GameStateService gameStateService,
     ILogger<PhaseOrchestrator> logger)
 {
     // Adjacency map loaded once at first use.
     private static Dictionary<string, string[]>? _adjacency;
     private static readonly object _adjLock = new();
+
+    /// <summary>
+    /// Called by TickerService when a phase timer expires.
+    /// Reads state from GameStateService, advances, writes it back.
+    /// </summary>
+    public async Task AdvanceForGameAsync(string gameId)
+    {
+        if (!gameStateService.TryGet(gameId, out var state)) return;
+
+        var voters  = gameStateService.GetOrAddVoters(gameId);
+        var pending = gameStateService.GetAndClearPendingForGame(gameId, state.Players.Select(p => p.Id));
+
+        var (newState, ending) = await AdvanceAsync(gameId, state, voters, pending);
+        gameStateService.Set(gameId, newState);
+
+        if (ending is not null)
+            gameStateService.Remove(gameId);
+    }
 
     /// <summary>
     /// Advances <paramref name="state"/> by one phase and returns the updated state.
@@ -57,14 +77,18 @@ public class PhaseOrchestrator(
         logger.LogInformation("Game {GameId} → {Phase} round {Round}", gameId, nextPhase, nextRound);
 
         // ── Persist ───────────────────────────────────────────────────────────
-        var entity = await db.GameSessions.FindAsync(gameId);
-        if (entity is not null)
+        await using (var scope = scopeFactory.CreateAsyncScope())
         {
-            entity.Phase     = nextPhase.ToString();
-            entity.Round     = nextRound;
-            entity.StateJson = JsonSerializer.Serialize(state);
-            entity.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync();
+            var db     = scope.ServiceProvider.GetRequiredService<ArmsFairDb>();
+            var entity = await db.GameSessions.FindAsync(gameId);
+            if (entity is not null)
+            {
+                entity.Phase     = nextPhase.ToString();
+                entity.Round     = nextRound;
+                entity.StateJson = JsonSerializer.Serialize(state);
+                entity.UpdatedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
         }
 
         // ── Ending check ──────────────────────────────────────────────────────
@@ -272,14 +296,18 @@ public class PhaseOrchestrator(
         await hub.Clients.Group(gameId).SendAsync("GameEnding",
             new GameEndingMessage(ending.Type, $"Ending: {ending.Type}", scores));
 
-        var entity = await db.GameSessions.FindAsync(gameId);
-        if (entity is not null)
+        await using (var scope = scopeFactory.CreateAsyncScope())
         {
-            entity.IsComplete = true;
-            entity.EndingType = ending.Type;
-            entity.UpdatedAt  = DateTime.UtcNow;
-            entity.StateJson  = JsonSerializer.Serialize(state with { EndingType = ending.Type });
-            await db.SaveChangesAsync();
+            var db     = scope.ServiceProvider.GetRequiredService<ArmsFairDb>();
+            var entity = await db.GameSessions.FindAsync(gameId);
+            if (entity is not null)
+            {
+                entity.IsComplete = true;
+                entity.EndingType = ending.Type;
+                entity.UpdatedAt  = DateTime.UtcNow;
+                entity.StateJson  = JsonSerializer.Serialize(state with { EndingType = ending.Type });
+                await db.SaveChangesAsync();
+            }
         }
 
         logger.LogInformation("Game {GameId} ended: {EndingType}", gameId, ending.Type);

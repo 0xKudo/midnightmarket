@@ -1,80 +1,63 @@
-/* Arms Fair — design tokens */
-:root {
-    /* Backgrounds */
-    --color-bg:               #0d0d0d;
-    --color-surface:          #111108;
-    --color-surface-deep:     #0f0f08;
-    --color-surface-deeper:   #0d0d08;
-    --color-surface-section:  #0a0a06;
-
-    /* Borders */
-    --color-border:           #3a3a2a;
-    --color-border-active:    #4a4a30;
-    --color-border-focus:     #8a8660;
-    --color-border-accent:    #5a5a3a;
-    --color-border-host:      #6a6650;
-    --color-border-danger:    #5a2a2a;
-    --color-border-divider:   #2a2a1a;
-
-    /* Text */
-    --color-text:             #d4cfb8;
-    --color-text-alt:         #e8e4d4;
-    --color-text-muted:       #8a8670;
-    --color-text-dim:         #6a6450;
-    --color-text-ghost:       #5a5850;
-    --color-text-empty:       #3a3a2a;
-    --color-text-dark:        #0d0d0d;
-
-    /* Accents */
-    --color-accent-host:      #c0a840;
-    --color-accent-danger:    #c09090;
-    --color-accent-ready:     #6a9650;
-    --color-accent-waiting:   #8a8670;
-    --color-star:             #c0a840;
-
-    /* Game track colors (HUD — unchanged) */
-    --color-track-safe:       #40c080;
-    --color-track-warn:       #f0c040;
-    --color-track-danger:     #f04040;
-
-    /* Toast colors (unchanged) */
-    --color-toast-info:       #4a90d9;
-    --color-toast-success:    #40c080;
-    --color-toast-warning:    #f0c040;
-    --color-toast-danger:     #f04040;
-
-    /* Font sizes — desktop */
-    --font-size-xs:           9px;
-    --font-size-sm:           10px;
-    --font-size-md:           13px;
-    --font-size-lg:           15px;
-    --font-size-xl:           18px;
-    --font-size-xxl:          24px;
-
-    /* Spacing */
-    --spacing-xs:             4px;
-    --spacing-sm:             8px;
-    --spacing-md:             12px;
-    --spacing-lg:             20px;
-    --spacing-xl:             32px;
-
-    /* Button transition */
-    --btn-transition:         0.15s;
-
-    /* HUD legacy */
+VisualElement {
+    --color-bg: rgb(13, 13, 13);
+    --color-surface: rgb(17, 17, 8);
+    --color-surface-deep: rgb(15, 15, 8);
+    --color-surface-deeper: rgb(13, 13, 8);
+    --color-surface-section: rgb(10, 10, 6);
+    --color-border: rgb(58, 58, 42);
+    --color-border-active: rgb(74, 74, 48);
+    --color-border-focus: rgb(138, 134, 96);
+    --color-border-accent: rgb(90, 90, 58);
+    --color-border-host: rgb(106, 102, 80);
+    --color-border-danger: rgb(90, 42, 42);
+    --color-border-divider: rgb(42, 42, 26);
+    --color-text: rgb(212, 207, 184);
+    --color-text-alt: rgb(232, 228, 212);
+    --color-text-muted: rgb(138, 134, 112);
+    --color-text-dim: rgb(106, 100, 80);
+    --color-text-ghost: rgb(90, 88, 80);
+    --color-text-empty: rgb(58, 58, 42);
+    --color-text-dark: rgb(13, 13, 13);
+    --color-accent-host: rgb(192, 168, 64);
+    --color-accent-danger: rgb(192, 144, 144);
+    --color-accent-ready: rgb(106, 150, 80);
+    --color-accent-waiting: rgb(138, 134, 112);
+    --color-star: rgb(192, 168, 64);
+    --color-track-safe: rgb(64, 192, 128);
+    --color-track-warn: rgb(240, 192, 64);
+    --color-track-danger: rgb(240, 64, 64);
+    --color-toast-info: rgb(74, 144, 217);
+    --color-toast-success: rgb(64, 192, 128);
+    --color-toast-warning: rgb(240, 192, 64);
+    --color-toast-danger: rgb(240, 64, 64);
+    --font-size-xs: 9px;
+    --font-size-sm: 10px;
+    --font-size-md: 13px;
+    --font-size-lg: 15px;
+    --font-size-xl: 18px;
+    --font-size-xxl: 24px;
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 20px;
+    --spacing-xl: 32px;
+    --btn-transition: 0.15s;
     --timer-urgent-threshold-ms: 10000;
+    align-content: center;
+    width: auto;
+    height: auto;
 }
 
-/* Mobile overrides — applied via .mobile-layout class on root */
 .mobile-layout {
-    --font-size-xs:   11px;
-    --font-size-sm:   13px;
-    --font-size-md:   15px;
-    --font-size-lg:   17px;
-    --font-size-xl:   20px;
-    --spacing-xs:     6px;
-    --spacing-sm:     10px;
-    --spacing-md:     16px;
-    --spacing-lg:     24px;
-    --spacing-xl:     40px;
+    --font-size-xs: 11px;
+    --font-size-sm: 13px;
+    --font-size-md: 15px;
+    --font-size-lg: 17px;
+    --font-size-xl: 20px;
+    --spacing-xs: 6px;
+    --spacing-sm: 10px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 40px;
+    -unity-text-auto-size: best-fit 10px 100px;
 }

@@ -9,19 +9,18 @@ using ArmsFair.Shared.Models.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Concurrent;
 using System.Text.Json;
 
 namespace ArmsFair.Server.Hubs;
 
 [Authorize]
-public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator phaseOrchestrator, TickerService ticker) : Hub
+public class GameHub(
+    ArmsFairDb db,
+    SeedService seedService,
+    PhaseOrchestrator phaseOrchestrator,
+    GameStateService gameStateService,
+    TickerService ticker) : Hub
 {
-    // In-memory game state keyed by gameId.
-    private static readonly ConcurrentDictionary<string, GameState>       _games           = new();
-    private static readonly ConcurrentDictionary<string, PlayerAction>    _pending         = new(); // connectionId → action
-    private static readonly ConcurrentDictionary<string, HashSet<string>> _ceaseFireVoters = new();
-
     // ── Connection lifecycle ─────────────────────────────────────────────────
 
     public override async Task OnConnectedAsync()
@@ -44,7 +43,7 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
 
-        if (_games.TryGetValue(gameId, out var state))
+        if (gameStateService.TryGet(gameId, out var state))
             await Clients.Caller.SendAsync("StateSync", new StateSync(state));
         else
             await Clients.Caller.SendAsync("Error", new ErrorMessage("GAME_NOT_FOUND", $"Game {gameId} does not exist."));
@@ -88,7 +87,7 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
             Countries = countries,
             Players   = new List<PlayerProfile> { hostProfile }
         };
-        _games[gameId] = state;
+        gameStateService.Set(gameId, state);
 
         var entity = new GameSessionEntity
         {
@@ -108,7 +107,7 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
 
     public async Task StartGame(string gameId)
     {
-        if (!_games.TryGetValue(gameId, out var state))
+        if (!gameStateService.TryGet(gameId, out var state))
         { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
 
         var hostId = GetPlayerId();
@@ -122,18 +121,13 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
     public async Task SubmitAction(string gameId, SubmitActionMessage msg)
     {
         var playerId = GetPlayerId();
-        if (!_games.TryGetValue(gameId, out var state))
-        {
-            await SendError("GAME_NOT_FOUND", "Game not found.");
-            return;
-        }
-        if (state.Phase != GamePhase.Sales)
-        {
-            await SendError("WRONG_PHASE", "Actions can only be submitted during the Sales phase.");
-            return;
-        }
+        if (!gameStateService.TryGet(gameId, out var state))
+        { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
 
-        _pending[Context.ConnectionId] = new PlayerAction
+        if (state.Phase != GamePhase.Sales)
+        { await SendError("WRONG_PHASE", "Actions can only be submitted during the Sales phase."); return; }
+
+        gameStateService.SetPendingAction(Context.ConnectionId, new PlayerAction
         {
             PlayerId       = playerId,
             SaleType       = msg.SaleType,
@@ -142,7 +136,7 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
             SupplierId     = msg.SupplierId,
             IsDualSupply   = msg.IsDualSupply,
             IsProxyRouted  = msg.IsProxyRouted
-        };
+        });
 
         await Clients.Caller.SendAsync("ActionAcknowledged", new { playerId, gameId });
     }
@@ -155,23 +149,23 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
     public async Task VoteCeaseFire(string gameId)
     {
         var playerId = GetPlayerId();
-        var voters   = _ceaseFireVoters.GetOrAdd(gameId, _ => new HashSet<string>());
+        var voters   = gameStateService.GetOrAddVoters(gameId);
         lock (voters) voters.Add(playerId);
 
         await Clients.Group(gameId).SendAsync("CeaseFireVote", new { playerId, gameId });
 
-        if (_games.TryGetValue(gameId, out var state))
+        if (gameStateService.TryGet(gameId, out var state))
         {
             var ending = EndingChecker.Check(state, voters);
             if (ending is not null)
-                await AdvancePhase(gameId); // let orchestrator handle ending broadcast
+                await phaseOrchestrator.AdvanceForGameAsync(gameId);
         }
     }
 
     public async Task FundCoup(string gameId, FundCoupMessage msg)
     {
         var playerId = GetPlayerId();
-        if (!_games.TryGetValue(gameId, out var state))
+        if (!gameStateService.TryGet(gameId, out var state))
         { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
 
         var outcome = CoupEngine.Roll(Random.Shared);
@@ -182,7 +176,7 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
             ? (state.Tracks with { GeoTension = state.Tracks.GeoTension + geoHit }).Clamp()
             : state.Tracks;
 
-        _games[gameId] = state with { Tracks = newTracks };
+        gameStateService.Set(gameId, state with { Tracks = newTracks });
 
         await Clients.Group(gameId).SendAsync("CoupResult", new
         {
@@ -214,7 +208,7 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
     public async Task Whistle(string gameId, WhistleMessage msg)
     {
         var playerId = GetPlayerId();
-        if (!_games.TryGetValue(gameId, out var state))
+        if (!gameStateService.TryGet(gameId, out var state))
         { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
 
         await Clients.Group(gameId).SendAsync("WhistleResult", new WhistleResultMessage(
@@ -232,7 +226,7 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
     public async Task InvestInPeacekeeping(string gameId, PeacekeepingMessage msg)
     {
         var playerId = GetPlayerId();
-        if (!_games.TryGetValue(gameId, out var state))
+        if (!gameStateService.TryGet(gameId, out var state))
         { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
 
         var newTracks = (state.Tracks with
@@ -241,7 +235,7 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
             CivilianCost = state.Tracks.CivilianCost + Balance.PeacekeepingCivilianDelta
         }).Clamp();
 
-        _games[gameId] = state with { Tracks = newTracks };
+        gameStateService.Set(gameId, state with { Tracks = newTracks });
 
         await Clients.Group(gameId).SendAsync("PeacekeepingInvested", new
         {
@@ -249,33 +243,6 @@ public class GameHub(ArmsFairDb db, SeedService seedService, PhaseOrchestrator p
             country   = msg.TargetCountryIso,
             newTracks
         });
-    }
-
-    // ── Server-initiated phase advance (called by TickerService) ────────────
-
-    public async Task AdvancePhase(string gameId)
-    {
-        if (!_games.TryGetValue(gameId, out var state)) return;
-
-        var pending = _pending.Values
-            .Where(a => state.Players.Any(p => p.Id == a.PlayerId))
-            .ToList();
-
-        var voters = _ceaseFireVoters.GetValueOrDefault(gameId) ?? [];
-
-        var (newState, ending) = await phaseOrchestrator.AdvanceAsync(gameId, state, voters, pending);
-        _games[gameId] = newState;
-
-        // Pending actions are consumed during Reveal
-        if (newState.Phase == GamePhase.Reveal)
-            _pending.Clear();
-
-        if (ending is not null)
-        {
-            _games.TryRemove(gameId, out _);
-            _ceaseFireVoters.TryRemove(gameId, out _);
-            _pending.Clear();
-        }
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────

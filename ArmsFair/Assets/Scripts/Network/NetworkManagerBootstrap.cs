@@ -1,37 +1,21 @@
-using ArmsFair.Network;
+using System.Threading.Tasks;
+using ArmsFair.Auth;
+using ArmsFair.UI;
 using UnityEngine;
 
 namespace ArmsFair.Network
 {
+    [DefaultExecutionOrder(100)]
     public class NetworkManagerBootstrap : MonoBehaviour
     {
-        [SerializeField] private string serverUrl = "http://localhost:5000";
-
-        private static bool _created;
-
-        private void Awake()
+        private async void Start()
         {
-            if (_created)
-            {
-                Destroy(gameObject);
-                return;
-            }
+            bool autoLoggedIn = await AccountManager.Instance.TryAutoLoginAsync();
 
-            _created = true;
-            DontDestroyOnLoad(gameObject);
-
-            if (GetComponent<UnityMainThreadDispatcher>() == null)
-                gameObject.AddComponent<UnityMainThreadDispatcher>();
-
-            var client = GetComponent<GameClient>();
-            if (client != null)
-                client.ServerUrl = serverUrl;
-        }
-
-        private void OnDestroy()
-        {
-            if (gameObject == null)
-                _created = false;
+            if (!autoLoggedIn)
+                UIManager.Instance.GoTo("Login");
+            else
+                UIManager.Instance.GoTo("MainMenu");
         }
     }
 }

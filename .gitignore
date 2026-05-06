@@ -13,6 +13,9 @@ ArmsFair/Builds/
 ArmsFair/.DS_Store
 ArmsFair/**/*.DS_Store
 
+# Unity package large binaries
+ArmsFair/Packages/com.unity.ai.assistant/RelayApp~/
+
 # Unity auto-generated meta files for ignored folders
 ArmsFair/Library.meta
 ArmsFair/Temp.meta

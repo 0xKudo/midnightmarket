@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+  <ui:Style src="../USS/variables.uss" />
+  <ui:Style src="../USS/terminal.uss" />
+  <ui:VisualElement name="MainMenuScreen" class="screen-root" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background-color:rgb(13,13,13);">
+    <ui:VisualElement class="term-panel term-panel--narrow" style="background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px; flex-direction:column; width:320px;">
+      <ui:Label text="THE ARMS FAIR" class="term-title" style="font-size:15px; color:rgb(212,207,184); -unity-font-style:bold; margin-bottom:4px;" />
+      <ui:Label name="WelcomeLabel" text="OPERATIVE: —" class="term-subtitle" style="font-size:9px; color:rgb(138,134,112); margin-bottom:16px;" />
+      <ui:VisualElement class="term-divider" style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
+      <ui:Button name="CreateRoomBtn" text="CREATE ROOM" class="term-btn" style="color:rgb(212,207,184); -unity-text-color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center;" />
+      <ui:Button name="JoinRoomBtn"   text="JOIN ROOM"   class="term-btn" style="color:rgb(212,207,184); -unity-text-color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center;" />
+      <ui:Button name="ProfileBtn"    text="PROFILE"     class="term-btn" style="color:rgb(212,207,184); -unity-text-color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center;" />
+      <ui:VisualElement class="term-divider" style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
+      <ui:Button name="LogoutBtn"     text="DISCONNECT"  class="term-btn term-btn--danger" style="color:rgb(192,144,144); -unity-text-color:rgb(192,144,144); background-color:rgb(15,15,8); border-color:rgb(90,42,42); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center;" />
+    </ui:VisualElement>
+  </ui:VisualElement>
+</ui:UXML>

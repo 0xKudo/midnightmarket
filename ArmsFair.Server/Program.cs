@@ -24,7 +24,8 @@ builder.Services.AddHttpClient("gpi");
 
 // ── App services ─────────────────────────────────────────────────────────────
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<PhaseOrchestrator>();
+builder.Services.AddSingleton<GameStateService>();
+builder.Services.AddSingleton<PhaseOrchestrator>();
 builder.Services.AddSingleton<LobbyService>();
 builder.Services.AddSingleton<SeedService>();
 builder.Services.AddSingleton<TickerService>();
