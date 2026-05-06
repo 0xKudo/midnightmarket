@@ -544,7 +544,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 136b1bf68320fe24db5c736a01ab4fb5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArmsFair.Network.GameClient
-  serverUrl: http://localhost:5059/gamehub
+  serverUrl: https://armsfair.laynekudo.com/gamehub
   OnPhaseStart:
     m_PersistentCalls:
       m_Calls:
@@ -619,7 +619,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9caa524465b2df24faa8fe1674576a80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArmsFair.Auth.AccountManager
-  serverUrl: http://localhost:5059
+  serverUrl: https://armsfair.laynekudo.com
   OnLoggedIn:
     m_PersistentCalls:
       m_Calls: []
