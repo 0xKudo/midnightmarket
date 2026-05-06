@@ -24,12 +24,18 @@ namespace ArmsFair.Auth
     }
 
     [Serializable]
-    internal class AuthResponse
+    internal class AuthProfile
     {
-        public string token;
-        public string playerId;
+        public string id;
         public string username;
         public string homeNationIso;
+    }
+
+    [Serializable]
+    internal class AuthResponse
+    {
+        public string      token;
+        public AuthProfile profile;
     }
 
     [Serializable]
@@ -60,14 +66,14 @@ namespace ArmsFair.Auth
         {
             var json = $"{{\"usernameOrEmail\":\"{usernameOrEmail}\",\"password\":\"{password}\"}}";
             var r    = await PostAsync<AuthResponse>("/api/auth/login", json);
-            return new AuthResult(r.token, r.playerId, r.username, r.homeNationIso);
+            return new AuthResult(r.token, r.profile?.id, r.profile?.username, r.profile?.homeNationIso);
         }
 
         public async Task<AuthResult> RegisterAsync(string username, string email, string password)
         {
             var json = $"{{\"username\":\"{username}\",\"email\":\"{email}\",\"password\":\"{password}\"}}";
             var r    = await PostAsync<AuthResponse>("/api/auth/register", json);
-            return new AuthResult(r.token, r.playerId, r.username, r.homeNationIso);
+            return new AuthResult(r.token, r.profile?.id, r.profile?.username, r.profile?.homeNationIso);
         }
 
         public async Task<PlayerProfile> GetMeAsync(string token)
@@ -88,8 +94,9 @@ namespace ArmsFair.Auth
             };
         }
 
-        private static async Task<T> PostAsync<T>(string url, string json)
+        private async Task<T> PostAsync<T>(string path, string json)
         {
+            var url     = _baseUrl + path;
             var request = new UnityWebRequest(url, "POST");
             request.uploadHandler   = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
             request.downloadHandler = new DownloadHandlerBuffer();
@@ -98,13 +105,14 @@ namespace ArmsFair.Auth
             await request.SendWebRequest();
 
             if (request.result != UnityWebRequest.Result.Success)
-                throw new Exception($"[AuthApiClient] POST {url} failed: {request.error} — {request.downloadHandler.text}");
+                throw new Exception($"{request.responseCode}: {request.error} — {request.downloadHandler.text}");
 
             return JsonUtility.FromJson<T>(request.downloadHandler.text);
         }
 
-        private static async Task<T> GetAsync<T>(string url, string token)
+        private async Task<T> GetAsync<T>(string path, string token)
         {
+            var url     = _baseUrl + path;
             var request = UnityWebRequest.Get(url);
             request.SetRequestHeader("Authorization", $"Bearer {token}");
             request.downloadHandler = new DownloadHandlerBuffer();
@@ -112,7 +120,7 @@ namespace ArmsFair.Auth
             await request.SendWebRequest();
 
             if (request.result != UnityWebRequest.Result.Success)
-                throw new Exception($"[AuthApiClient] GET {url} failed: {request.error} — {request.downloadHandler.text}");
+                throw new Exception($"{request.responseCode}: {request.error} — {request.downloadHandler.text}");
 
             return JsonUtility.FromJson<T>(request.downloadHandler.text);
         }

@@ -59,10 +59,11 @@ namespace ArmsFair.UI
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
                 _errorLabel.text = "ALL FIELDS REQUIRED";
-                _errorLabel.RemoveFromClassList("hidden");
+                _errorLabel.style.display = DisplayStyle.Flex;
                 return;
             }
 
+            _errorLabel.style.display = DisplayStyle.None;
             try
             {
                 await AccountManager.Instance.RegisterAsync(username, email, password);
@@ -73,7 +74,7 @@ namespace ArmsFair.UI
                 _errorLabel.text = ex.Message.Contains("409") ? "USERNAME OR EMAIL TAKEN"
                                  : ex.Message.Contains("400") ? "INVALID INPUT"
                                  : "CONNECTION ERROR";
-                _errorLabel.RemoveFromClassList("hidden");
+                _errorLabel.style.display = DisplayStyle.Flex;
             }
         }
     }

@@ -49,7 +49,7 @@ namespace ArmsFair.UI
 
         private async void OnLogin()
         {
-            _errorLabel.AddToClassList("hidden");
+            _errorLabel.style.display = DisplayStyle.None;
             try
             {
                 await AccountManager.Instance.LoginAsync(_usernameField.value, _passwordField.value);
@@ -58,7 +58,7 @@ namespace ArmsFair.UI
             catch (System.Exception ex)
             {
                 _errorLabel.text = ex.Message.Contains("401") ? "INVALID CREDENTIALS" : "CONNECTION ERROR";
-                _errorLabel.RemoveFromClassList("hidden");
+                _errorLabel.style.display = DisplayStyle.Flex;
             }
         }
     }

@@ -81,16 +81,37 @@ Each screen is its own child GameObject with its own UIDocument. Do NOT share a 
 **RegisterScreen status: WORKING** ✓
 - Same terminal styling as LoginScreen
 - Username, Email, Password fields functional
-- On success navigates back to Login (temporary — change to MainMenu after Phase 7)
+- On success navigates to MainMenu
 - Back button returns to Login
 
+**MainMenuScreen status: WORKING** ✓
+- Shows `OPERATIVE: <USERNAME>` on login/register
+- DISCONNECT returns to Login
+- CREATE ROOM / JOIN ROOM / PROFILE log warnings (Phases 8–10 pending)
+
+**VPS status: LIVE** ✓
+- Server running at `https://armsfair.laynekudo.com`
+- PostgreSQL on VPS — accounts persist across sessions
+- Register and login confirmed working end-to-end from Unity client
+
 **NOT yet done (Unity):**
-- MainMenuScreen (Phase 7) — after which RegisterScreen's GoTo("Login") becomes GoTo("MainMenu")
+- CreateRoomScreen (Phase 8)
+- RoomListScreen (Phase 9)
+- ProfileScreen (Phase 10)
+- PreGameLobbyScreen (Phase 11)
 - CreateRoomScreen + LobbyApiClient (Phase 8)
 - RoomListScreen (Phase 9)
 - ProfileScreen (Phase 10)
 - PreGameLobbyScreen (Phase 11)
 - HUD + all game screens (Phases 12–24)
+
+---
+
+## AuthApiClient Gotchas (learned 2026-05-06)
+
+- **`PostAsync`/`GetAsync` must be instance methods** — they need `_baseUrl` prepended or requests go to a bare path with no host and fail silently
+- **Server response shape:** `{"token":"...","profile":{"id":"...","username":"...","homeNationIso":"..."}}` — `AuthResponse` must have a nested `AuthProfile` class, not flat fields. `JsonUtility` does not flatten nested JSON.
+- **Error label visibility:** inline `style="display:none"` in UXML overrides USS class removal. Always use `_errorLabel.style.display = DisplayStyle.Flex/None` directly — never `AddToClassList("hidden")` / `RemoveFromClassList("hidden")`.
 
 ---
 

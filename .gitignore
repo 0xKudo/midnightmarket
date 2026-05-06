@@ -33,7 +33,7 @@ appsettings.local.json
 
 # Claude / AI tooling
 .claude/
-docs/plans/
+# docs/plans/ — removed, plans are now tracked in git
 docs/superpowers/
 CLAUDE.md
 memory/
