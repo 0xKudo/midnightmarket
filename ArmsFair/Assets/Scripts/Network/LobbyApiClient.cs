@@ -91,17 +91,22 @@ namespace ArmsFair.Network
 
         private async Task<T> PostAsync<T>(string path, string json)
         {
-            var url     = _baseUrl + path;
+            var url   = _baseUrl + path;
+            var token = AccountManager.Instance.Token;
+            Debug.Log($"[LobbyApiClient] POST {path} token={(string.IsNullOrEmpty(token) ? "NULL" : token[..Math.Min(20, token.Length)] + "...")}");
             var request = new UnityWebRequest(url, "POST");
             request.uploadHandler   = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type",  "application/json");
-            request.SetRequestHeader("Authorization", $"Bearer {AccountManager.Instance.Token}");
+            request.SetRequestHeader("Authorization", $"Bearer {token}");
 
             await request.SendWebRequest();
 
             if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"[LobbyApiClient] POST {path} → {request.responseCode}: {request.error} | body: {request.downloadHandler.text}");
                 throw new Exception($"{request.responseCode}: {request.error} — {request.downloadHandler.text}");
+            }
 
             return JsonUtility.FromJson<T>(request.downloadHandler.text);
         }
