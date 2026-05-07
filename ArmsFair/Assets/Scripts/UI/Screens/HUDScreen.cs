@@ -40,12 +40,12 @@ namespace ArmsFair.UI
         private Label _statusLabel;
 
         // Procurement panel
-        private VisualElement        _procurementPanel;
-        private ScrollView           _weaponList;
-        private Label                _procTotalLabel;
-        private Label                _procErrorLabel;
-        private Button               _confirmProcBtn;
-        private List<WeaponCategory> _selectedWeapons = new();
+        private VisualElement                    _procurementPanel;
+        private ScrollView                       _weaponList;
+        private Label                            _procTotalLabel;
+        private Label                            _procErrorLabel;
+        private Button                           _confirmProcBtn;
+        private Dictionary<WeaponCategory, int>  _quantities = new();
 
         // Timer state
         private long _phaseEndsAt;
@@ -221,7 +221,7 @@ namespace ArmsFair.UI
         {
             if (_weaponList == null) return;
             _weaponList.Clear();
-            _selectedWeapons.Clear();
+            _quantities.Clear();
             UpdateProcTotal(capitalM);
 
             if (_procErrorLabel != null) _procErrorLabel.style.display = DisplayStyle.None;
@@ -229,93 +229,112 @@ namespace ArmsFair.UI
 
             foreach (var entry in WeaponCatalog.Items)
             {
+                var cat = entry.Category;
+                _quantities[cat] = 0;
+
                 var row = new VisualElement();
-                row.style.flexDirection    = FlexDirection.Row;
-                row.style.justifyContent  = Justify.SpaceBetween;
-                row.style.alignItems      = Align.Center;
-                row.style.paddingTop      = 6;
-                row.style.paddingBottom   = 6;
+                row.style.flexDirection     = FlexDirection.Row;
+                row.style.justifyContent    = Justify.SpaceBetween;
+                row.style.alignItems        = Align.Center;
+                row.style.paddingTop        = 7;
+                row.style.paddingBottom     = 7;
                 row.style.borderBottomColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
                 row.style.borderBottomWidth = 1;
 
                 var nameLabel = new Label(entry.DisplayName);
-                nameLabel.style.color     = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
-                nameLabel.style.fontSize  = 14;
-                nameLabel.style.flexGrow  = 1;
+                nameLabel.style.color    = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
+                nameLabel.style.fontSize = 14;
+                nameLabel.style.flexGrow = 1;
 
-                var costLabel = new Label($"${entry.BaseCostMillions}M");
-                costLabel.style.color              = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                costLabel.style.fontSize           = 13;
-                costLabel.style.width              = 52;
-                costLabel.style.unityTextAlign     = TextAnchor.MiddleRight;
-                costLabel.style.marginRight        = 12;
+                var costLabel = new Label($"${entry.BaseCostMillions}M ea");
+                costLabel.style.color          = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                costLabel.style.fontSize       = 12;
+                costLabel.style.width          = 60;
+                costLabel.style.unityTextAlign = TextAnchor.MiddleRight;
+                costLabel.style.marginRight    = 10;
 
-                var cat = entry.Category;
-                var buyBtn = new Button();
-                buyBtn.text = "BUY";
-                buyBtn.style.width            = 52;
-                buyBtn.style.fontSize         = 12;
-                buyBtn.style.paddingTop       = 4;
-                buyBtn.style.paddingBottom    = 4;
-                buyBtn.style.color            = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                buyBtn.style.backgroundColor  = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
-                buyBtn.style.borderTopColor   = buyBtn.style.borderBottomColor =
-                buyBtn.style.borderLeftColor  = buyBtn.style.borderRightColor  =
-                    new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
-                buyBtn.style.borderTopWidth   = buyBtn.style.borderBottomWidth =
-                buyBtn.style.borderLeftWidth  = buyBtn.style.borderRightWidth  = 1;
+                var qtyLabel = new Label("0");
+                qtyLabel.style.color          = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+                qtyLabel.style.fontSize       = 14;
+                qtyLabel.style.width          = 24;
+                qtyLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
 
-                buyBtn.clicked += () =>
+                var minusBtn = MakeQtyButton("-");
+                var plusBtn  = MakeQtyButton("+");
+
+                minusBtn.clicked += () =>
                 {
-                    bool selected = _selectedWeapons.Contains(cat);
-                    if (selected)
-                    {
-                        _selectedWeapons.Remove(cat);
-                        buyBtn.text = "BUY";
-                        buyBtn.style.color           = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                        buyBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
-                        buyBtn.style.borderTopColor  = buyBtn.style.borderBottomColor =
-                        buyBtn.style.borderLeftColor = buyBtn.style.borderRightColor  =
-                            new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
-                    }
-                    else
-                    {
-                        _selectedWeapons.Add(cat);
-                        buyBtn.text = "SELECTED";
-                        buyBtn.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
-                        buyBtn.style.backgroundColor = new StyleColor(new Color(20f/255f, 35f/255f, 15f/255f));
-                        buyBtn.style.borderTopColor  = buyBtn.style.borderBottomColor =
-                        buyBtn.style.borderLeftColor = buyBtn.style.borderRightColor  =
-                            new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
-                    }
+                    if (_quantities[cat] <= 0) return;
+                    _quantities[cat]--;
+                    qtyLabel.text = _quantities[cat].ToString();
+                    UpdateProcTotal(capitalM);
+                };
+
+                plusBtn.clicked += () =>
+                {
+                    _quantities[cat]++;
+                    qtyLabel.text = _quantities[cat].ToString();
                     UpdateProcTotal(capitalM);
                 };
 
                 row.Add(nameLabel);
                 row.Add(costLabel);
-                row.Add(buyBtn);
+                row.Add(minusBtn);
+                row.Add(qtyLabel);
+                row.Add(plusBtn);
                 _weaponList.Add(row);
             }
+        }
+
+        private static Button MakeQtyButton(string label)
+        {
+            var btn = new Button { text = label };
+            btn.style.width           = 26;
+            btn.style.height          = 26;
+            btn.style.fontSize        = 14;
+            btn.style.paddingTop      = 0;
+            btn.style.paddingBottom   = 0;
+            btn.style.paddingLeft     = 0;
+            btn.style.paddingRight    = 0;
+            btn.style.unityTextAlign  = TextAnchor.MiddleCenter;
+            btn.style.color           = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+            btn.style.backgroundColor = new StyleColor(new Color(25f/255f, 25f/255f, 15f/255f));
+            btn.style.borderTopColor  = btn.style.borderBottomColor =
+            btn.style.borderLeftColor = btn.style.borderRightColor  =
+                new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+            btn.style.borderTopWidth  = btn.style.borderBottomWidth =
+            btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
+            return btn;
         }
 
         private void UpdateProcTotal(int capitalM)
         {
             if (_procTotalLabel == null) return;
-            var total = _selectedWeapons.Sum(w =>
-                WeaponCatalog.Items.FirstOrDefault(i => i.Category == w)?.BaseCostMillions ?? 0);
+            var total = _quantities.Sum(kv =>
+                (WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key)?.BaseCostMillions ?? 0) * kv.Value);
             _procTotalLabel.text = $"${total}M";
             _procTotalLabel.style.color = new StyleColor(total > capitalM
                 ? new Color(192f/255f, 100f/255f, 100f/255f)
                 : new Color(212f/255f, 207f/255f, 184f/255f));
         }
 
-        private async void OnConfirmProcurement()
+        private void OnConfirmProcurement()
         {
             if (_confirmProcBtn == null) return;
             var capital = _lastState?.Players.FirstOrDefault(
                 p => p.Id == AccountManager.Instance.LocalPlayer?.Id)?.Capital ?? 0;
-            var total = _selectedWeapons.Sum(w =>
-                WeaponCatalog.Items.FirstOrDefault(i => i.Category == w)?.BaseCostMillions ?? 0);
+            var total = _quantities.Sum(kv =>
+                (WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key)?.BaseCostMillions ?? 0) * kv.Value);
+
+            if (total == 0)
+            {
+                if (_procErrorLabel != null)
+                {
+                    _procErrorLabel.text = "Select at least one weapon before confirming.";
+                    _procErrorLabel.style.display = DisplayStyle.Flex;
+                }
+                return;
+            }
 
             if (total > capital)
             {
@@ -327,10 +346,146 @@ namespace ArmsFair.UI
                 return;
             }
 
-            _confirmProcBtn.SetEnabled(false);
             if (_procErrorLabel != null) _procErrorLabel.style.display = DisplayStyle.None;
+            ShowProcurementConfirmModal(total, capital);
+        }
 
-            await GameClient.Instance.SubmitProcurementAsync(new ProcurementMessage(_selectedWeapons));
+        private void ShowProcurementConfirmModal(int totalM, int capitalM)
+        {
+            var overlay = new VisualElement();
+            overlay.style.position        = Position.Absolute;
+            overlay.style.left            = 0; overlay.style.top    = 0;
+            overlay.style.right           = 0; overlay.style.bottom = 0;
+            overlay.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.85f));
+            overlay.style.alignItems      = Align.Center;
+            overlay.style.justifyContent  = Justify.Center;
+
+            var panel = new VisualElement();
+            panel.style.width           = 380;
+            panel.style.backgroundColor = new StyleColor(new Color(17f/255f, 17f/255f, 8f/255f));
+            panel.style.borderTopColor  = panel.style.borderBottomColor =
+            panel.style.borderLeftColor = panel.style.borderRightColor  =
+                new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
+            panel.style.borderTopWidth  = panel.style.borderBottomWidth =
+            panel.style.borderLeftWidth = panel.style.borderRightWidth  = 1;
+            panel.style.paddingTop      = panel.style.paddingBottom =
+            panel.style.paddingLeft     = panel.style.paddingRight  = 20;
+
+            var title = new Label("Confirm Purchase");
+            title.style.fontSize       = 16;
+            title.style.color          = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            title.style.unityFontStyleAndWeight = FontStyle.Bold;
+            title.style.marginBottom   = 14;
+            panel.Add(title);
+
+            foreach (var kv in _quantities)
+            {
+                if (kv.Value == 0) continue;
+                var entry    = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
+                if (entry == null) continue;
+                var lineCost = entry.BaseCostMillions * kv.Value;
+
+                var row = new VisualElement();
+                row.style.flexDirection  = FlexDirection.Row;
+                row.style.justifyContent = Justify.SpaceBetween;
+                row.style.marginBottom   = 6;
+
+                var nameLabel = new Label($"{entry.DisplayName} x{kv.Value}");
+                nameLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+                nameLabel.style.fontSize = 13;
+
+                var costLabel = new Label($"${lineCost}M");
+                costLabel.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                costLabel.style.fontSize = 13;
+
+                row.Add(nameLabel);
+                row.Add(costLabel);
+                panel.Add(row);
+            }
+
+            var divider = new VisualElement();
+            divider.style.height          = 1;
+            divider.style.backgroundColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+            divider.style.marginTop       = 10;
+            divider.style.marginBottom    = 10;
+            panel.Add(divider);
+
+            var totalRow = new VisualElement();
+            totalRow.style.flexDirection  = FlexDirection.Row;
+            totalRow.style.justifyContent = Justify.SpaceBetween;
+            totalRow.style.marginBottom   = 16;
+
+            var totalLabel = new Label("TOTAL");
+            totalLabel.style.color          = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+            totalLabel.style.fontSize       = 14;
+            totalLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+
+            var totalAmt = new Label($"${totalM}M");
+            totalAmt.style.color          = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+            totalAmt.style.fontSize       = 14;
+            totalAmt.style.unityFontStyleAndWeight = FontStyle.Bold;
+
+            var afterLabel = new Label($"Capital after: ${capitalM - totalM}M");
+            afterLabel.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+            afterLabel.style.fontSize = 12;
+            afterLabel.style.marginBottom = 16;
+
+            totalRow.Add(totalLabel);
+            totalRow.Add(totalAmt);
+            panel.Add(totalRow);
+            panel.Add(afterLabel);
+
+            var btnRow = new VisualElement();
+            btnRow.style.flexDirection = FlexDirection.Row;
+            btnRow.style.justifyContent = Justify.SpaceBetween;
+
+            var cancelBtn  = new Button { text = "CANCEL" };
+            cancelBtn.style.flexGrow        = 1;
+            cancelBtn.style.marginRight     = 8;
+            cancelBtn.style.paddingTop      = cancelBtn.style.paddingBottom = 8;
+            cancelBtn.style.color           = new StyleColor(new Color(192f/255f, 144f/255f, 144f/255f));
+            cancelBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
+            cancelBtn.style.borderTopColor  = cancelBtn.style.borderBottomColor =
+            cancelBtn.style.borderLeftColor = cancelBtn.style.borderRightColor  =
+                new StyleColor(new Color(90f/255f, 42f/255f, 42f/255f));
+            cancelBtn.style.borderTopWidth  = cancelBtn.style.borderBottomWidth =
+            cancelBtn.style.borderLeftWidth = cancelBtn.style.borderRightWidth  = 1;
+
+            var confirmBtn = new Button { text = "CONFIRM" };
+            confirmBtn.style.flexGrow        = 1;
+            confirmBtn.style.paddingTop      = confirmBtn.style.paddingBottom = 8;
+            confirmBtn.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            confirmBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 25f/255f, 8f/255f));
+            confirmBtn.style.borderTopColor  = confirmBtn.style.borderBottomColor =
+            confirmBtn.style.borderLeftColor = confirmBtn.style.borderRightColor  =
+                new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
+            confirmBtn.style.borderTopWidth  = confirmBtn.style.borderBottomWidth =
+            confirmBtn.style.borderLeftWidth = confirmBtn.style.borderRightWidth  = 1;
+
+            cancelBtn.clicked  += () => _root.Remove(overlay);
+            confirmBtn.clicked += () =>
+            {
+                _root.Remove(overlay);
+                SubmitProcurement();
+            };
+
+            btnRow.Add(cancelBtn);
+            btnRow.Add(confirmBtn);
+            panel.Add(btnRow);
+            overlay.Add(panel);
+            _root.Add(overlay);
+        }
+
+        private async void SubmitProcurement()
+        {
+            if (_confirmProcBtn != null) _confirmProcBtn.SetEnabled(false);
+
+            var selected = new List<WeaponCategory>();
+            foreach (var kv in _quantities)
+                for (int i = 0; i < kv.Value; i++)
+                    selected.Add(kv.Key);
+
+            await GameClient.Instance.SubmitProcurementAsync(new ProcurementMessage(selected));
         }
 
         // ── Binding ──────────────────────────────────────────────────────────
