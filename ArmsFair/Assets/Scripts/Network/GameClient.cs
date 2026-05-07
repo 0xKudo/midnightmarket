@@ -76,15 +76,8 @@ namespace ArmsFair.Network
 
             RegisterHandlers();
 
-            try
-            {
-                await _hub.StartAsync(_cts.Token);
-                Debug.Log($"[GameClient] Connected to {serverUrl}");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[GameClient] Connection failed: {ex.Message}");
-            }
+            await _hub.StartAsync(_cts.Token);
+            Debug.Log($"[GameClient] Connected to {serverUrl}");
         }
 
         public async Task DisconnectAsync()

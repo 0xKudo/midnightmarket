@@ -169,6 +169,12 @@ namespace ArmsFair.UI
                         return;
                     }
                     await GameClient.Instance.ConnectAsync(token);
+                    if (!GameClient.Instance.IsConnected)
+                    {
+                        _errorLabel.text          = "CANNOT REACH SERVER — CHECK CONNECTION";
+                        _errorLabel.style.display = DisplayStyle.Flex;
+                        return;
+                    }
                 }
 
                 var gameMode = Enum.TryParse<GameMode>(_currentRoom.gameMode, out var gm)
