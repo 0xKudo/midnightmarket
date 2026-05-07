@@ -45,7 +45,10 @@ namespace ArmsFair.UI
         private Label                            _procTotalLabel;
         private Label                            _procErrorLabel;
         private Button                           _confirmProcBtn;
-        private Dictionary<WeaponCategory, int>  _quantities = new();
+        private VisualElement                    _inventorySection;
+        private Dictionary<WeaponCategory, int>  _quantities  = new();
+        private Dictionary<WeaponCategory, int>  _inventory   = new();
+        private int                              _procCapitalM;
 
         // Timer state
         private long _phaseEndsAt;
@@ -156,6 +159,14 @@ namespace ArmsFair.UI
             _lastState = msg.FullState;
             if (_root == null || _root.style.display == DisplayStyle.None) return;
             BindState(msg.FullState);
+
+            if (_procurementPanel != null && _procurementPanel.style.display == DisplayStyle.Flex)
+            {
+                var localId = AccountManager.Instance.LocalPlayer?.Id;
+                _procCapitalM = msg.FullState.Players.FirstOrDefault(p => p.Id == localId)?.Capital ?? 0;
+                UpdateProcTotal();
+                RefreshInventoryDisplay();
+            }
         }
 
         private void OnPhaseStart(PhaseStartMessage msg)
@@ -211,18 +222,19 @@ namespace ArmsFair.UI
 
             if (isProcurement)
             {
-                var capital = _lastState?.Players.FirstOrDefault(
-                    p => p.Id == AccountManager.Instance.LocalPlayer?.Id)?.Capital ?? 0;
-                BuildProcurementPanel(capital);
+                var localId = AccountManager.Instance.LocalPlayer?.Id;
+                _procCapitalM = _lastState?.Players.FirstOrDefault(p => p.Id == localId)?.Capital ?? 0;
+                _inventory.Clear();
+                BuildProcurementPanel();
             }
         }
 
-        private void BuildProcurementPanel(int capitalM)
+        private void BuildProcurementPanel()
         {
             if (_weaponList == null) return;
             _weaponList.Clear();
             _quantities.Clear();
-            UpdateProcTotal(capitalM);
+            UpdateProcTotal();
 
             if (_procErrorLabel != null) _procErrorLabel.style.display = DisplayStyle.None;
             if (_confirmProcBtn  != null) _confirmProcBtn.SetEnabled(true);
@@ -267,14 +279,14 @@ namespace ArmsFair.UI
                     if (_quantities[cat] <= 0) return;
                     _quantities[cat]--;
                     qtyLabel.text = _quantities[cat].ToString();
-                    UpdateProcTotal(capitalM);
+                    UpdateProcTotal();
                 };
 
                 plusBtn.clicked += () =>
                 {
                     _quantities[cat]++;
                     qtyLabel.text = _quantities[cat].ToString();
-                    UpdateProcTotal(capitalM);
+                    UpdateProcTotal();
                 };
 
                 row.Add(nameLabel);
@@ -283,6 +295,55 @@ namespace ArmsFair.UI
                 row.Add(qtyLabel);
                 row.Add(plusBtn);
                 _weaponList.Add(row);
+            }
+
+            // Inventory section — shown/updated after each purchase
+            _inventorySection = new VisualElement();
+            _inventorySection.style.display     = DisplayStyle.None;
+            _inventorySection.style.marginTop   = 12;
+            _inventorySection.style.borderTopColor  = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+            _inventorySection.style.borderTopWidth  = 1;
+            _inventorySection.style.paddingTop  = 10;
+            _procurementPanel.Add(_inventorySection);
+        }
+
+        private void RefreshInventoryDisplay()
+        {
+            if (_inventorySection == null) return;
+            _inventorySection.Clear();
+
+            var hasItems = _inventory.Any(kv => kv.Value > 0);
+            _inventorySection.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!hasItems) return;
+
+            var title = new Label("YOUR INVENTORY THIS ROUND");
+            title.style.fontSize     = 12;
+            title.style.color        = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+            title.style.marginBottom = 6;
+            _inventorySection.Add(title);
+
+            foreach (var kv in _inventory)
+            {
+                if (kv.Value == 0) continue;
+                var entry = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
+                if (entry == null) continue;
+
+                var row = new VisualElement();
+                row.style.flexDirection  = FlexDirection.Row;
+                row.style.justifyContent = Justify.SpaceBetween;
+                row.style.marginBottom   = 4;
+
+                var nameL = new Label($"{entry.DisplayName} x{kv.Value}");
+                nameL.style.color    = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+                nameL.style.fontSize = 13;
+
+                var costL = new Label($"${entry.BaseCostMillions * kv.Value}M");
+                costL.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                costL.style.fontSize = 13;
+
+                row.Add(nameL);
+                row.Add(costL);
+                _inventorySection.Add(row);
             }
         }
 
@@ -307,13 +368,13 @@ namespace ArmsFair.UI
             return btn;
         }
 
-        private void UpdateProcTotal(int capitalM)
+        private void UpdateProcTotal()
         {
             if (_procTotalLabel == null) return;
             var total = _quantities.Sum(kv =>
                 (WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key)?.BaseCostMillions ?? 0) * kv.Value);
             _procTotalLabel.text = $"${total}M";
-            _procTotalLabel.style.color = new StyleColor(total > capitalM
+            _procTotalLabel.style.color = new StyleColor(total > _procCapitalM
                 ? new Color(192f/255f, 100f/255f, 100f/255f)
                 : new Color(212f/255f, 207f/255f, 184f/255f));
         }
@@ -321,8 +382,6 @@ namespace ArmsFair.UI
         private void OnConfirmProcurement()
         {
             if (_confirmProcBtn == null) return;
-            var capital = _lastState?.Players.FirstOrDefault(
-                p => p.Id == AccountManager.Instance.LocalPlayer?.Id)?.Capital ?? 0;
             var total = _quantities.Sum(kv =>
                 (WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key)?.BaseCostMillions ?? 0) * kv.Value);
 
@@ -336,18 +395,18 @@ namespace ArmsFair.UI
                 return;
             }
 
-            if (total > capital)
+            if (total > _procCapitalM)
             {
                 if (_procErrorLabel != null)
                 {
-                    _procErrorLabel.text = $"INSUFFICIENT CAPITAL: need ${total}M, have ${capital}M";
+                    _procErrorLabel.text = $"INSUFFICIENT CAPITAL: need ${total}M, have ${_procCapitalM}M";
                     _procErrorLabel.style.display = DisplayStyle.Flex;
                 }
                 return;
             }
 
             if (_procErrorLabel != null) _procErrorLabel.style.display = DisplayStyle.None;
-            ShowProcurementConfirmModal(total, capital);
+            ShowProcurementConfirmModal(total, _procCapitalM);
         }
 
         private void ShowProcurementConfirmModal(int totalM, int capitalM)
@@ -485,7 +544,19 @@ namespace ArmsFair.UI
                 for (int i = 0; i < kv.Value; i++)
                     selected.Add(kv.Key);
 
+            // Accumulate into inventory before resetting quantities
+            foreach (var kv in _quantities)
+            {
+                if (kv.Value == 0) continue;
+                _inventory.TryGetValue(kv.Key, out var existing);
+                _inventory[kv.Key] = existing + kv.Value;
+            }
+
             await GameClient.Instance.SubmitProcurementAsync(new ProcurementMessage(selected));
+
+            // Reset quantity selectors after submit
+            _quantities.Clear();
+            if (_confirmProcBtn != null) _confirmProcBtn.SetEnabled(true);
         }
 
         // ── Binding ──────────────────────────────────────────────────────────
