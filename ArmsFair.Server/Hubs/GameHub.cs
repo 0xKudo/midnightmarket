@@ -132,6 +132,7 @@ public class GameHub(
         await db.SaveChangesAsync();
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+        ticker.StartGame(gameId);
         await Clients.Group(gameId).SendAsync("StateSync", new StateSync(state));
     }
 
