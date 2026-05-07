@@ -250,20 +250,50 @@ namespace ArmsFair.UI
                 costLabel.style.unityTextAlign     = TextAnchor.MiddleRight;
                 costLabel.style.marginRight        = 12;
 
-                var toggle = new Toggle();
-                toggle.style.marginLeft = 8;
-
                 var cat = entry.Category;
-                toggle.RegisterValueChangedCallback(evt =>
+                var buyBtn = new Button();
+                buyBtn.text = "BUY";
+                buyBtn.style.width            = 52;
+                buyBtn.style.fontSize         = 12;
+                buyBtn.style.paddingTop       = 4;
+                buyBtn.style.paddingBottom    = 4;
+                buyBtn.style.color            = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                buyBtn.style.backgroundColor  = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
+                buyBtn.style.borderTopColor   = buyBtn.style.borderBottomColor =
+                buyBtn.style.borderLeftColor  = buyBtn.style.borderRightColor  =
+                    new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+                buyBtn.style.borderTopWidth   = buyBtn.style.borderBottomWidth =
+                buyBtn.style.borderLeftWidth  = buyBtn.style.borderRightWidth  = 1;
+
+                buyBtn.clicked += () =>
                 {
-                    if (evt.newValue) _selectedWeapons.Add(cat);
-                    else              _selectedWeapons.Remove(cat);
+                    bool selected = _selectedWeapons.Contains(cat);
+                    if (selected)
+                    {
+                        _selectedWeapons.Remove(cat);
+                        buyBtn.text = "BUY";
+                        buyBtn.style.color           = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                        buyBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
+                        buyBtn.style.borderTopColor  = buyBtn.style.borderBottomColor =
+                        buyBtn.style.borderLeftColor = buyBtn.style.borderRightColor  =
+                            new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+                    }
+                    else
+                    {
+                        _selectedWeapons.Add(cat);
+                        buyBtn.text = "SELECTED";
+                        buyBtn.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+                        buyBtn.style.backgroundColor = new StyleColor(new Color(20f/255f, 35f/255f, 15f/255f));
+                        buyBtn.style.borderTopColor  = buyBtn.style.borderBottomColor =
+                        buyBtn.style.borderLeftColor = buyBtn.style.borderRightColor  =
+                            new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
+                    }
                     UpdateProcTotal(capitalM);
-                });
+                };
 
                 row.Add(nameLabel);
                 row.Add(costLabel);
-                row.Add(toggle);
+                row.Add(buyBtn);
                 _weaponList.Add(row);
             }
         }
@@ -291,7 +321,7 @@ namespace ArmsFair.UI
             {
                 if (_procErrorLabel != null)
                 {
-                    _procErrorLabel.text = $"INSUFFICIENT CAPITAL — need ${total}M, have ${capital}M";
+                    _procErrorLabel.text = $"INSUFFICIENT CAPITAL: need ${total}M, have ${capital}M";
                     _procErrorLabel.style.display = DisplayStyle.Flex;
                 }
                 return;
