@@ -97,6 +97,9 @@ namespace ArmsFair.Network
         public Task SubmitActionAsync(SubmitActionMessage action) =>
             InvokeAsync("SubmitAction", GameId, action);
 
+        public Task SubmitProcurementAsync(ProcurementMessage msg) =>
+            InvokeAsync("SubmitProcurement", GameId, msg);
+
         public Task SendChatAsync(string text, string recipientId = null, bool isPrivate = false) =>
             InvokeAsync("SendChat", GameId, new ChatMessage(
                 PlayerId, text, recipientId, isPrivate, IsSystem: false));

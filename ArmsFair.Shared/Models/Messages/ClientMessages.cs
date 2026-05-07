@@ -31,7 +31,7 @@ public record ManufactureDemandMessage(string TargetCountryIso);
 
 public record PeacekeepingMessage(string TargetCountryIso);
 
-public record ProcurementMessage(WeaponCategory Weapon, string SupplierId, int Quantity);
+public record ProcurementMessage(List<WeaponCategory> SelectedWeapons);
 
 public record LobbySettingsMessage(
     int          PlayerSlots,

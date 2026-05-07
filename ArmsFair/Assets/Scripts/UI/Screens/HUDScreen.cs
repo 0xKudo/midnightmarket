@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using ArmsFair.Auth;
 using ArmsFair.Network;
+using ArmsFair.Shared;
+using ArmsFair.Shared.Enums;
 using ArmsFair.Shared.Models;
 using ArmsFair.Shared.Models.Messages;
 using UnityEngine;
@@ -34,6 +38,14 @@ namespace ArmsFair.UI
         // Centre
         private Label _phaseStatusLabel;
         private Label _statusLabel;
+
+        // Procurement panel
+        private VisualElement        _procurementPanel;
+        private ScrollView           _weaponList;
+        private Label                _procTotalLabel;
+        private Label                _procErrorLabel;
+        private Button               _confirmProcBtn;
+        private List<WeaponCategory> _selectedWeapons = new();
 
         // Timer state
         private long _phaseEndsAt;
@@ -81,6 +93,13 @@ namespace ArmsFair.UI
 
             _root.Q<Button>("LeaveGameBtn").clicked += OnLeaveGame;
             TerminalUI.StyleDangerButton(_root.Q<Button>("LeaveGameBtn"));
+
+            _procurementPanel = _root.Q("ProcurementPanel");
+            _weaponList       = _root.Q<ScrollView>("WeaponList");
+            _procTotalLabel   = _root.Q<Label>("ProcTotalLabel");
+            _procErrorLabel   = _root.Q<Label>("ProcErrorLabel");
+            _confirmProcBtn   = _root.Q<Button>("ConfirmProcBtn");
+            if (_confirmProcBtn != null) _confirmProcBtn.clicked += OnConfirmProcurement;
 
             UIManager.Instance.Register("HUD", this);
         }
@@ -142,12 +161,13 @@ namespace ArmsFair.UI
         private void OnPhaseStart(PhaseStartMessage msg)
         {
             if (_root == null || _root.style.display == DisplayStyle.None) return;
-            _phaseLabel.text     = msg.Phase.ToString().ToUpper();
-            _roundLabel.text     = msg.Round > 0 ? $"ROUND {msg.Round}" : "SETUP";
-            _phaseEndsAt         = msg.EndsAt;
-            _timerRunning        = true;
+            _phaseLabel.text       = msg.Phase.ToString().ToUpper();
+            _roundLabel.text       = msg.Round > 0 ? $"ROUND {msg.Round}" : "SETUP";
+            _phaseEndsAt           = msg.EndsAt;
+            _timerRunning          = true;
             _phaseStatusLabel.text = $"PHASE: {msg.Phase.ToString().ToUpper()}";
-            _statusLabel.text    = $"PHASE STARTED — ROUND {msg.Round}";
+            _statusLabel.text      = $"PHASE STARTED — ROUND {msg.Round}";
+            ShowPanel(msg.Phase);
         }
 
         private void OnConsequences(ConsequencesMessage msg)
@@ -179,6 +199,107 @@ namespace ArmsFair.UI
             BindTracks(msg.NewTracks);
         }
 
+        // ── Panel switching ───────────────────────────────────────────────────
+
+        private void ShowPanel(GamePhase phase)
+        {
+            var isProcurement = phase == GamePhase.Procurement;
+            if (_procurementPanel != null)
+                _procurementPanel.style.display = isProcurement ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_phaseStatusLabel != null)
+                _phaseStatusLabel.style.display = isProcurement ? DisplayStyle.None : DisplayStyle.Flex;
+
+            if (isProcurement)
+            {
+                var capital = _lastState?.Players.FirstOrDefault(
+                    p => p.Id == AccountManager.Instance.LocalPlayer?.Id)?.Capital ?? 0;
+                BuildProcurementPanel(capital);
+            }
+        }
+
+        private void BuildProcurementPanel(int capitalM)
+        {
+            if (_weaponList == null) return;
+            _weaponList.Clear();
+            _selectedWeapons.Clear();
+            UpdateProcTotal(capitalM);
+
+            if (_procErrorLabel != null) _procErrorLabel.style.display = DisplayStyle.None;
+            if (_confirmProcBtn  != null) _confirmProcBtn.SetEnabled(true);
+
+            foreach (var entry in WeaponCatalog.Items)
+            {
+                var row = new VisualElement();
+                row.style.flexDirection    = FlexDirection.Row;
+                row.style.justifyContent  = Justify.SpaceBetween;
+                row.style.alignItems      = Align.Center;
+                row.style.paddingTop      = 6;
+                row.style.paddingBottom   = 6;
+                row.style.borderBottomColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+                row.style.borderBottomWidth = 1;
+
+                var nameLabel = new Label(entry.DisplayName);
+                nameLabel.style.color    = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
+                nameLabel.style.fontSize = 14;
+
+                var costLabel = new Label($"${entry.BaseCostMillions}M");
+                costLabel.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                costLabel.style.fontSize = 13;
+                costLabel.style.marginRight = 12;
+
+                var toggle = new Toggle();
+                toggle.style.marginLeft = 8;
+
+                var cat = entry.Category;
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (evt.newValue) _selectedWeapons.Add(cat);
+                    else              _selectedWeapons.Remove(cat);
+                    UpdateProcTotal(capitalM);
+                });
+
+                row.Add(nameLabel);
+                row.Add(costLabel);
+                row.Add(toggle);
+                _weaponList.Add(row);
+            }
+        }
+
+        private void UpdateProcTotal(int capitalM)
+        {
+            if (_procTotalLabel == null) return;
+            var total = _selectedWeapons.Sum(w =>
+                WeaponCatalog.Items.FirstOrDefault(i => i.Category == w)?.BaseCostMillions ?? 0);
+            _procTotalLabel.text = $"${total}M";
+            _procTotalLabel.style.color = new StyleColor(total > capitalM
+                ? new Color(192f/255f, 100f/255f, 100f/255f)
+                : new Color(212f/255f, 207f/255f, 184f/255f));
+        }
+
+        private async void OnConfirmProcurement()
+        {
+            if (_confirmProcBtn == null) return;
+            var capital = _lastState?.Players.FirstOrDefault(
+                p => p.Id == AccountManager.Instance.LocalPlayer?.Id)?.Capital ?? 0;
+            var total = _selectedWeapons.Sum(w =>
+                WeaponCatalog.Items.FirstOrDefault(i => i.Category == w)?.BaseCostMillions ?? 0);
+
+            if (total > capital)
+            {
+                if (_procErrorLabel != null)
+                {
+                    _procErrorLabel.text = $"INSUFFICIENT CAPITAL — need ${total}M, have ${capital}M";
+                    _procErrorLabel.style.display = DisplayStyle.Flex;
+                }
+                return;
+            }
+
+            _confirmProcBtn.SetEnabled(false);
+            if (_procErrorLabel != null) _procErrorLabel.style.display = DisplayStyle.None;
+
+            await GameClient.Instance.SubmitProcurementAsync(new ProcurementMessage(_selectedWeapons));
+        }
+
         // ── Binding ──────────────────────────────────────────────────────────
 
         private void BindState(GameState state)
@@ -208,7 +329,7 @@ namespace ArmsFair.UI
                 label.style.color      = new StyleColor(isMe
                     ? new Color(138f/255f, 184f/255f, 112f/255f)
                     : new Color(0.831f, 0.812f, 0.722f));
-                label.style.fontSize   = 10;
+                label.style.fontSize   = 14;
                 label.style.paddingTop    = 3;
                 label.style.paddingBottom = 3;
                 label.style.whiteSpace = WhiteSpace.NoWrap;
@@ -218,11 +339,11 @@ namespace ArmsFair.UI
 
         private void BindTracks(WorldTracks t)
         {
-            _marketHeatLabel.text    = $"MKT: {t.MarketHeat}";
-            _civilianCostLabel.text  = $"CIV: {t.CivilianCost}";
-            _stabilityLabel.text     = $"STB: {t.Stability}";
-            _sanctionsRiskLabel.text = $"SAN: {t.SanctionsRisk}";
-            _geoTensionLabel.text    = $"GEO: {t.GeoTension}";
+            _marketHeatLabel.text    = $"MARKET HEAT: {t.MarketHeat}";
+            _civilianCostLabel.text  = $"CIVILIAN COST: {t.CivilianCost}";
+            _stabilityLabel.text     = $"STABILITY: {t.Stability}";
+            _sanctionsRiskLabel.text = $"SANCTIONS: {t.SanctionsRisk}";
+            _geoTensionLabel.text    = $"GEO TENSION: {t.GeoTension}";
 
             SetTrackColor(_marketHeatLabel,    t.MarketHeat,    inverted: false);
             SetTrackColor(_civilianCostLabel,  t.CivilianCost,  inverted: false);

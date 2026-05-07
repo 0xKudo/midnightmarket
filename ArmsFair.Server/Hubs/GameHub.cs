@@ -149,6 +149,39 @@ public class GameHub(
         await Clients.Group(gameId).SendAsync("StateSync", new StateSync(state));
     }
 
+    public async Task SubmitProcurement(string gameId, ProcurementMessage msg)
+    {
+        try
+        {
+            var playerId = GetPlayerId();
+            if (!gameStateService.TryGet(gameId, out var state))
+            { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
+
+            if (state.Phase != GamePhase.Procurement)
+            { await SendError("WRONG_PHASE", "Procurement can only be submitted during the Procurement phase."); return; }
+
+            // Capital is stored in $M (int). Deduct cost in $M units.
+            var totalCostM = msg.SelectedWeapons
+                .Sum(w => WeaponCatalog.Items.First(i => i.Category == w).BaseCostMillions);
+
+            var player = state.Players.FirstOrDefault(p => p.Id == playerId);
+            if (player is null) { await SendError("PLAYER_NOT_FOUND", "Player not in game."); return; }
+            if (player.Capital < totalCostM) { await SendError("INSUFFICIENT_CAPITAL", "Not enough capital."); return; }
+
+            var updated = state.Players
+                .Select(p => p.Id == playerId ? p with { Capital = p.Capital - totalCostM } : p)
+                .ToList();
+            state = state with { Players = updated };
+            gameStateService.Set(gameId, state);
+
+            await Clients.Caller.SendAsync("StateSync", new StateSync(state));
+        }
+        catch (Exception ex)
+        {
+            await SendError("PROCUREMENT_FAILED", ex.Message);
+        }
+    }
+
     public async Task SubmitAction(string gameId, SubmitActionMessage msg)
     {
         var playerId = GetPlayerId();
