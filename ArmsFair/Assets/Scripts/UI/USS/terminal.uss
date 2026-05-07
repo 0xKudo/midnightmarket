@@ -305,3 +305,16 @@ Button.term-btn {
 .unity-scroll-view__vertical-scroller > .unity-base-slider__dragger:hover {
     background-color: rgb(90, 90, 58);
 }
+
+.unity-scroll-view__vertical-scroller > .unity-scroller__high-button,
+.unity-scroll-view__vertical-scroller > .unity-scroller__low-button {
+    background-color: rgb(13, 13, 8);
+    border-color: rgb(42, 42, 26);
+    border-width: 1px;
+    height: 0;
+    display: none;
+}
+
+.unity-scroll-view__vertical-scroller > .unity-base-slider__tracker {
+    background-color: rgb(13, 13, 8);
+}

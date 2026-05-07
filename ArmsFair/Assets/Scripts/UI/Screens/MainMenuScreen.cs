@@ -60,20 +60,17 @@ namespace ArmsFair.UI
 
         private void OnCreateRoom()
         {
-            // TODO Phase 8: UIManager.Instance.GoTo("CreateRoom");
-            Debug.LogWarning("[MainMenuScreen] CreateRoom screen not yet built (Phase 8)");
+            UIManager.Instance.Push("CreateRoom");
         }
 
         private void OnJoinRoom()
         {
-            // TODO Phase 9: UIManager.Instance.GoTo("RoomList");
-            Debug.LogWarning("[MainMenuScreen] RoomList screen not yet built (Phase 9)");
+            UIManager.Instance.Push("RoomList");
         }
 
         private void OnProfile()
         {
-            // TODO Phase 10: UIManager.Instance.Push("Profile");
-            Debug.LogWarning("[MainMenuScreen] Profile screen not yet built (Phase 10)");
+            UIManager.Instance.Push("Profile");
         }
 
         private async void OnLogout()

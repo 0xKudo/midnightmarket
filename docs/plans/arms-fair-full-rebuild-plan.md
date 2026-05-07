@@ -3,6 +3,15 @@ _Written 2026-05-02. Execute every step in order. Never skip a step. When adding
 
 **COMPILE RULE: After every file written or modified, run a build check before moving to the next step. For server files: `dotnet build ArmsFair.Server`. For Unity files: use Unity MCP `GetConsoleLogs` to check for compiler errors. Do not proceed if there are errors.**
 
+## Infrastructure (updated 2026-05-06)
+
+- **Server:** `https://armsfair.laynekudo.com` — Hostinger VPS, Ubuntu 24.04, Docker Compose
+- **Database:** PostgreSQL running in Docker container on the VPS — this is the only database. Do not run a local PostgreSQL instance for development; always point at the VPS.
+- **Nginx** reverse proxy handles SSL termination and SignalR WebSocket upgrade (`Upgrade` + `Connection` headers, `proxy_read_timeout 86400s`)
+- **Unity client server URL:** `https://armsfair.laynekudo.com` hardcoded in AccountManager (SerializeField `serverUrl`) and LobbyApiClient
+
+---
+
 ## Critical Unity UI Toolkit Gotchas (learned 2026-05-03 / updated 2026-05-06)
 
 - **CSS custom properties (`var()`) do NOT reliably inherit** in Unity UI Toolkit. Never use `var(--color-text)` etc. in `terminal.uss`. Always use hardcoded `rgb()` values.
@@ -552,6 +561,33 @@ In `RegisterScreen.cs` `OnRegister()`: change `GoTo("Login")` → `GoTo("MainMen
 
 ## Phase 8 — Screen 4: Create Room Screen
 
+### Phase 8 Gotchas (pre-flight 2026-05-06)
+
+- **`JsonUtility` cannot deserialize `List<string>`** — declare `PlayerIds` as `string[]` in `RoomInfo`. `List<string>` silently deserializes as null.
+- **Server returns PascalCase record fields serialized as camelCase** — `System.Text.Json` defaults to camelCase for record types. Unity `[Serializable]` field names must be camelCase: `roomId`, `hostPlayerId`, `playerIds`, etc.
+- **Two different server response shapes**: `GET /api/rooms` returns `RoomSummary` (has `playerCount` int, no `playerIds`). `GET /api/rooms/{id}` and `POST /api/rooms` return `RoomRecord` (has `playerIds string[]`). Use two separate C# classes: `RoomSummary` and `RoomInfo`.
+- **NationDropdown choices must be set in C# Awake(), not UXML** — the ISO list is too long for UXML. Leave UXML `NationDropdown` with no choices attribute. Populate via `dropdown.choices = new List<string>{...}` in Awake.
+- **Pre-filling NationDropdown** — `dropdown.value = "XX — Country"` only works if the exact string is already in `.choices`. Set `.choices` first, then `.value`.
+- **`CreateBtn` navigates to `"PreGameLobby"` — screen not registered until Phase 11** — for now, log `Debug.LogWarning("TODO Phase 11: GoTo PreGameLobby")` and do NOT call `UIManager.Instance.GoTo("PreGameLobby")`. Add actual navigation in Phase 11.
+- **`BackBtn → Pop()`** — requires `MainMenuScreen` to navigate here via `Push("CreateRoom")` not `GoTo`. Update `MainMenuScreen.cs` `CreateRoomBtn.clicked` to call `UIManager.Instance.Push("CreateRoom")`.
+- **`voiceEnabled` not in UXML** — `CreateRoomRequest` on server has a `VoiceEnabled` bool. It has no default in the record but C# bool defaults to `false` when omitted from JSON. Send `voiceEnabled: false` in the payload to be explicit.
+- **Token in Authorization header** — all lobby endpoints require `Authorization: Bearer <token>`. Use `AccountManager.Instance.Token` (public property, confirmed). Set on the `UnityWebRequest` via `request.SetRequestHeader("Authorization", $"Bearer {token}")`.
+- **`LobbyApiClient` must use instance methods** — same bug as `AuthApiClient`. `PostAsync`/`GetAsync` must be instance methods so `_baseUrl` is accessible. Never make them static.
+- **`GameMode` enum must be sent as integer** — server has no `JsonStringEnumConverter`. Sending `"gameMode":"Realistic"` causes 400. Send integer: Realistic=1, EqualWorld=2, BlankSlate=3, HotWorld=4, Custom=5. In `CreateRoomPayload`, declare `gameMode` as `int` and map with a `Dictionary<string,int>`.
+- **Do NOT use `DropdownField` for styled selections** — Unity's DropdownField popup renders in a separate overlay outside USS scope and cannot be styled to match the terminal aesthetic. Use a `Button` showing the current value that opens a custom modal overlay instead.
+- **Modal overlay positioning** — use `left:0; top:0; right:0; bottom:0` on absolute-positioned overlays, NOT `width:100%; height:100%`. Percentage dimensions on absolute elements do not fill the parent reliably in Unity UI Toolkit.
+- **ScrollView height in modals** — parent panel needs explicit pixel `height` + `overflow:hidden`. Set ScrollView height in BOTH UXML and C# (call `_choiceList.style.height = new StyleLength(Xf)` when opening the modal). `flex-grow:1` alone is unreliable.
+- **Search bar** — only show for long lists (nations). Short lists (slots 2-6, timers, game modes) do not need search. Control via `showSearch` bool parameter on `OpenModal()`.
+- **Home Nation removed from CreateRoomScreen** — belongs in ProfileScreen (Phase 10) with company name. Do not add it back here.
+- **Nations use ISO 3166-1 alpha-3 codes** — format `"USA — United States"` (3-letter code, not 2-letter). ~155 countries in CreateRoomScreen.cs, organised by region.
+- **scrollbar.uss must use hardcoded RGB** — the original file used `var()` references which don't resolve. All scrollbar USS rules must use `rgb()` values. Arrow buttons hidden with `display:none`.
+
+**⚠ PHASE 8 STATUS: COMPLETE** ✓
+- LobbyApiClient.cs — create/list/get/join rooms, Bearer auth, RoomInfo + RoomSummary response types
+- CreateRoomScreen.uxml + CreateRoomScreen.cs — modal-based selections, toggle buttons, posts to `/api/rooms`
+- CreateBtn logs `TODO Phase 11: GoTo PreGameLobby with roomId=...` on success
+- MainMenuScreen updated to use `Push("CreateRoom")`
+
 ### 8.1 CreateRoomScreen UXML
 **Create:** `ArmsFair/Assets/Scripts/UI/UXML/CreateRoomScreen.uxml`
 ```xml
@@ -568,12 +604,12 @@ In `RegisterScreen.cs` `OnRegister()`: change `GoTo("Login")` → `GoTo("MainMen
       <ui:Label text="PLAYER SLOTS (2–6)" class="field__label" />
       <ui:SliderInt name="SlotsSlider" low-value="2" high-value="6" value="4" class="field__input" />
       <ui:Label text="TIMER PRESET" class="field__label" />
-      <ui:DropdownField name="TimerDropdown" choices="60s,90s,120s,180s" class="field__input" />
+      <ui:DropdownField name="TimerDropdown" class="field__input" />
       <ui:Label text="GAME MODE" class="field__label" />
-      <ui:DropdownField name="GameModeDropdown" choices="Realistic,EqualWorld,BlankSlate,HotWorld" class="field__input" />
+      <ui:DropdownField name="GameModeDropdown" class="field__input" />
       <ui:Toggle name="PrivateToggle" label="PRIVATE ROOM" class="field__input" />
       <ui:Toggle name="AiFillToggle"  label="AI FILL-IN"   class="field__input" />
-      <ui:Label name="ErrorLabel" text="" class="error-label" />
+      <ui:Label name="ErrorLabel" text="" class="error-label" style="display:none;" />
       <ui:Button name="CreateBtn" text="CREATE" class="btn btn--full" />
       <ui:Button name="BackBtn"   text="BACK"   class="btn btn--full" />
     </ui:VisualElement>
@@ -583,76 +619,120 @@ In `RegisterScreen.cs` `OnRegister()`: change `GoTo("Login")` → `GoTo("MainMen
 
 ### 8.2 LobbyApiClient
 **Create:** `ArmsFair/Assets/Scripts/Network/LobbyApiClient.cs`
-- All calls use `UnityWebRequest` (not HttpClient)
-- `CreateRoomAsync(CreateRoomPayload payload, string token) → RoomInfo`
-- `ListRoomsAsync(string token) → List<RoomInfo>`
-- `GetRoomAsync(string id, string token) → RoomInfo`
-- `JoinRoomAsync(string id, string token) → RoomInfo`
-- `[Serializable]` classes: `CreateRoomPayload`, `RoomInfo` (matching server fields exactly)
-- `RoomInfo` fields: `roomId`, `roomName`, `hostPlayerId`, `hostUsername`, `playerIds`, `playerSlots`, `timerPreset` (string), `isPrivate`, `aiFillIn`, `gameMode`, `inviteCode`, `isStarted`
+- All calls use `UnityWebRequest` (not HttpClient) — instance methods only, never static
+- Constructor takes `string baseUrl`
+- `CreateRoomAsync(CreateRoomPayload payload) → RoomInfo` — POST `/api/rooms`, returns `RoomInfo` (full RoomRecord shape)
+- `ListRoomsAsync() → RoomSummary[]` — GET `/api/rooms`, returns `RoomSummary[]` (different shape — has `playerCount` not `playerIds`)
+- `GetRoomAsync(string id) → RoomInfo` — GET `/api/rooms/{id}`
+- `JoinRoomAsync(string id) → RoomInfo` — POST `/api/rooms/{id}/join`
+- Token read from `AccountManager.Instance.Token` internally — set as `Authorization: Bearer <token>` header on every request
+- `[Serializable] class RoomInfo` fields (camelCase, matching server RoomRecord): `roomId`, `roomName`, `hostPlayerId`, `hostUsername`, `timerPreset`, `inviteCode`, `gameMode`, `playerSlots`, `isPrivate`, `aiFillIn`, `isStarted`, `playerIds` as `string[]`
+- `[Serializable] class RoomSummary` fields (camelCase, matching server RoomSummary): `roomId`, `roomName`, `hostUsername`, `gameMode`, `timerPreset`, `playerSlots`, `playerCount`, `isPrivate`, `isStarted`, `inviteCode`
+- `[Serializable] class CreateRoomPayload` fields: `roomName`, `playerSlots`, `timerPreset`, `voiceEnabled` (always false), `aiFillIn`, `isPrivate`, `gameMode` (string)
+- For array responses (`ListRoomsAsync`): wrap in `{"items":[...]}` on the server side OR use a `RoomSummaryList` wrapper class with a `items` field — `JsonUtility` cannot deserialize a bare JSON array. **Use the wrapper approach client-side.**
 
 ### 8.3 CreateRoomScreen MonoBehaviour
 **Create:** `ArmsFair/Assets/Scripts/UI/Screens/CreateRoomScreen.cs`
-- Populate NationDropdown from embedded ISO-3166 list (hardcoded array of `"FR — France"` etc.)
-- Populate CompanyDropdown with 10 preset arms company names
-- On Show: pre-fill nation from `AccountManager.Instance.LocalPlayer.HomeNation`
-- `CreateBtn.clicked` → build `CreateRoomPayload`, POST via `LobbyApiClient`, navigate to `PreGameLobby` with room ID
-- `BackBtn.clicked` → Pop
-- `timerPreset` is a string (`"60s"` not `60`) — use DropdownField value directly
+- In Awake: populate all dropdowns via `.choices` lists:
+  - `NationDropdown.choices` = hardcoded list of `"ISO — Full Name"` strings (20–30 key nations)
+  - `CompanyDropdown.choices` = 10 preset arms company names
+  - `TimerDropdown.choices` = `new List<string>{"60s","90s","120s","180s"}` (set `.value = "90s"` as default)
+  - `GameModeDropdown.choices` = `new List<string>{"Realistic","EqualWorld","BlankSlate","HotWorld"}`
+- In `Show()`: pre-fill nation from `AccountManager.Instance.LocalPlayer?.HomeNation` — find matching entry in NationDropdown.choices by prefix, fall back to choices[0]
+- `CreateBtn.clicked` → validate RoomNameField not empty → build `CreateRoomPayload` → `await LobbyApiClient.CreateRoomAsync(payload)` → on success log `Debug.LogWarning("TODO Phase 11: GoTo PreGameLobby with roomId")` — do NOT navigate yet
+- `BackBtn.clicked` → `UIManager.Instance.Pop()`
+- ErrorLabel: use `style.display = DisplayStyle.Flex/None` — never AddToClassList
+- `timerPreset`: read `TimerDropdown.value` directly (already a string like `"90s"`)
+- `gameMode`: read `GameModeDropdown.value` directly (string passed to server)
 - Registers as `"CreateRoom"`
+- Also update `MainMenuScreen.cs` `CreateRoomBtn.clicked` to use `Push("CreateRoom")` not `GoTo`
 
-**⚠ CONFIRM:** Room created, server returns roomId, navigates to PreGameLobby.
+**⚠ CONFIRM:** Room created, server returns roomId logged to console, Back returns to MainMenu.
 
 ---
 
-## Phase 9 — Screen 5: Room List Screen
+## Phase 9 — Screen 5: Room List Screen ✅ COMPLETE (2026-05-06)
+
+### Phase 9 Gotchas (pre-flight 2026-05-06)
+
+- **`RoomSummary` has `playerCount` (int), NOT `playerIds`** — `GET /api/rooms` returns the summary shape. Row label must read `room.playerCount` not `room.playerIds.Length`. Do NOT use `RoomInfo` here.
+- **UXML uses old USS class names** — the original spec UXML used `.screen`, `.panel`, `.btn` etc. which are not in the actual USS files. Follow the hardcoded-RGB pattern from CreateRoomScreen/LoginScreen instead. Import variables.uss + terminal.uss + scrollbar.uss in UXML.
+- **Room rows built entirely in C#** — same pattern as `PopulateChoiceList` in CreateRoomScreen. Do not try to define row structure in UXML. Clear the ScrollView, loop `RoomSummary[]`, create a `VisualElement` row per room with a Label + JOIN Button, style inline.
+- **`Show()` must be `async void`** to `await ListRoomsAsync()`. Guard with a loading/empty state label so the ScrollView isn't blank while fetching.
+- **JOIN navigates to `"PreGameLobby"` — not registered until Phase 11** — log `Debug.LogWarning("TODO Phase 11: GoTo PreGameLobby with roomId=...")` and do NOT call GoTo. Same pattern as CreateRoomScreen's OnCreate success path.
+- **Join by invite code uses `JoinRoomAsync(code)`** — the server's `/api/rooms/{id}/join` accepts either roomId or inviteCode. Pass the TextField value directly; same TODO log on success.
+- **`_lobby` instance must be created in Awake** — same as CreateRoomScreen (`new LobbyApiClient("https://armsfair.laynekudo.com")`). Do not use static methods.
+- **ScrollView height** — set explicit pixel height in UXML (`height:400px`) and `overflow:hidden` on the parent panel. Do not rely on `flex-grow:1` alone.
+- **Update `MainMenuScreen.cs`** — `JoinRoomBtn.clicked` currently logs a TODO. Change to `UIManager.Instance.Push("RoomList")`.
 
 ### 9.1 RoomListScreen UXML
 **Create:** `ArmsFair/Assets/Scripts/UI/UXML/RoomListScreen.uxml`
-```xml
-<ui:UXML xmlns:ui="UnityEngine.UIElements">
-  <ui:VisualElement name="RoomListScreen" class="screen" style="display:none;">
-    <ui:VisualElement class="panel panel--wide">
-      <ui:Label text="OPEN ROOMS" class="screen__title" />
-      <ui:TextField name="InviteCodeField" placeholder-text="ENTER INVITE CODE..." class="field__input" />
-      <ui:Button name="JoinByCodeBtn" text="JOIN BY CODE" class="btn" />
-      <ui:VisualElement class="divider" />
-      <ui:ScrollView name="RoomList" />
-      <ui:Button name="RefreshBtn" text="REFRESH" class="btn" />
-      <ui:Button name="BackBtn"    text="BACK"    class="btn btn--full" />
-    </ui:VisualElement>
-  </ui:VisualElement>
-</ui:UXML>
-```
+- Import variables.uss, terminal.uss, scrollbar.uss
+- Root element: `name="RoomListScreen"` — `display:none; position:absolute; left:0; top:0; width:100%; height:100%` — centered column
+- FormPanel: `width:480px` — slightly wider than CreateRoom to fit room rows
+- Header: "OPEN ROOMS" title + subtitle "SELECT AN ENGAGEMENT"
+- Divider line
+- Join-by-code row: `InviteCodeField` TextField + `JoinByCodeBtn` Button — side by side (`flex-direction:row`)
+- Divider line
+- Status label `name="StatusLabel"` — shows "LOADING..." / "NO OPEN ROOMS" / empty
+- `ScrollView name="RoomList"` — `vertical-scroller-visibility:AlwaysVisible; height:360px; overflow:hidden`
+- Bottom buttons: `RefreshBtn` + `BackBtn` — full width, stacked
 
 ### 9.2 RoomListScreen MonoBehaviour
 **Create:** `ArmsFair/Assets/Scripts/UI/Screens/RoomListScreen.cs`
-- On Show: call `LobbyApiClient.ListRoomsAsync` and populate `ScrollView` with room rows
-- Each row: Label `"{roomName} ({playerIds.Count}/{playerSlots})"` + JOIN button
-- JOIN button → calls `LobbyApiClient.JoinRoomAsync(room.roomId)` → GoTo PreGameLobby
-- `JoinByCodeBtn.clicked` → calls `LobbyApiClient.JoinRoomAsync(inviteCodeField.value)` → GoTo PreGameLobby
-- `RefreshBtn.clicked` → re-runs list fetch
-- `BackBtn.clicked` → Pop
-- Registers as `"RoomList"`
+- Copy Awake pattern from CreateRoomScreen (docRoot fill, Q elements, Register as "RoomList")
+- `_lobby = new LobbyApiClient("https://armsfair.laynekudo.com")` in Awake
+- `Show()` is `async void`: set `StatusLabel.text = "LOADING..."`, clear RoomList, call `await _lobby.ListRoomsAsync()`, then call `PopulateRoomList(rooms)`
+- `PopulateRoomList(RoomSummary[] rooms)`: if empty → `StatusLabel.text = "NO OPEN ROOMS"`. Otherwise hide StatusLabel and build one row per room:
+  - Row: `VisualElement` flex-row, space-between, border `rgb(58,58,42)`, padding 8px, margin-bottom 4px
+  - Left: `Label` — `"{room.roomName}  [{room.playerCount}/{room.playerSlots}]  {room.gameMode}"` — color `rgb(212,207,184)`
+  - Right: `Button` — "JOIN" — green border `rgb(58,90,42)`, color `rgb(138,184,112)` — clicked → `OnJoin(room.roomId)`
+- `OnJoin(string roomId)` is `async void`: call `await _lobby.JoinRoomAsync(roomId)` → `Debug.LogWarning($"TODO Phase 11: GoTo PreGameLobby with roomId={roomId}")`; catch → show error
+- `JoinByCodeBtn.clicked` → `OnJoin(_inviteCodeField.value.Trim())`
+- `RefreshBtn.clicked` → call `Show()` (re-triggers the async fetch)
+- `BackBtn.clicked` → `UIManager.Instance.Pop()`
+- ErrorLabel: shown on join failure; hidden on Show()
 
-**⚠ CONFIRM:** Room list populates, join by code works, navigates to PreGameLobby.
+### 9.3 Update MainMenuScreen
+In `MainMenuScreen.cs` `OnJoinRoom()`: change `Debug.LogWarning("TODO Phase 9...")` → `UIManager.Instance.Push("RoomList")`
+
+### 9.4 Register RoomListScreen in Bootstrap
+- Add child GameObject `RoomListScreen` under NetworkManager
+- Add UIDocument component → assign RoomListScreen.uxml + Assets/PanelSettings.asset
+- Add RoomListScreen MonoBehaviour
+- Save scene, check console before play mode
+
+**⚠ CONFIRM:** Room list populates with rooms from VPS, JOIN logs TODO with roomId, join by code logs TODO, Refresh re-fetches, Back returns to MainMenu.
+
+**STATUS: CONFIRMED WORKING** ✓
+- RoomListScreen.uxml + RoomListScreen.cs created
+- Bootstrap scene wired via Unity MCP (GameObject + UIDocument + MonoBehaviour)
+- Duplicate empty MainMenuScreen GameObject cleaned up
+- MainMenuScreen.OnJoinRoom updated to Push("RoomList")
+- async Show() fetches from VPS, displays rows with player count from RoomSummary.playerCount
 
 ---
 
 ## Phase 10 — Screen 6: Profile Screen
 
+### Phase 10 Notes (updated 2026-05-06)
+Home Nation selection was originally in CreateRoomScreen but was moved here — it belongs with the company/operative profile setup, not room configuration.
+
 ### 10.1 ProfileScreen UXML
 **Create:** `ArmsFair/Assets/Scripts/UI/UXML/ProfileScreen.uxml`
-- Shows: Username, HomeNation, CompanyName, Capital, Reputation, SharePrice, PeaceCredits, LatentRisk, Status
+- Shows: Username, HomeNation (display), CompanyName (display), Capital, Reputation, SharePrice, PeaceCredits, LatentRisk, Status
+- If HomeNation or CompanyName not yet set: show a setup section with modal selectors (same modal pattern as CreateRoomScreen)
 - Single BACK button → Pop
 
 ### 10.2 ProfileScreen MonoBehaviour
 **Create:** `ArmsFair/Assets/Scripts/UI/Screens/ProfileScreen.cs`
 - On Show: read `AccountManager.Instance.LocalPlayer` and bind labels
+- Home Nation selector: reuse the same Nations list + modal pattern from CreateRoomScreen (ISO alpha-3 codes, search bar, ~155 countries)
+- Company Name: free text field the player types (not a dropdown — player creates their own brokerage name per the game spec)
 - `BackBtn.clicked` → Pop
 - Registers as `"Profile"`
 
-**⚠ CONFIRM:** Profile screen shows correct data, Back returns to previous screen.
+**⚠ CONFIRM:** Profile screen shows correct data, Home Nation can be selected, Back returns to previous screen.
 
 ---
 

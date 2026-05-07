@@ -60,9 +60,10 @@ namespace ArmsFair.Auth
             Token       = result.Token;
             LocalPlayer = new PlayerProfile
             {
-                Id         = result.PlayerId,
-                Username   = result.Username,
-                HomeNation = result.HomeNationIso
+                Id          = result.PlayerId,
+                Username    = result.Username,
+                HomeNation  = result.HomeNationIso,
+                CompanyName = result.CompanyName,
             };
             IsLoggedIn = true;
             PlayerPrefs.SetString(TokenKey, Token);
@@ -77,15 +78,21 @@ namespace ArmsFair.Auth
             Token       = result.Token;
             LocalPlayer = new PlayerProfile
             {
-                Id         = result.PlayerId,
-                Username   = result.Username,
-                HomeNation = result.HomeNationIso
+                Id          = result.PlayerId,
+                Username    = result.Username,
+                HomeNation  = result.HomeNationIso,
+                CompanyName = result.CompanyName,
             };
             IsLoggedIn = true;
             PlayerPrefs.SetString(TokenKey, Token);
             PlayerPrefs.Save();
             await GameClient.Instance.ConnectAsync(Token);
             OnLoggedIn.Invoke();
+        }
+
+        public async Task SaveProfileAsync(string homeNationIso, string companyName)
+        {
+            LocalPlayer = await _api.PatchProfileAsync(Token, homeNationIso, companyName);
         }
 
         public async Task LogOutAsync()

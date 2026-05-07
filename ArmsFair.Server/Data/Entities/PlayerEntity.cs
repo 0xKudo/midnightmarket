@@ -8,6 +8,7 @@ public class PlayerEntity
     public string?   PasswordHash       { get; set; }
     public string?   SteamId            { get; set; }
     public string    HomeNationIso      { get; set; } = "USA";
+    public string?   CompanyName        { get; set; }
     public DateTime  CreatedAt          { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt        { get; set; }
     public DateTime? UsernameChangedAt  { get; set; }

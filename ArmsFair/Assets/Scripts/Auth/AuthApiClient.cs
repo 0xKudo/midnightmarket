@@ -13,13 +13,15 @@ namespace ArmsFair.Auth
         public string PlayerId      { get; }
         public string Username      { get; }
         public string HomeNationIso { get; }
+        public string CompanyName   { get; }
 
-        public AuthResult(string token, string playerId, string username, string homeNationIso)
+        public AuthResult(string token, string playerId, string username, string homeNationIso, string companyName)
         {
             Token         = token;
             PlayerId      = playerId;
             Username      = username;
             HomeNationIso = homeNationIso;
+            CompanyName   = companyName;
         }
     }
 
@@ -29,6 +31,7 @@ namespace ArmsFair.Auth
         public string id;
         public string username;
         public string homeNationIso;
+        public string companyName;
     }
 
     [Serializable]
@@ -43,7 +46,7 @@ namespace ArmsFair.Auth
     {
         public string id;
         public string username;
-        public string homeNation;
+        public string homeNationIso;
         public string companyName;
         public int    capital;
         public int    reputation;
@@ -66,14 +69,14 @@ namespace ArmsFair.Auth
         {
             var json = $"{{\"usernameOrEmail\":\"{usernameOrEmail}\",\"password\":\"{password}\"}}";
             var r    = await PostAsync<AuthResponse>("/api/auth/login", json);
-            return new AuthResult(r.token, r.profile?.id, r.profile?.username, r.profile?.homeNationIso);
+            return new AuthResult(r.token, r.profile?.id, r.profile?.username, r.profile?.homeNationIso, r.profile?.companyName);
         }
 
         public async Task<AuthResult> RegisterAsync(string username, string email, string password)
         {
             var json = $"{{\"username\":\"{username}\",\"email\":\"{email}\",\"password\":\"{password}\"}}";
             var r    = await PostAsync<AuthResponse>("/api/auth/register", json);
-            return new AuthResult(r.token, r.profile?.id, r.profile?.username, r.profile?.homeNationIso);
+            return new AuthResult(r.token, r.profile?.id, r.profile?.username, r.profile?.homeNationIso, r.profile?.companyName);
         }
 
         public async Task<PlayerProfile> GetMeAsync(string token)
@@ -83,7 +86,7 @@ namespace ArmsFair.Auth
             {
                 Id           = r.id,
                 Username     = r.username,
-                HomeNation   = r.homeNation,
+                HomeNation   = r.homeNationIso,
                 CompanyName  = r.companyName,
                 Capital      = r.capital,
                 Reputation   = r.reputation,
@@ -91,6 +94,31 @@ namespace ArmsFair.Auth
                 PeaceCredits = r.peaceCredits,
                 LatentRisk   = r.latentRisk,
                 Status       = string.IsNullOrEmpty(r.status) ? "active" : r.status
+            };
+        }
+
+        public async Task<PlayerProfile> PatchProfileAsync(string token, string homeNationIso, string companyName)
+        {
+            var json = $"{{\"homeNationIso\":\"{homeNationIso}\",\"companyName\":\"{companyName}\"}}";
+            var url  = _baseUrl + "/api/auth/profile";
+            var request = new UnityWebRequest(url, "PATCH");
+            request.uploadHandler   = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("Authorization", $"Bearer {token}");
+
+            await request.SendWebRequest();
+
+            if (request.result != UnityWebRequest.Result.Success)
+                throw new Exception($"{request.responseCode}: {request.error} — {request.downloadHandler.text}");
+
+            var r = JsonUtility.FromJson<ProfileResponse>(request.downloadHandler.text);
+            return new PlayerProfile
+            {
+                Id          = r.id,
+                Username    = r.username,
+                HomeNation  = r.homeNationIso,
+                CompanyName = r.companyName,
             };
         }
 

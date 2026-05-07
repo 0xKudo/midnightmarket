@@ -100,7 +100,7 @@ app.MapPost("/api/auth/register", async (RegisterRequest req, AuthService auth) 
         return Results.Ok(new
         {
             token,
-            profile = new { id = player.Id, username = player.Username, homeNationIso = player.HomeNationIso }
+            profile = new { id = player.Id, username = player.Username, homeNationIso = player.HomeNationIso, companyName = player.CompanyName }
         });
     }
     catch (ArgumentException ex)       { return Results.BadRequest(new { error = ex.Message }); }
@@ -116,7 +116,7 @@ app.MapPost("/api/auth/login", async (LoginRequest req, AuthService auth) =>
     return Results.Ok(new
     {
         token,
-        profile = new { id = player.Id, username = player.Username, homeNationIso = player.HomeNationIso }
+        profile = new { id = player.Id, username = player.Username, homeNationIso = player.HomeNationIso, companyName = player.CompanyName }
     });
 });
 
@@ -134,6 +134,30 @@ app.MapGet("/api/auth/me", async (HttpContext ctx, AuthService auth) =>
         id            = player.Id,
         username      = player.Username,
         homeNationIso = player.HomeNationIso,
+        companyName   = player.CompanyName,
+        createdAt     = player.CreatedAt
+    });
+}).RequireAuthorization();
+
+app.MapPatch("/api/auth/profile", async (UpdateProfileRequest req, HttpContext ctx, AuthService auth, ArmsFairDb db) =>
+{
+    var authHeader = ctx.Request.Headers.Authorization.FirstOrDefault();
+    var token = authHeader?.StartsWith("Bearer ") == true ? authHeader[7..] : null;
+    if (token is null) return Results.Unauthorized();
+
+    var player = await auth.ValidateTokenAsync(token);
+    if (player is null) return Results.Unauthorized();
+
+    if (req.HomeNationIso is not null) player.HomeNationIso = req.HomeNationIso;
+    if (req.CompanyName   is not null) player.CompanyName   = req.CompanyName;
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new
+    {
+        id            = player.Id,
+        username      = player.Username,
+        homeNationIso = player.HomeNationIso,
+        companyName   = player.CompanyName,
         createdAt     = player.CreatedAt
     });
 }).RequireAuthorization();
@@ -202,6 +226,7 @@ app.Run();
 // ── Request types ─────────────────────────────────────────────────────────────
 record RegisterRequest(string Username, string Email, string Password);
 record LoginRequest(string UsernameOrEmail, string Password);
+record UpdateProfileRequest(string? HomeNationIso, string? CompanyName);
 record CreateRoomRequest(
     string?  RoomName,
     int      PlayerSlots,

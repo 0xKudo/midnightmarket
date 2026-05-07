@@ -1,0 +1,50 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+  <ui:Style src="../USS/variables.uss" />
+  <ui:Style src="../USS/terminal.uss" />
+  <ui:Style src="../USS/scrollbar.uss" />
+  <ui:VisualElement name="CreateRoomScreen" class="screen-root" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background-color:rgb(13,13,13);">
+
+    <!-- Main form panel -->
+    <ui:VisualElement name="FormPanel" class="term-panel term-panel--medium" style="background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px; flex-direction:column; width:420px;">
+      <ui:Label text="CREATE ROOM" class="term-title" style="font-size:15px; color:rgb(212,207,184); -unity-font-style:bold; margin-bottom:4px;" />
+      <ui:Label text="CONFIGURE YOUR ENGAGEMENT" style="font-size:9px; color:rgb(138,134,112); margin-bottom:16px; white-space:nowrap;" />
+      <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
+
+      <ui:Label text="ROOM NAME" style="font-size:9px; color:rgb(138,134,112); margin-bottom:4px;" />
+      <ui:TextField name="RoomNameField" style="margin-bottom:12px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px;" />
+
+      <ui:Label text="PLAYER SLOTS" style="font-size:9px; color:rgb(138,134,112); margin-bottom:4px;" />
+      <ui:Button name="SlotsBtn" text="4 PLAYERS" class="term-btn" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; padding:6px 10px; margin-bottom:12px; font-size:12px; -unity-text-align:middle-left; white-space:nowrap;" />
+
+      <ui:Label text="TIMER PRESET" style="font-size:9px; color:rgb(138,134,112); margin-bottom:4px;" />
+      <ui:Button name="TimerBtn" text="90s" class="term-btn" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; padding:6px 10px; margin-bottom:12px; font-size:12px; -unity-text-align:middle-left; white-space:nowrap;" />
+
+      <ui:Label text="GAME MODE" style="font-size:9px; color:rgb(138,134,112); margin-bottom:4px;" />
+      <ui:Button name="GameModeBtn" text="Realistic" class="term-btn" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; padding:6px 10px; margin-bottom:12px; font-size:12px; -unity-text-align:middle-left; white-space:nowrap;" />
+
+      <ui:VisualElement style="flex-direction:row; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <ui:Label text="PRIVATE ROOM" style="font-size:9px; color:rgb(138,134,112);" />
+        <ui:Button name="PrivateBtn" text="NO" class="term-btn" style="color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding:4px 12px; margin-bottom:0; font-size:11px; -unity-text-align:middle-center; min-width:48px;" />
+      </ui:VisualElement>
+      <ui:VisualElement style="flex-direction:row; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <ui:Label text="AI FILL-IN" style="font-size:9px; color:rgb(138,134,112);" />
+        <ui:Button name="AiFillBtn" text="NO" class="term-btn" style="color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding:4px 12px; margin-bottom:0; font-size:11px; -unity-text-align:middle-center; min-width:48px;" />
+      </ui:VisualElement>
+
+      <ui:Label name="ErrorLabel" text="" style="color:rgb(192,144,144); font-size:10px; display:none; margin-bottom:8px;" />
+      <ui:Button name="CreateBtn" text="CREATE ROOM" class="term-btn" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center;" />
+      <ui:Button name="BackBtn" text="BACK" class="term-btn" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:0; font-size:13px; -unity-text-align:middle-center;" />
+    </ui:VisualElement>
+
+    <!-- Choice modal overlay — shown when any select button is clicked -->
+    <ui:VisualElement name="ChoiceModal" style="display:none; position:absolute; left:0; top:0; right:0; bottom:0; background-color:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
+      <ui:VisualElement name="ChoicePanel" style="background-color:rgb(17,17,8); border-color:rgb(90,90,58); border-width:1px; padding-top:16px; padding-bottom:16px; padding-left:16px; padding-right:16px; width:380px; height:460px; overflow:hidden; flex-direction:column;">
+        <ui:Label name="ChoiceTitle" text="SELECT" style="font-size:9px; color:rgb(138,134,112); margin-bottom:8px; white-space:nowrap; flex-shrink:0;" />
+        <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:8px; flex-shrink:0;" />
+        <ui:TextField name="ChoiceSearch" style="margin-bottom:8px; flex-shrink:0; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; font-size:11px;" />
+        <ui:ScrollView name="ChoiceList" vertical-scroller-visibility="AlwaysVisible" style="flex-grow:1; flex-shrink:1; overflow:hidden;" />
+      </ui:VisualElement>
+    </ui:VisualElement>
+
+  </ui:VisualElement>
+</ui:UXML>
