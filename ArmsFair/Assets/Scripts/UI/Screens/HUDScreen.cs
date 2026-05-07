@@ -237,27 +237,26 @@ namespace ArmsFair.UI
             if (_root == null || _root.style.display == DisplayStyle.None) return;
             if (_lastState == null) return;
 
-            // Update _lastState so the next Procurement phase reads correct capital
+            // Sum all profit entries per player — multi-weapon orders produce one entry per weapon
             var updatedPlayers = _lastState.Players.Select(p =>
             {
-                var profit = msg.ProfitUpdates.FirstOrDefault(u => u.PlayerId == p.Id);
-                var rep    = msg.ReputationUpdates.FirstOrDefault(u => u.PlayerId == p.Id);
-                var share  = msg.SharePriceUpdates.FirstOrDefault(u => u.PlayerId == p.Id);
+                var totalEarned = msg.ProfitUpdates.Where(u => u.PlayerId == p.Id).Sum(u => u.ProfitEarned);
+                var rep         = msg.ReputationUpdates.FirstOrDefault(u => u.PlayerId == p.Id);
+                var share       = msg.SharePriceUpdates.FirstOrDefault(u => u.PlayerId == p.Id);
                 return p with
                 {
-                    Capital    = profit != null ? profit.NewCapital  : p.Capital,
-                    Reputation = rep    != null ? rep.NewReputation  : p.Reputation,
-                    SharePrice = share  != null ? share.NewPrice     : p.SharePrice,
+                    Capital    = p.Capital + totalEarned,
+                    Reputation = rep   != null ? rep.NewReputation : p.Reputation,
+                    SharePrice = share != null ? share.NewPrice    : p.SharePrice,
                 };
             }).ToList();
             _lastState = _lastState with { Players = updatedPlayers };
 
             var localId = AccountManager.Instance.LocalPlayer?.Id;
-            foreach (var p in msg.ProfitUpdates)
-            {
-                if (p.PlayerId != localId) continue;
-                _capitalLabel.text = $"${p.NewCapital}M";
-            }
+            var me = _lastState.Players.FirstOrDefault(p => p.Id == localId);
+            if (me != null && msg.ProfitUpdates.Any(u => u.PlayerId == localId))
+                _capitalLabel.text = $"${me.Capital}M";
+
             foreach (var r in msg.ReputationUpdates)
             {
                 if (r.PlayerId != localId) continue;
@@ -831,7 +830,7 @@ namespace ArmsFair.UI
                 if (entry == null) continue;
                 var cat    = kv.Key;
                 var maxQty = kv.Value;
-                pending[cat] = 0;
+                pending[cat] = _salesOrder.TryGetValue(cat, out var prev) ? Math.Min(prev, maxQty) : 0;
 
                 var row = new VisualElement();
                 row.style.flexDirection     = FlexDirection.Row;
@@ -848,7 +847,7 @@ namespace ArmsFair.UI
                 nameLabel.style.fontSize = 13;
                 nameLabel.style.flexGrow = 1;
 
-                var qtyLabel = new Label("0");
+                var qtyLabel = new Label(pending[cat].ToString());
                 qtyLabel.style.color          = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
                 qtyLabel.style.fontSize       = 14;
                 qtyLabel.style.width          = 24;
@@ -959,7 +958,6 @@ namespace ArmsFair.UI
 
             var overlay  = MakeModalOverlay();
             var panel    = MakeModalPanel(320);
-            panel.style.overflow = Overflow.Hidden;
 
             var title    = MakeModalTitle("Select Target Country");
             panel.Add(title);
@@ -976,10 +974,13 @@ namespace ArmsFair.UI
             search.style.fontSize        = 13;
             panel.Add(search);
 
+            var listRow = new VisualElement();
+            listRow.style.flexShrink = 0;
             var scroll = new ScrollView();
             scroll.style.height   = 220;
             scroll.style.flexGrow = 0;
-            panel.Add(scroll);
+            listRow.Add(scroll);
+            panel.Add(listRow);
 
             void Populate(string filter)
             {
@@ -1009,10 +1010,12 @@ namespace ArmsFair.UI
             Populate("");
             search.RegisterValueChangedCallback(evt => Populate(evt.newValue));
 
+            var cancelRow = new VisualElement();
+            cancelRow.style.marginTop  = 8;
+            cancelRow.style.flexShrink = 0;
             var cancel = MakeModalCancelBtn(() => _root.Remove(overlay));
-            cancel.style.flexShrink = 0;
-            cancel.style.marginTop  = 8;
-            panel.Add(cancel);
+            cancelRow.Add(cancel);
+            panel.Add(cancelRow);
             overlay.Add(panel);
             _root.Add(overlay);
         }
