@@ -713,7 +713,7 @@ In `MainMenuScreen.cs` `OnJoinRoom()`: change `Debug.LogWarning("TODO Phase 9...
 
 ---
 
-## Phase 10 — Screen 6: Profile Screen
+## Phase 10 — Screen 6: Profile Screen ✅ COMPLETE (2026-05-06)
 
 ### Phase 10 Notes (updated 2026-05-06)
 Home Nation selection was originally in CreateRoomScreen but was moved here — it belongs with the company/operative profile setup, not room configuration.
@@ -733,6 +733,17 @@ Home Nation selection was originally in CreateRoomScreen but was moved here — 
 - Registers as `"Profile"`
 
 **⚠ CONFIRM:** Profile screen shows correct data, Home Nation can be selected, Back returns to previous screen.
+
+**STATUS: CONFIRMED WORKING** ✓
+- ProfileScreen.uxml + ProfileScreen.cs created
+- NationsList.cs extracted as shared static (~155 countries, ISO alpha-3)
+- CompanyName added to PlayerEntity + all auth responses on server
+- POST /api/auth/profile endpoint added (NOT PATCH — UnityWebRequest drops auth headers on PATCH)
+- Server endpoint reads player from ctx.User claims, not manual token re-validation
+- AddCompanyName EF migration applied on VPS
+- Success feedback is a modal popup with OK button (not inline label)
+- Bootstrap scene wired via Unity MCP
+- MainMenuScreen PROFILE button wired to Push("Profile")
 
 ---
 

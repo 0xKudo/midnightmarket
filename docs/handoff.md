@@ -6,43 +6,57 @@
 
 ## Current State
 
-### Server (ArmsFair.Server) — builds clean, 0 errors
+### Server (ArmsFair.Server) — builds clean, deployed to VPS
 
 **Done:**
-- GameStateService singleton — owns all in-memory game state (extracted from GameHub static fields)
+- GameStateService singleton — owns all in-memory game state
 - PhaseOrchestrator — single authority for phase transitions, uses IServiceScopeFactory for scoped DB access
-- TickerService — calls PhaseOrchestrator.AdvanceForGameAsync on expiry, does NOT send PhaseStart directly
+- TickerService — calls PhaseOrchestrator.AdvanceForGameAsync on expiry
 - GameHub — all state via GameStateService, no static fields
 - AuthService — JWT + BCrypt, register/login/me endpoints
 - LobbyService — create/join/list rooms
 - SeedService — ACLED + GPI, all 5 game modes, Redis cache
 - Program.cs — correct singleton/scoped lifetimes
+- `POST /api/auth/profile` — updates HomeNationIso + CompanyName, reads player from `ctx.User` claims (not manual token re-validation)
+- `CompanyName` added to PlayerEntity + all auth responses (register/login/me)
+- `AddCompanyName` EF migration run on VPS — column exists in DB
 
 **Known gaps (server):**
-- EF Core migrations never run — DB schema not created
 - StatsService — lifetime stat updates at game end not wired
 - ChatRepository — chat not persisted to DB
 - Treaty system stubbed (0 values in PhaseOrchestrator)
 - No `JsonStringEnumConverter` registered — enum fields in request bodies must be sent as integers, not strings
 
+**Critical server gotcha — profile endpoint pattern:**
+- Auth'd endpoints must read player identity from `ctx.User` claims, NOT by manually re-reading the Authorization header and calling `ValidateTokenAsync`
+- Manual re-validation conflicts with `.RequireAuthorization()` JWT middleware and causes 401
+- Correct pattern: `ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? ctx.User.FindFirst("sub")?.Value` → parse Guid → `db.Players.FindAsync(id)`
+- See `/api/rooms` POST and `/api/auth/profile` POST for reference implementations
+
+**Critical server gotcha — HTTP methods:**
+- `UnityWebRequest` does NOT reliably send `Authorization` headers with `PATCH` requests — use `POST` for all profile/update endpoints
+- The profile update endpoint is `POST /api/auth/profile` (not PATCH)
+
 ---
 
-### Unity Client — Bootstrap scene, auth layer, UIManager wired
+### Unity Client — Bootstrap scene, all pre-game screens complete
 
 **Done:**
-- AuthApiClient.cs — UnityWebRequest REST wrapper (login, register, getMe)
-- AccountManager.cs — singleton, PlayerPrefs token persistence, OnLoggedIn/OnLoggedOut events
+- AuthApiClient.cs — login, register, getMe, PatchProfileAsync (POST)
+- AccountManager.cs — singleton, PlayerPrefs token persistence, SaveProfileAsync
 - GameClient.cs — SignalR singleton, all server→client events wired
 - UnityMainThreadDispatcher.cs — marshals SignalR callbacks to main thread
 - UIManager.cs — singleton navigation (GoTo/Push/Pop), DefaultExecutionOrder(-100)
 - IScreen.cs — interface all screens implement
-- NetworkManagerBootstrap.cs — calls TryAutoLoginAsync, routes to Login or MainMenu, DefaultExecutionOrder(100)
-- LobbyApiClient.cs — UnityWebRequest REST wrapper (create/list/get/join rooms), instance methods, Bearer token from AccountManager.Instance.Token
-- LoginScreen.uxml + LoginScreen.cs — terminal-styled login screen, registers as "Login"
+- NetworkManagerBootstrap.cs — TryAutoLoginAsync, routes to Login or MainMenu, DefaultExecutionOrder(100)
+- LobbyApiClient.cs — create/list/get/join rooms, instance methods, Bearer token
+- NationsList.cs — shared static ~155-country list, ISO 3166-1 alpha-3 format
+- LoginScreen.uxml + LoginScreen.cs — registers as "Login"
 - RegisterScreen.uxml + RegisterScreen.cs — registers as "Register"
-- MainMenuScreen.uxml + MainMenuScreen.cs — registers as "MainMenu", uses Push("CreateRoom") and Push("RoomList")
+- MainMenuScreen.uxml + MainMenuScreen.cs — registers as "MainMenu"
 - CreateRoomScreen.uxml + CreateRoomScreen.cs — registers as "CreateRoom"
 - RoomListScreen.uxml + RoomListScreen.cs — registers as "RoomList"
+- ProfileScreen.uxml + ProfileScreen.cs — registers as "Profile"
 
 **Bootstrap scene hierarchy:**
 ```
@@ -57,7 +71,8 @@ NetworkManager
   ├── RegisterScreen   (UIDocument → RegisterScreen.uxml + PanelSettings, RegisterScreen.cs)
   ├── MainMenuScreen   (UIDocument → MainMenuScreen.uxml + PanelSettings, MainMenuScreen.cs)
   ├── CreateRoomScreen (UIDocument → CreateRoomScreen.uxml + PanelSettings, CreateRoomScreen.cs)
-  └── RoomListScreen   (UIDocument → RoomListScreen.uxml + PanelSettings, RoomListScreen.cs)
+  ├── RoomListScreen   (UIDocument → RoomListScreen.uxml + PanelSettings, RoomListScreen.cs)
+  └── ProfileScreen    (UIDocument → ProfileScreen.uxml + PanelSettings, ProfileScreen.cs)
 ```
 
 **CRITICAL — one UIDocument per screen:**
@@ -66,34 +81,36 @@ Each screen is its own child GameObject with its own UIDocument. Do NOT share a 
 **Adding a new screen (follow every time):**
 1. Create `UXML/XxxScreen.uxml` — include `<ui:Style>` for variables.uss + terminal.uss + scrollbar.uss, hardcoded RGB inline styles, root element `display:none; position:absolute; left:0; top:0; width:100%; height:100%`
 2. Create `Screens/XxxScreen.cs` — copy LoginScreen.cs pattern (docRoot fill to 100%, StyleButton, StyleLabels, Register)
-3. Add child GameObject `XxxScreen` under NetworkManager via Unity MCP
-4. Add UIDocument component → assign XxxScreen.uxml (`m_PanelSettings` property name) + Assets/PanelSettings.asset
-5. Add XxxScreen MonoBehaviour to same GameObject
-6. Save scene, check console before entering play mode
+3. Add child GameObject `XxxScreen` under NetworkManager via Unity MCP (`manage_gameobject create`)
+4. Add UIDocument component → `manage_components add` → set `sourceAsset` + `m_PanelSettings` (NOT `panelSettings`)
+5. Add XxxScreen MonoBehaviour via `manage_components add`
+6. Save scene via `manage_scene save`, check console for errors
 
 **USS / Styling:**
 - variables.uss — CSS custom properties (NOTE: Unity UI Toolkit does NOT reliably inherit CSS vars — reference only)
 - terminal.uss — all hardcoded RGB values, no var() references. Top rule sets font via `* { -unity-font: resource("Fonts & Materials/SourceCodePro-Medium"); }`
-- scrollbar.uss — hardcoded RGB scrollbar selectors (var() references were broken and have been replaced). Arrow buttons hidden via `display:none`. Import this in any UXML that uses ScrollView.
+- scrollbar.uss — hardcoded RGB scrollbar selectors. Arrow buttons hidden via `display:none`. Import in any UXML that uses ScrollView.
 - ArmsFair.tss — imports all three USS files, assigned to PanelSettings.themeUss
 
-**DO NOT use DropdownField for styled menus.** Unity's DropdownField popup renders in a separate overlay panel outside the USS scope — it cannot be styled to match the terminal aesthetic. Instead use:
+**DO NOT use DropdownField for styled menus.** Unity's DropdownField popup renders in a separate overlay panel outside the USS scope. Instead use:
 - A `Button` showing the current selection
-- A modal overlay `VisualElement` (position:absolute; left:0; top:0; right:0; bottom:0) containing a `ScrollView` with choice buttons
+- A modal overlay `VisualElement` (`position:absolute; left:0; top:0; right:0; bottom:0`) containing a `ScrollView` with choice buttons
 - For long lists (nations): show a search `TextField` above the ScrollView, filter with `FindAll` on keystroke
 - For short lists (slots, timer, game mode): hide the search field
 
-**ScrollView height in modals — critical:**
-- Parent panel must have explicit pixel `height` + `overflow:hidden`
-- ScrollView must have explicit pixel `height` set BOTH in UXML and in C# when opening (Unity sometimes ignores UXML-only)
-- `flex-grow:1` on ScrollView inside a fixed-height panel is unreliable — always set explicit height
+**Modal overlay pattern (confirmed working):**
+- Overlay: `position:absolute; left:0; top:0; right:0; bottom:0; background-color:rgba(0,0,0,0.85)`
+- Panel inside: explicit `width` + `height` px + `overflow:hidden`
+- ScrollView height set in BOTH UXML and C# when opening (`_choiceList.style.height = new StyleLength(Xf)`)
+- `flex-grow:1` on ScrollView is unreliable — always set explicit pixel height
 
-**Absolute overlay positioning:**
-- Use `left:0; top:0; right:0; bottom:0` for overlays — NOT `width:100%; height:100%`. In Unity UI Toolkit, percentage dimensions on absolute elements do not reliably fill the parent.
+**Success/confirmation modals:**
+- Use a full-screen overlay modal with an OK button — not an inline label
+- Same overlay pattern as choice modals: `position:absolute; left:0; top:0; right:0; bottom:0`
+- See ProfileScreen SuccessModal for reference
 
 **Font setup (critical):**
 - UI Toolkit requires font set via USS `* { -unity-font: resource("Fonts & Materials/SourceCodePro-Medium"); }` in terminal.uss
-- The TTF lives at `Assets/TextMesh Pro/Resources/Fonts & Materials/SourceCodePro-Medium.ttf`
 - rootVisualElement height fix: set `docRoot.style.height = Length.Percent(100)` in code
 
 **Unity MCP — UIDocument property names:**
@@ -107,104 +124,80 @@ Each screen is its own child GameObject with its own UIDocument. Do NOT share a 
 **LoginScreen: WORKING** ✓
 **RegisterScreen: WORKING** ✓
 **MainMenuScreen: WORKING** ✓
-- CREATE ROOM uses `Push("CreateRoom")`
-- JOIN ROOM uses `Push("RoomList")`
-- PROFILE logs TODO warning (Phase 10)
+- CREATE ROOM → `Push("CreateRoom")`
+- JOIN ROOM → `Push("RoomList")`
+- PROFILE → `Push("Profile")`
+- DISCONNECT → logout + `GoTo("Login")`
 
 **CreateRoomScreen: WORKING** ✓
-- Room Name (text field)
-- Player Slots, Timer Preset, Game Mode — styled modal selection (no search)
-- Private Room / AI Fill-In — toggle buttons (YES/NO)
+- Room Name, Player Slots, Timer Preset, Game Mode — all working
+- Private Room / AI Fill-In toggles — working
 - CREATE ROOM posts to `/api/rooms` — logs TODO Phase 11 on success
-- BACK uses `Pop()`
-- Home Nation removed from this screen — moves to ProfileScreen (Phase 10)
+- BACK → `Pop()`
 
 **RoomListScreen: WORKING** ✓
-- Fetches room list from VPS on Show() — shows "LOADING..." while waiting
-- Displays each room as a row: name, player count/slots, game mode, JOIN button
+- Fetches room list from VPS on Show(), shows LOADING... while waiting
+- Room rows: name, player count/slots, game mode, JOIN button
 - JOIN logs TODO Phase 11 on success
-- Join by invite code field + button
-- REFRESH re-triggers Show()
-- BACK uses `Pop()`
+- Join by invite code + REFRESH + BACK
+
+**ProfileScreen: WORKING** ✓
+- Home Nation modal with search (NationsList.All, ISO alpha-3)
+- Brokerage Name text field
+- SAVE PROFILE posts to `POST /api/auth/profile` — confirmed working end-to-end
+- On success: green "[ PROFILE SAVED ]" modal with OK button to dismiss
+- BACK → `Pop()`
 
 **VPS status: LIVE** ✓
-- Server running at `https://armsfair.laynekudo.com` (Hostinger VPS, Ubuntu 24.04, Docker Compose)
-- PostgreSQL running in Docker container on VPS — accounts persist across sessions
+- Server at `https://armsfair.laynekudo.com` (Hostinger VPS, Ubuntu 24.04, Docker Compose)
+- PostgreSQL in Docker — accounts + company names persist across sessions
 - Nginx reverse proxy handles SSL + SignalR WebSocket upgrade
-- Register and login confirmed working end-to-end from Unity client
-- Room creation confirmed working (logs roomId to console)
-- Do NOT run a local PostgreSQL for development — always point at the VPS DB for testing
+- `AddCompanyName` migration applied — CompanyName column exists
+- Do NOT run a local PostgreSQL — always point at the VPS DB
 
 ---
 
-## AuthApiClient Gotchas (learned 2026-05-06)
+## AuthApiClient Gotchas
 
-- **`PostAsync`/`GetAsync` must be instance methods** — they need `_baseUrl` prepended or requests go to a bare path with no host and fail silently
-- **Server response shape:** `{"token":"...","profile":{"id":"...","username":"...","homeNationIso":"..."}}` — `AuthResponse` must have a nested `AuthProfile` class. `JsonUtility` does not flatten nested JSON.
-- **Error label visibility:** inline `style="display:none"` in UXML overrides USS class removal. Always use `_errorLabel.style.display = DisplayStyle.Flex/None` directly.
+- **`PostAsync`/`GetAsync` must be instance methods** — need `_baseUrl` prepended or requests fail silently
+- **Server response shape:** `{"token":"...","profile":{"id","username","homeNationIso","companyName"}}` — `AuthResponse` must have a nested `AuthProfile` class
+- **`ProfileResponse.homeNationIso`** — field name is `homeNationIso` (NOT `homeNation`) to match server response
+- **Error label visibility:** inline `style="display:none"` in UXML overrides USS class removal — always use `style.display = DisplayStyle.Flex/None` directly
+- **PATCH method broken** — `UnityWebRequest` does not reliably send Authorization headers with PATCH. Use POST for all update endpoints.
 
-## LobbyApiClient Gotchas (learned 2026-05-06)
+## LobbyApiClient Gotchas
 
-- **`GameMode` enum must be sent as integer** — server has no `JsonStringEnumConverter`. Sending `"gameMode":"Realistic"` causes a 400. Send the integer value: Realistic=1, EqualWorld=2, BlankSlate=3, HotWorld=4, Custom=5.
-- **Two different response shapes** — `GET /api/rooms` returns `RoomSummary` (has `playerCount` int, no `playerIds`). `POST /api/rooms` and `GET /api/rooms/{id}` return `RoomRecord` (has `playerIds string[]`). Use separate C# classes.
-- **`JsonUtility` cannot deserialize `List<string>`** — use `string[]` for `playerIds` in `RoomInfo`.
-- **Bare JSON array** — `GET /api/rooms` returns a bare `[...]` array. Wrap it: `JsonUtility.FromJson<RoomSummaryList>("{\"items\":" + raw + "}")`.
-- **Bearer token required** — all lobby endpoints require `Authorization: Bearer <token>`. Use `AccountManager.Instance.Token`.
+- **`GameMode` enum must be sent as integer** — Realistic=1, EqualWorld=2, BlankSlate=3, HotWorld=4, Custom=5
+- **Two response shapes** — `GET /api/rooms` → `RoomSummary` (has `playerCount`). `POST/GET /api/rooms/{id}` → `RoomInfo` (has `playerIds string[]`)
+- **`JsonUtility` cannot deserialize `List<string>`** — use `string[]`
+- **Bare JSON array** — `GET /api/rooms` returns bare `[...]`. Wrap: `JsonUtility.FromJson<RoomSummaryList>("{\"items\":" + raw + "}")`
+- **Bearer token required** — all lobby endpoints need `Authorization: Bearer <token>`
 
 ## Nations List
 
-- Uses ISO 3166-1 alpha-3 codes (3-letter): `"USA — United States"`, `"GBR — United Kingdom"`, etc.
-- ~155 countries organised by region in CreateRoomScreen.cs
-- Home Nation selection belongs in ProfileScreen (Phase 10), not CreateRoomScreen
-
----
-
-## 🔴 BLOCKING — VPS Redeploy Required
-
-**ProfileScreen SAVE PROFILE returns "SAVE FAILED — CONNECTION ERROR"**
-
-The VPS is running stale code. The following changes exist in git (`main` branch, commit `cf9b522`) but have NOT been deployed to the VPS yet:
-
-1. **`ArmsFair.Server/Program.cs`** — `PATCH /api/auth/profile` changed to `POST /api/auth/profile` (UnityWebRequest does not reliably send Authorization headers with PATCH)
-2. **`ArmsFair.Server/Data/Entities/PlayerEntity.cs`** — `CompanyName` field added
-3. **`ArmsFair.Server/Program.cs`** — `companyName` included in register/login/me responses; PATCH→POST profile endpoint added; `UpdateProfileRequest` record added
-
-**Steps to fix:**
-```bash
-# On the VPS — pull latest and redeploy
-git pull origin main
-
-# Run the EF migration (adds CompanyName column)
-dotnet ef migrations add AddCompanyName --project ArmsFair.Server
-dotnet ef database update --project ArmsFair.Server
-
-# Restart the server (Docker or systemd — confirm method with user)
-```
-
-After redeploy, ProfileScreen SAVE PROFILE should work end-to-end.
+- `NationsList.cs` — shared static class at `ArmsFair/Assets/Scripts/UI/NationsList.cs`
+- ISO 3166-1 alpha-3 format: `"USA — United States"`, `"GBR — United Kingdom"`, etc.
+- ~155 countries organised by region
+- ISO code extracted from entry: `entry[..3]` gives the 3-letter code to send to the server
 
 ---
 
 ## Known Issues / Gotchas
 
 ### CSS Custom Properties Don't Inherit in Unity UI Toolkit
-`var(--color-text)` etc. do NOT reliably propagate. Always use hardcoded RGB. scrollbar.uss was broken by var() references and has been fixed.
+`var(--color-text)` etc. do NOT reliably propagate. Always use hardcoded RGB.
 
 ### Button Label Color in Unity UI Toolkit
-Unity wraps Button text in an internal Label. Target `.unity-button > .unity-label` or set color directly on the Button.
+Unity wraps Button text in an internal Label. Set color directly on the Button element.
 
 ### UIManager Execution Order
 - UIManager: DefaultExecutionOrder(-100)
 - Screen MonoBehaviours: default order 0 — register in Awake
 - NetworkManagerBootstrap: DefaultExecutionOrder(100) — calls GoTo after all screens registered
 
-### EF Core Migrations Never Run
-Before deploying: `dotnet ef migrations add InitialSchema --project ArmsFair.Server && dotnet ef database update`
-
 ---
 
 ## Pending Work (priority order)
 
-1. **Phase 10: ProfileScreen** — includes Home Nation + Company Name selection
-2. **Phase 11: PreGameLobbyScreen** — wire CreateRoomScreen + RoomListScreen JOIN navigation here
-3. **Phase 12+: HUD and game screens**
+1. **Phase 11: PreGameLobbyScreen** — wire CreateRoomScreen CREATE + RoomListScreen JOIN navigation here; show room info, player list, start game button for host
+2. **Phase 12+: HUD and in-game screens**
