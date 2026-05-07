@@ -1,6 +1,6 @@
 # Arms Fair — Session Handoff
 
-## Last updated: 2026-05-06 (Phase 11 complete)
+## Last updated: 2026-05-06 (Phase 11 fully verified working)
 
 ---
 
@@ -36,6 +36,12 @@
 **Critical server gotcha — HTTP methods:**
 - `UnityWebRequest` does NOT reliably send `Authorization` headers with `PATCH` requests — use `POST` for all profile/update endpoints
 - The profile update endpoint is `POST /api/auth/profile` (not PATCH)
+
+**Critical server gotcha — claim name remapping:**
+- ASP.NET Core JWT middleware silently remaps `sub` → `ClaimTypes.NameIdentifier` (`http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier`)
+- `ctx.User.FindFirst("sub")` always returns null in handlers — causes silent 401 with empty body
+- Always use the fallback pattern for player ID: `ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? ctx.User.FindFirst("sub")?.Value`
+- See `/api/auth/profile`, `/api/rooms` POST, and `/api/rooms/{id}/join` for correct implementations
 
 ---
 

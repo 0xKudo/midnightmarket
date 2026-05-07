@@ -189,7 +189,7 @@ namespace ArmsFair.UI
         private void OnLeave()
         {
             CancelInvoke(nameof(PollRoom));
-            UIManager.Instance.Pop();
+            UIManager.Instance.GoTo("MainMenu");
         }
     }
 }
