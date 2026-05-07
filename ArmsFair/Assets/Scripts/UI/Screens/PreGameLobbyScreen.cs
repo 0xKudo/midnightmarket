@@ -158,6 +158,19 @@ namespace ArmsFair.UI
 
             try
             {
+                // Reconnect if the SignalR connection dropped while waiting in lobby
+                if (!GameClient.Instance.IsConnected)
+                {
+                    var token = ArmsFair.Auth.AccountManager.Instance.Token;
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        _errorLabel.text          = "SESSION EXPIRED — PLEASE LOG IN AGAIN";
+                        _errorLabel.style.display = DisplayStyle.Flex;
+                        return;
+                    }
+                    await GameClient.Instance.ConnectAsync(token);
+                }
+
                 var gameMode = Enum.TryParse<GameMode>(_currentRoom.gameMode, out var gm)
                     ? gm : GameMode.Realistic;
 
