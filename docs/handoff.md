@@ -1,6 +1,6 @@
 # Arms Fair — Session Handoff
 
-## Last updated: 2026-05-06
+## Last updated: 2026-05-06 (Phase 11 complete)
 
 ---
 
@@ -57,6 +57,8 @@
 - CreateRoomScreen.uxml + CreateRoomScreen.cs — registers as "CreateRoom"
 - RoomListScreen.uxml + RoomListScreen.cs — registers as "RoomList"
 - ProfileScreen.uxml + ProfileScreen.cs — registers as "Profile"
+- LobbyState.cs — static `PendingRoomId` property, used to pass roomId between screens (UIManager has no param system)
+- PreGameLobbyScreen.uxml + PreGameLobbyScreen.cs — registers as "PreGameLobby"
 
 **Bootstrap scene hierarchy:**
 ```
@@ -67,12 +69,13 @@ NetworkManager
   ├── UnityMainThreadDispatcher
   ├── NetworkManagerBootstrap
   ├── ViewToggleManager
-  ├── LoginScreen      (UIDocument → LoginScreen.uxml + PanelSettings, LoginScreen.cs)
-  ├── RegisterScreen   (UIDocument → RegisterScreen.uxml + PanelSettings, RegisterScreen.cs)
-  ├── MainMenuScreen   (UIDocument → MainMenuScreen.uxml + PanelSettings, MainMenuScreen.cs)
-  ├── CreateRoomScreen (UIDocument → CreateRoomScreen.uxml + PanelSettings, CreateRoomScreen.cs)
-  ├── RoomListScreen   (UIDocument → RoomListScreen.uxml + PanelSettings, RoomListScreen.cs)
-  └── ProfileScreen    (UIDocument → ProfileScreen.uxml + PanelSettings, ProfileScreen.cs)
+  ├── LoginScreen          (UIDocument → LoginScreen.uxml + PanelSettings, LoginScreen.cs)
+  ├── RegisterScreen       (UIDocument → RegisterScreen.uxml + PanelSettings, RegisterScreen.cs)
+  ├── MainMenuScreen       (UIDocument → MainMenuScreen.uxml + PanelSettings, MainMenuScreen.cs)
+  ├── CreateRoomScreen     (UIDocument → CreateRoomScreen.uxml + PanelSettings, CreateRoomScreen.cs)
+  ├── RoomListScreen       (UIDocument → RoomListScreen.uxml + PanelSettings, RoomListScreen.cs)
+  ├── ProfileScreen        (UIDocument → ProfileScreen.uxml + PanelSettings, ProfileScreen.cs)
+  └── PreGameLobbyScreen   (UIDocument → PreGameLobbyScreen.uxml + PanelSettings, PreGameLobbyScreen.cs)
 ```
 
 **CRITICAL — one UIDocument per screen:**
@@ -132,14 +135,24 @@ Each screen is its own child GameObject with its own UIDocument. Do NOT share a 
 **CreateRoomScreen: WORKING** ✓
 - Room Name, Player Slots, Timer Preset, Game Mode — all working
 - Private Room / AI Fill-In toggles — working
-- CREATE ROOM posts to `/api/rooms` — logs TODO Phase 11 on success
+- CREATE ROOM → sets `LobbyState.PendingRoomId`, `GoTo("PreGameLobby")`
 - BACK → `Pop()`
 
 **RoomListScreen: WORKING** ✓
 - Fetches room list from VPS on Show(), shows LOADING... while waiting
 - Room rows: name, player count/slots, game mode, JOIN button
-- JOIN logs TODO Phase 11 on success
+- JOIN → sets `LobbyState.PendingRoomId`, `GoTo("PreGameLobby")`
 - Join by invite code + REFRESH + BACK
+
+**PreGameLobbyScreen: WORKING** ✓
+- Reads `LobbyState.PendingRoomId` on Show()
+- Polls `/api/rooms/{id}` every 3s via `InvokeRepeating`
+- Shows room name, invite code, slot count, player list
+- Host sees START GAME button; non-host sees WAITING FOR HOST...
+- Player list: host shown as `> NAME [HOST]`, others as `OPERATIVE-XXXX`
+- START GAME: builds `LobbySettingsMessage`, calls `GameClient.Instance.CreateGameAsync`
+- Navigation to HUD happens in `OnStateSync` handler (gameId only known after StateSync)
+- LEAVE → `Pop()`
 
 **ProfileScreen: WORKING** ✓
 - Home Nation modal with search (NationsList.All, ISO alpha-3)
@@ -197,7 +210,16 @@ Unity wraps Button text in an internal Label. Set color directly on the Button e
 
 ---
 
+## PreGameLobbyScreen Gotchas
+
+- **`LobbyState.PendingRoomId`** — set before `GoTo("PreGameLobby")`, read in `Show()`. UIManager has no param system; this static is the workaround.
+- **Polling not SignalR** — LobbyService has no SignalR events. Use `InvokeRepeating`/`CancelInvoke` for lobby refresh.
+- **`RoomInfo.gameMode` is a string** — use `Enum.TryParse<GameMode>(room.gameMode, out var gm)` when building `LobbySettingsMessage`.
+- **Navigation to HUD is deferred** — `CreateGameAsync` triggers `StateSync` on the server. Listen for `OnStateSync` and call `GoTo("HUD")` there, not on button click.
+- **`hostUsername` is on `RoomInfo`** — the only player name available is the host's. Other players render as `OPERATIVE-{id[..4]}`.
+
+---
+
 ## Pending Work (priority order)
 
-1. **Phase 11: PreGameLobbyScreen** — wire CreateRoomScreen CREATE + RoomListScreen JOIN navigation here; show room info, player list, start game button for host
-2. **Phase 12+: HUD and in-game screens**
+1. **Phase 12+: HUD and in-game screens** — game loop UI, phase timers, trade/bid panels
