@@ -861,13 +861,15 @@ namespace ArmsFair.UI
 
             var overlay  = MakeModalOverlay();
             var panel    = MakeModalPanel(320);
-            panel.style.height = 460;
+            panel.style.maxHeight      = new StyleLength(Length.Percent(75));
+            panel.style.flexDirection  = FlexDirection.Column;
 
             var title    = MakeModalTitle("Select Target Country");
             panel.Add(title);
 
             var search   = new TextField();
-            search.style.marginBottom   = 8;
+            search.style.marginBottom    = 8;
+            search.style.flexShrink      = 0;
             search.style.backgroundColor = new StyleColor(new Color(25f/255f, 25f/255f, 15f/255f));
             search.style.borderTopColor  = search.style.borderBottomColor =
             search.style.borderLeftColor = search.style.borderRightColor  =
@@ -879,8 +881,9 @@ namespace ArmsFair.UI
             panel.Add(search);
 
             var scroll = new ScrollView();
-            scroll.style.height    = 340;
-            scroll.style.flexGrow  = 0;
+            scroll.style.flexGrow   = 1;
+            scroll.style.flexShrink = 1;
+            scroll.style.minHeight  = 80;
             panel.Add(scroll);
 
             void Populate(string filter)
@@ -912,6 +915,8 @@ namespace ArmsFair.UI
             search.RegisterValueChangedCallback(evt => Populate(evt.newValue));
 
             var cancel = MakeModalCancelBtn(() => _root.Remove(overlay));
+            cancel.style.flexShrink = 0;
+            cancel.style.marginTop  = 8;
             panel.Add(cancel);
             overlay.Add(panel);
             _root.Add(overlay);
