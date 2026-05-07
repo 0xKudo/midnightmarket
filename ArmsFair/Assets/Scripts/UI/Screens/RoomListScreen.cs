@@ -170,7 +170,8 @@ namespace ArmsFair.UI
             try
             {
                 var room = await _lobby.JoinRoomAsync(roomIdOrCode);
-                Debug.LogWarning($"[RoomListScreen] TODO Phase 11: GoTo PreGameLobby with roomId={room.roomId}");
+                LobbyState.PendingRoomId = room.roomId;
+                UIManager.Instance.GoTo("PreGameLobby");
             }
             catch (Exception ex)
             {

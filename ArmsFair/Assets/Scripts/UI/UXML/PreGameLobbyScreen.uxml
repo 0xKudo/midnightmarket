@@ -1,0 +1,39 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+  <ui:Style src="../USS/variables.uss" />
+  <ui:Style src="../USS/terminal.uss" />
+  <ui:Style src="../USS/scrollbar.uss" />
+  <ui:VisualElement name="PreGameLobbyScreen" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background-color:rgb(13,13,13);">
+
+    <ui:VisualElement name="FormPanel" style="background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px; flex-direction:column; width:480px;">
+
+      <ui:Label name="RoomNameLabel" text="ROOM NAME" style="font-size:15px; color:rgb(212,207,184); -unity-font-style:bold; margin-bottom:4px; white-space:nowrap;" />
+      <ui:Label text="PRE-GAME LOBBY" style="font-size:9px; color:rgb(138,134,112); margin-bottom:16px; white-space:nowrap;" />
+      <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
+
+      <!-- Room info -->
+      <ui:VisualElement style="flex-direction:row; justify-content:space-between; margin-bottom:6px;">
+        <ui:Label text="INVITE CODE" style="font-size:9px; color:rgb(138,134,112);" />
+        <ui:Label name="InviteCodeLabel" text="—" style="font-size:11px; color:rgb(138,184,112); -unity-font-style:bold; white-space:nowrap;" />
+      </ui:VisualElement>
+      <ui:VisualElement style="flex-direction:row; justify-content:space-between; margin-bottom:12px;">
+        <ui:Label text="PLAYERS" style="font-size:9px; color:rgb(138,134,112);" />
+        <ui:Label name="SlotLabel" text="— / —" style="font-size:11px; color:rgb(212,207,184); white-space:nowrap;" />
+      </ui:VisualElement>
+
+      <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
+
+      <!-- Player list -->
+      <ui:Label text="OPERATIVES" style="font-size:9px; color:rgb(138,134,112); margin-bottom:6px;" />
+      <ui:ScrollView name="PlayerList" vertical-scroller-visibility="AlwaysVisible" style="height:200px; overflow:hidden; margin-bottom:12px;" />
+
+      <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
+
+      <ui:Label name="ErrorLabel" text="" style="color:rgb(192,144,144); font-size:10px; display:none; margin-bottom:8px;" />
+      <ui:Button name="StartGameBtn" text="START GAME" style="display:none; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center;" />
+      <ui:Label name="WaitingLabel" text="WAITING FOR HOST..." style="font-size:10px; color:rgb(138,134,112); -unity-text-align:middle-center; margin-bottom:8px; display:none;" />
+      <ui:Button name="LeaveBtn" text="LEAVE" style="color:rgb(192,144,144); background-color:rgb(15,15,8); border-color:rgb(90,42,42); border-width:1px; padding:8px 12px; margin-bottom:0; font-size:13px; -unity-text-align:middle-center;" />
+
+    </ui:VisualElement>
+
+  </ui:VisualElement>
+</ui:UXML>

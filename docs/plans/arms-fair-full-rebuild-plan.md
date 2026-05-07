@@ -749,25 +749,80 @@ Home Nation selection was originally in CreateRoomScreen but was moved here — 
 
 ## Phase 11 — Screen 7: Pre-Game Lobby Screen
 
-### 11.1 PreGameLobbyScreen UXML
-**Create:** `ArmsFair/Assets/Scripts/UI/UXML/PreGameLobbyScreen.uxml`
-- Room info panel: room name, invite code, slot count
-- Player list: ScrollView showing each player's name + ready badge
-- Host controls (only shown when `AccountManager.Instance.LocalPlayer.Id == room.hostPlayerId`):
-  - START GAME button
-- READY toggle for non-hosts
-- LEAVE button
+### Phase 11 Gotchas (pre-flight 2026-05-06)
 
-### 11.2 PreGameLobbyScreen MonoBehaviour
+- **No UIManager parameter passing** — `UIManager.GoTo/Push` takes only a screen name. Use a static `LobbyState.cs` class to pass `PendingRoomId` before navigating. `CreateRoomScreen` and `RoomListScreen` write to it; `PreGameLobbyScreen.Show()` reads from it.
+
+- **No real-time SignalR lobby events** — `GameHub` has no `PlayerJoined`/`PlayerReady` hub methods and `GameClient` has no handlers for them. Do NOT try to subscribe to these. Use polling instead: call `LobbyApiClient.GetRoomAsync(roomId)` every 3 seconds via `InvokeRepeating` to refresh the player list.
+
+- **Player list shows GUIDs, not usernames** — `RoomRecord.PlayerIds` is `List<string>` of GUIDs. There is no username lookup endpoint. Display truncated IDs for non-host players (e.g. `"PLAYER-ABCD"`). `hostUsername` IS available in `RoomInfo`. This is a known gap — acceptable for Phase 11.
+
+- **`CreateGame` takes `LobbySettingsMessage`, not loose args** — `GameClient.CreateGameAsync(LobbySettingsMessage settings)` is the correct call. Build from the room: `new LobbySettingsMessage(room.playerSlots, room.timerPreset, false, room.aiFillIn, room.isPrivate, (GameMode)Enum.Parse(typeof(GameMode), room.gameMode))`. `LobbySettingsMessage` is in `ArmsFair.Shared.Models.Messages`.
+
+- **`GameMode` in `RoomInfo` is a string** — The server serializes `GameMode` enum as a string (e.g. `"Realistic"`). Parse it with `Enum.Parse<GameMode>(room.gameMode)` when building `LobbySettingsMessage`.
+
+- **`gameId` comes from `StateSync`, not from `CreateGame`** — After `CreateGameAsync` is called, the server sends a `StateSync` event which sets `GameClient.Instance.GameId`. `PreGameLobbyScreen` must listen to `GameClient.OnStateSync` and navigate to `"HUD"` from that handler — NOT on button click.
+
+- **No leave room endpoint** — `LobbyService` has no remove-player operation. `LeaveBtn` just calls `CancelInvokeRepeating` (stop polling) and `UIManager.Instance.Pop()`. The room will still list the player on the server until it is cleaned up or the game starts. Acceptable gap for Phase 11.
+
+- **Host check uses player ID, not username** — `RoomInfo.hostPlayerId` is a GUID string. `AccountManager.Instance.LocalPlayer.Id` is also a GUID string. Compare these to determine if the local player is the host and whether to show START GAME vs a waiting message.
+
+- **Wire navigation in `CreateRoomScreen` and `RoomListScreen`** — Replace both `Debug.LogWarning("TODO Phase 11...")` with: `LobbyState.PendingRoomId = room.roomId; UIManager.Instance.GoTo("PreGameLobby");`
+
+### 11.1 LobbyState static helper
+**Create:** `ArmsFair/Assets/Scripts/UI/LobbyState.cs`
+```csharp
+namespace ArmsFair.UI
+{
+    public static class LobbyState
+    {
+        public static string PendingRoomId { get; set; }
+    }
+}
+```
+
+### 11.2 PreGameLobbyScreen UXML
+**Create:** `ArmsFair/Assets/Scripts/UI/UXML/PreGameLobbyScreen.uxml`
+- Import variables.uss, terminal.uss, scrollbar.uss
+- Root: `display:none; position:absolute; left:0; top:0; width:100%; height:100%` centered
+- FormPanel: `width:480px`
+- Header: room name label (`RoomNameLabel`) + subtitle "PRE-GAME LOBBY"
+- Invite code row: label "INVITE CODE" + `InviteCodeLabel` (monospace, green tint)
+- Slot info row: `SlotLabel` e.g. "PLAYERS: 1 / 4"
+- Divider
+- ScrollView `name="PlayerList"` — `height:200px; vertical-scroller-visibility:AlwaysVisible`
+- Divider
+- `StartGameBtn` — shown only for host (hidden in UXML, shown in C# if host)
+- `WaitingLabel` — "WAITING FOR HOST..." shown for non-hosts
+- `LeaveBtn` — always shown
+
+### 11.3 PreGameLobbyScreen MonoBehaviour
 **Create:** `ArmsFair/Assets/Scripts/UI/Screens/PreGameLobbyScreen.cs`
-- On Show: receive roomId, fetch room via `LobbyApiClient.GetRoomAsync`
-- Subscribe to SignalR `PlayerJoined`, `PlayerReady`, `GameStarting` events from `GameClient`
-- `StartGameBtn.clicked` (host only) → calls `GameClient.Instance.Hub.InvokeAsync("CreateGame", roomId, gameMode)`
-- On `GameStarting` event → GoTo HUD
-- `LeaveBtn.clicked` → Pop back to previous screen
+- Fields: `_roomId`, `_isHost`, `_lobby` (LobbyApiClient instance)
+- `Show()`: read `LobbyState.PendingRoomId` → store as `_roomId` → call `RefreshAsync()` → start polling via `InvokeRepeating("PollRoom", 3f, 3f)`
+- `Hide()`: `CancelInvoke("PollRoom")`
+- `RefreshAsync()`: `async void` → `await _lobby.GetRoomAsync(_roomId)` → call `BindRoom(room)`
+- `BindRoom(RoomInfo room)`:
+  - Set `RoomNameLabel.text`, `InviteCodeLabel.text`, `SlotLabel.text`
+  - `_isHost = room.hostPlayerId == AccountManager.Instance.LocalPlayer.Id`
+  - Show/hide `StartGameBtn` vs `WaitingLabel` based on `_isHost`
+  - Populate `PlayerList` ScrollView: first entry = `room.hostUsername + " [HOST]"`, remaining = `"PLAYER-" + id[..4].ToUpper()` for each id in `room.playerIds` that isn't `room.hostPlayerId`
+- `StartGameBtn.clicked`: build `LobbySettingsMessage` from room fields → `await GameClient.Instance.CreateGameAsync(settings)` — navigation happens in `OnStateSync` handler
+- Subscribe to `GameClient.Instance.OnStateSync` in `Awake` → handler calls `CancelInvoke("PollRoom")` then `UIManager.Instance.GoTo("HUD")` — guard: only navigate if `_root` is visible
+- `LeaveBtn.clicked`: `CancelInvoke("PollRoom")` → `UIManager.Instance.Pop()`
 - Registers as `"PreGameLobby"`
 
-**⚠ CONFIRM:** Lobby shows players, invite code displays, host can start game, transitions to HUD.
+### 11.4 Wire CreateRoomScreen and RoomListScreen
+- `CreateRoomScreen.OnCreate` success: replace TODO log with `LobbyState.PendingRoomId = room.roomId; UIManager.Instance.GoTo("PreGameLobby");`
+- `RoomListScreen.OnJoin` success: replace TODO log with `LobbyState.PendingRoomId = room.roomId; UIManager.Instance.GoTo("PreGameLobby");`
+
+### 11.5 Register PreGameLobbyScreen in Bootstrap
+- Add child GameObject `PreGameLobbyScreen` under NetworkManager via Unity MCP
+- UIDocument → PreGameLobbyScreen.uxml + PanelSettings.asset
+- PreGameLobbyScreen MonoBehaviour
+- Save scene
+
+**⚠ CONFIRM:** Lobby shows room name, invite code, player count. Host sees START GAME. Non-host sees WAITING FOR HOST. Polling refreshes player list. START GAME calls CreateGameAsync and OnStateSync navigates to HUD. LEAVE pops back.
 
 ---
 

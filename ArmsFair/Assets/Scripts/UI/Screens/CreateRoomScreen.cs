@@ -251,7 +251,8 @@ namespace ArmsFair.UI
             try
             {
                 var room = await _lobby.CreateRoomAsync(payload);
-                Debug.LogWarning($"[CreateRoomScreen] TODO Phase 11: GoTo PreGameLobby with roomId={room.roomId}");
+                LobbyState.PendingRoomId = room.roomId;
+                UIManager.Instance.GoTo("PreGameLobby");
             }
             catch (Exception ex)
             {
