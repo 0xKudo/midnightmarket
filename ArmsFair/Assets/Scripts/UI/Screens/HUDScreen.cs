@@ -179,7 +179,7 @@ namespace ArmsFair.UI
             foreach (var p in msg.ProfitUpdates)
             {
                 if (p.PlayerId != localId) continue;
-                _capitalLabel.text = $"${p.NewCapital / 1_000_000}M";
+                _capitalLabel.text = $"${p.NewCapital}M";
             }
             foreach (var r in msg.ReputationUpdates)
             {
@@ -239,13 +239,16 @@ namespace ArmsFair.UI
                 row.style.borderBottomWidth = 1;
 
                 var nameLabel = new Label(entry.DisplayName);
-                nameLabel.style.color    = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
-                nameLabel.style.fontSize = 14;
+                nameLabel.style.color     = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
+                nameLabel.style.fontSize  = 14;
+                nameLabel.style.flexGrow  = 1;
 
                 var costLabel = new Label($"${entry.BaseCostMillions}M");
-                costLabel.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                costLabel.style.fontSize = 13;
-                costLabel.style.marginRight = 12;
+                costLabel.style.color              = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                costLabel.style.fontSize           = 13;
+                costLabel.style.width              = 52;
+                costLabel.style.unityTextAlign     = TextAnchor.MiddleRight;
+                costLabel.style.marginRight        = 12;
 
                 var toggle = new Toggle();
                 toggle.style.marginLeft = 8;
@@ -313,7 +316,7 @@ namespace ArmsFair.UI
             var localId = AccountManager.Instance.LocalPlayer?.Id;
             var me = state.Players.Find(p => p.Id == localId);
             _companyLabel.text      = AccountManager.Instance.LocalPlayer?.CompanyName ?? AccountManager.Instance.LocalPlayer?.Username ?? "—";
-            _capitalLabel.text      = me != null ? $"${me.Capital / 1_000_000}M"    : "$--M";
+            _capitalLabel.text      = me != null ? $"${me.Capital}M"                : "$--M";
             _reputationLabel.text   = me != null ? me.Reputation.ToString()          : "--";
             _sharePriceLabel.text   = me != null ? $"${me.SharePrice}"               : "$--";
             _peaceCreditsLabel.text = me != null ? me.PeaceCredits.ToString()        : "--";
