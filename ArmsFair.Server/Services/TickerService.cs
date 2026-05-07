@@ -10,6 +10,7 @@ namespace ArmsFair.Server.Services;
 /// </summary>
 public class TickerService(
     PhaseOrchestrator phaseOrchestrator,
+    GameStateService gameStateService,
     ILogger<TickerService> logger) : BackgroundService
 {
     private readonly ConcurrentDictionary<string, DateTimeOffset> _phaseEnds = new();
@@ -57,6 +58,10 @@ public class TickerService(
                 try
                 {
                     await phaseOrchestrator.AdvanceForGameAsync(gameId);
+
+                    // Re-arm timer for the next phase (game is still active if TryGet succeeds)
+                    if (gameStateService.TryGet(gameId, out var nextState))
+                        _phaseEnds[gameId] = DateTimeOffset.UtcNow.AddMilliseconds(PhaseDuration(nextState.Phase));
                 }
                 catch (Exception ex)
                 {
