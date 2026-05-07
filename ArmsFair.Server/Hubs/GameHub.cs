@@ -43,10 +43,28 @@ public class GameHub(
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
 
-        if (gameStateService.TryGet(gameId, out var state))
-            await Clients.Caller.SendAsync("StateSync", new StateSync(state));
-        else
+        if (!gameStateService.TryGet(gameId, out var state))
+        {
             await Clients.Caller.SendAsync("Error", new ErrorMessage("GAME_NOT_FOUND", $"Game {gameId} does not exist."));
+            return;
+        }
+
+        // Append joining player to state.Players if not already present
+        var playerId = GetPlayerId();
+        if (!state.Players.Any(p => p.Id == playerId))
+        {
+            var playerEntity = Guid.TryParse(playerId, out var guid)
+                ? await db.Players.FindAsync(guid) : null;
+
+            var profile = playerEntity is not null
+                ? new PlayerProfile { Id = playerId, Username = playerEntity.Username, HomeNation = playerEntity.HomeNationIso ?? "USA" }
+                : new PlayerProfile { Id = playerId, Username = "Operative", HomeNation = "USA" };
+
+            state = state with { Players = new List<PlayerProfile>(state.Players) { profile } };
+            gameStateService.Set(gameId, state);
+        }
+
+        await Clients.Caller.SendAsync("StateSync", new StateSync(state));
     }
 
     public async Task CreateGame(LobbySettingsMessage settings)
@@ -102,7 +120,7 @@ public class GameHub(
         await db.SaveChangesAsync();
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
-        await Clients.Caller.SendAsync("StateSync", new StateSync(state));
+        await Clients.Group(gameId).SendAsync("StateSync", new StateSync(state));
     }
 
     public async Task StartGame(string gameId)
