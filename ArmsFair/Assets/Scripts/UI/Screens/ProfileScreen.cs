@@ -172,7 +172,7 @@ namespace ArmsFair.UI
         private async void OnSave()
         {
             _errorLabel.style.display   = DisplayStyle.None;
-            _successLabel.style.display = DisplayStyle.None;
+            _successModal.style.display  = DisplayStyle.None;
 
             var companyName = _companyNameField.value.Trim();
             if (string.IsNullOrWhiteSpace(companyName))
