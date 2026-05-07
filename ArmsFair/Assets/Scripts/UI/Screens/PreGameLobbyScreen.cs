@@ -59,12 +59,15 @@ namespace ArmsFair.UI
             TerminalUI.StyleDangerButton(_root.Q<Button>("LeaveBtn"));
             TerminalUI.StyleLabels(_root);
 
-            // Navigate to HUD when game starts (StateSync received after CreateGame)
-            GameClient.Instance.OnStateSync.AddListener(OnStateSync);
-
             _lobby = new LobbyApiClient("https://armsfair.laynekudo.com");
 
             UIManager.Instance.Register("PreGameLobby", this);
+        }
+
+        private void Start()
+        {
+            if (GameClient.Instance != null)
+                GameClient.Instance.OnStateSync.AddListener(OnStateSync);
         }
 
         private void OnDestroy()
