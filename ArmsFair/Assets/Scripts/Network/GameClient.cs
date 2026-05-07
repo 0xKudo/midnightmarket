@@ -97,6 +97,9 @@ namespace ArmsFair.Network
         public Task SubmitActionAsync(SubmitActionMessage action) =>
             InvokeAsync("SubmitAction", GameId, action);
 
+        public Task SubmitOrderAsync(SubmitOrderMessage order) =>
+            InvokeAsync("SubmitOrder", GameId, order);
+
         public Task SubmitProcurementAsync(ProcurementMessage msg) =>
             InvokeAsync("SubmitProcurement", GameId, msg);
 

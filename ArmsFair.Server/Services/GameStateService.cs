@@ -11,7 +11,7 @@ namespace ArmsFair.Server.Services;
 public class GameStateService
 {
     private readonly ConcurrentDictionary<string, GameState>       _games           = new();
-    private readonly ConcurrentDictionary<string, PlayerAction>    _pending         = new();
+    private readonly ConcurrentDictionary<string, List<PlayerAction>> _pending         = new();
     private readonly ConcurrentDictionary<string, HashSet<string>> _ceaseFireVoters = new();
 
     // ── Game state ────────────────────────────────────────────────────────────
@@ -29,23 +29,31 @@ public class GameStateService
 
     // ── Pending actions ───────────────────────────────────────────────────────
 
-    public void SetPendingAction(string connectionId, PlayerAction action) =>
-        _pending[connectionId] = action;
+    public void SetPendingActions(string connectionId, List<PlayerAction> actions) =>
+        _pending[connectionId] = actions;
 
     public List<PlayerAction> GetAndClearPendingForGame(string gameId, IEnumerable<string> playerIds)
     {
         var ids = playerIds.ToHashSet();
-        var actions = _pending.Values.Where(a => ids.Contains(a.PlayerId)).ToList();
-        foreach (var key in _pending.Where(kvp => ids.Contains(kvp.Value.PlayerId)).Select(kvp => kvp.Key).ToList())
+        var result = new List<PlayerAction>();
+        foreach (var key in _pending.Keys.ToList())
+        {
+            if (!_pending.TryGetValue(key, out var list)) continue;
+            if (!list.Any(a => ids.Contains(a.PlayerId))) continue;
+            result.AddRange(list.Where(a => ids.Contains(a.PlayerId)));
             _pending.TryRemove(key, out _);
-        return actions;
+        }
+        return result;
     }
 
     public void ClearPendingForGame(IEnumerable<string> playerIds)
     {
         var ids = playerIds.ToHashSet();
-        foreach (var key in _pending.Where(kvp => ids.Contains(kvp.Value.PlayerId)).Select(kvp => kvp.Key).ToList())
-            _pending.TryRemove(key, out _);
+        foreach (var key in _pending.Keys.ToList())
+        {
+            if (_pending.TryGetValue(key, out var list) && list.Any(a => ids.Contains(a.PlayerId)))
+                _pending.TryRemove(key, out _);
+        }
     }
 
     // ── Cease-fire voters ─────────────────────────────────────────────────────

@@ -113,6 +113,12 @@
 
     </ui:VisualElement>
 
+    <!-- Inventory bar (persistent across all phases) -->
+    <ui:VisualElement name="InventoryBar" style="display:none; flex-direction:row; align-items:center; background-color:rgb(13,13,8); border-top-color:rgb(58,58,42); border-top-width:1px; padding-left:16px; padding-right:16px; padding-top:5px; padding-bottom:5px;">
+      <ui:Label text="INVENTORY:" style="font-size:12px; color:rgb(138,134,112); margin-right:12px; white-space:nowrap;" />
+      <ui:VisualElement name="InventoryItems" style="flex-direction:row; flex-wrap:wrap;" />
+    </ui:VisualElement>
+
     <!-- Status bar -->
     <ui:VisualElement style="background-color:rgb(17,17,8); border-top-color:rgb(58,58,42); border-top-width:1px; padding-left:16px; padding-right:16px; padding-top:5px; padding-bottom:5px;">
       <ui:Label name="StatusLabel" text="CONNECTED" style="font-size:13px; color:rgb(138,134,112); white-space:nowrap;" />

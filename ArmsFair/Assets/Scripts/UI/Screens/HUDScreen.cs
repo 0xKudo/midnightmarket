@@ -45,10 +45,13 @@ namespace ArmsFair.UI
         private Label                            _procTotalLabel;
         private Label                            _procErrorLabel;
         private Button                           _confirmProcBtn;
-        private VisualElement                    _inventorySection;
         private Dictionary<WeaponCategory, int>  _quantities  = new();
         private Dictionary<WeaponCategory, int>  _inventory   = new();
         private int                              _procCapitalM;
+
+        // Persistent inventory bar
+        private VisualElement _inventoryBar;
+        private VisualElement _inventoryItems;
 
         // Reveal overlay
         private VisualElement _revealOverlay;
@@ -68,11 +71,10 @@ namespace ArmsFair.UI
         private Button                       _dualSupplyBtn;
         private Button                       _proxyBtn;
         private SaleType                     _selectedSaleType   = SaleType.Open;
-        private WeaponCategory?              _selectedWeapon     = null;
         private string                       _selectedCountryIso = null;
         private bool                         _isDualSupply       = false;
         private bool                         _isProxyRouted      = false;
-        private int                          _salesQuantity      = 1;
+        private Dictionary<WeaponCategory, int> _salesOrder      = new();
         private Dictionary<SaleType, Button> _saleTypeBtns       = new();
 
         // Timer state
@@ -121,6 +123,9 @@ namespace ArmsFair.UI
 
             _root.Q<Button>("LeaveGameBtn").clicked += OnLeaveGame;
             TerminalUI.StyleDangerButton(_root.Q<Button>("LeaveGameBtn"));
+
+            _inventoryBar   = _root.Q("InventoryBar");
+            _inventoryItems = _root.Q("InventoryItems");
 
             _procurementPanel = _root.Q("ProcurementPanel");
             _weaponList       = _root.Q<ScrollView>("WeaponList");
@@ -173,6 +178,8 @@ namespace ArmsFair.UI
         {
             if (_root == null) return;
             _root.style.display = DisplayStyle.Flex;
+            _inventory.Clear();
+            RefreshInventoryBar();
             if (_lastState != null) BindState(_lastState);
         }
 
@@ -209,7 +216,6 @@ namespace ArmsFair.UI
                 var localId = AccountManager.Instance.LocalPlayer?.Id;
                 _procCapitalM = msg.FullState.Players.FirstOrDefault(p => p.Id == localId)?.Capital ?? 0;
                 UpdateProcTotal();
-                RefreshInventoryDisplay();
             }
         }
 
@@ -396,7 +402,6 @@ namespace ArmsFair.UI
             {
                 var localId = AccountManager.Instance.LocalPlayer?.Id;
                 _procCapitalM = _lastState?.Players.FirstOrDefault(p => p.Id == localId)?.Capital ?? 0;
-                _inventory.Clear();
                 BuildProcurementPanel();
             }
 
@@ -471,30 +476,16 @@ namespace ArmsFair.UI
                 _weaponList.Add(row);
             }
 
-            // Inventory section — shown/updated after each purchase
-            _inventorySection = new VisualElement();
-            _inventorySection.style.display     = DisplayStyle.None;
-            _inventorySection.style.marginTop   = 12;
-            _inventorySection.style.borderTopColor  = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
-            _inventorySection.style.borderTopWidth  = 1;
-            _inventorySection.style.paddingTop  = 10;
-            _procurementPanel.Add(_inventorySection);
         }
 
-        private void RefreshInventoryDisplay()
+        private void RefreshInventoryBar()
         {
-            if (_inventorySection == null) return;
-            _inventorySection.Clear();
+            if (_inventoryBar == null || _inventoryItems == null) return;
+            _inventoryItems.Clear();
 
             var hasItems = _inventory.Any(kv => kv.Value > 0);
-            _inventorySection.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
+            _inventoryBar.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
             if (!hasItems) return;
-
-            var title = new Label("YOUR INVENTORY THIS ROUND");
-            title.style.fontSize     = 12;
-            title.style.color        = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-            title.style.marginBottom = 6;
-            _inventorySection.Add(title);
 
             foreach (var kv in _inventory)
             {
@@ -502,22 +493,20 @@ namespace ArmsFair.UI
                 var entry = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
                 if (entry == null) continue;
 
-                var row = new VisualElement();
-                row.style.flexDirection  = FlexDirection.Row;
-                row.style.justifyContent = Justify.SpaceBetween;
-                row.style.marginBottom   = 4;
-
-                var nameL = new Label($"{entry.DisplayName} x{kv.Value}");
-                nameL.style.color    = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
-                nameL.style.fontSize = 13;
-
-                var costL = new Label($"${entry.BaseCostMillions * kv.Value}M");
-                costL.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                costL.style.fontSize = 13;
-
-                row.Add(nameL);
-                row.Add(costL);
-                _inventorySection.Add(row);
+                var chip = new Label($"{entry.DisplayName} x{kv.Value}");
+                chip.style.color            = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+                chip.style.fontSize         = 12;
+                chip.style.backgroundColor  = new StyleColor(new Color(20f/255f, 30f/255f, 12f/255f));
+                chip.style.borderTopColor   = chip.style.borderBottomColor =
+                chip.style.borderLeftColor  = chip.style.borderRightColor  =
+                    new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
+                chip.style.borderTopWidth   = chip.style.borderBottomWidth =
+                chip.style.borderLeftWidth  = chip.style.borderRightWidth  = 1;
+                chip.style.paddingTop       = chip.style.paddingBottom = 2;
+                chip.style.paddingLeft      = chip.style.paddingRight  = 8;
+                chip.style.marginRight      = 8;
+                chip.style.whiteSpace       = WhiteSpace.NoWrap;
+                _inventoryItems.Add(chip);
             }
         }
 
@@ -730,6 +719,7 @@ namespace ArmsFair.UI
 
             // Reset quantity selectors after submit
             _quantities.Clear();
+            RefreshInventoryBar();
             if (_confirmProcBtn != null) _confirmProcBtn.SetEnabled(true);
         }
 
@@ -738,11 +728,10 @@ namespace ArmsFair.UI
         private void BuildSalesPanel()
         {
             _selectedSaleType   = SaleType.Open;
-            _selectedWeapon     = null;
             _selectedCountryIso = null;
             _isDualSupply       = false;
             _isProxyRouted      = false;
-            _salesQuantity      = 1;
+            _salesOrder.Clear();
             _saleTypeBtns.Clear();
 
             if (_saleTypeRow != null)
@@ -926,15 +915,18 @@ namespace ArmsFair.UI
                     }
                     return;
                 }
-                // Use the first (and typically only) non-zero entry
-                var pick  = chosen[0];
-                var entry = WeaponCatalog.Items.FirstOrDefault(i => i.Category == pick.Key);
-                _selectedWeapon = pick.Key;
-                _salesQuantity  = pick.Value;
+                _salesOrder.Clear();
+                foreach (var kv in chosen) _salesOrder[kv.Key] = kv.Value;
+
                 if (_weaponPickerBtn != null)
-                    _weaponPickerBtn.text = pick.Value > 1
-                        ? $"{entry?.DisplayName}  x{pick.Value}"
-                        : entry?.DisplayName ?? pick.Key.ToString();
+                {
+                    var parts = chosen.Select(kv =>
+                    {
+                        var e = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
+                        return kv.Value > 1 ? $"{e?.DisplayName} x{kv.Value}" : e?.DisplayName ?? kv.Key.ToString();
+                    });
+                    _weaponPickerBtn.text = string.Join(", ", parts);
+                }
                 if (_saleErrorLabel != null) _saleErrorLabel.style.display = DisplayStyle.None;
                 _root.Remove(overlay);
                 UpdateSaleEstimate();
@@ -985,7 +977,7 @@ namespace ArmsFair.UI
             panel.Add(search);
 
             var scroll = new ScrollView();
-            scroll.style.height   = 260;
+            scroll.style.height   = 220;
             scroll.style.flexGrow = 0;
             panel.Add(scroll);
 
@@ -1033,19 +1025,32 @@ namespace ArmsFair.UI
                 _saleEstimateLabel.text = "Costs $2M. Earns 1 peace credit.";
                 return;
             }
-            if (_selectedWeapon == null || _selectedCountryIso == null)
+            if (_salesOrder.Count == 0 || _selectedCountryIso == null)
             {
                 _saleEstimateLabel.text = "";
                 return;
             }
             var country = _lastState?.Countries.FirstOrDefault(c => c.Iso == _selectedCountryIso);
-            var entry   = WeaponCatalog.Items.FirstOrDefault(i => i.Category == _selectedWeapon);
-            if (country == null || entry == null) { _saleEstimateLabel.text = ""; return; }
+            if (country == null) { _saleEstimateLabel.text = ""; return; }
 
-            var stage  = (int)country.Stage;
-            var profit = (int)(entry.BaseProfitMillions * Balance.StageMultiplier[stage]) * _salesQuantity;
-            var qtyStr = _salesQuantity > 1 ? $" x{_salesQuantity}" : "";
-            _saleEstimateLabel.text = $"Est. profit: ${profit}M{qtyStr}  (Stage {stage} market)";
+            var stage    = (int)country.Stage;
+            var stageMul = Balance.StageMultiplier[stage];
+            var typeMul  = _selectedSaleType switch
+            {
+                SaleType.Covert   => Balance.CovertProfitPremium,
+                SaleType.AidCover => Balance.AidCoverProfitPenalty,
+                _                 => 1.0f
+            };
+            var dualMul  = _isDualSupply ? Balance.DualSupplyProfitMul : 1.0f;
+
+            var total = 0;
+            foreach (var kv in _salesOrder)
+            {
+                var entry = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
+                if (entry == null) continue;
+                total += (int)(entry.BaseProfitMillions * stageMul * typeMul * dualMul) * kv.Value;
+            }
+            _saleEstimateLabel.text = $"Est. profit: ${total}M  (Stage {stage} market)";
         }
 
         private void OnSubmitSale()
@@ -1060,7 +1065,8 @@ namespace ArmsFair.UI
 
             if (_selectedSaleType != SaleType.PeaceBroker)
             {
-                if (_selectedWeapon == null)     { ShowSaleError("Select a weapon."); return; }
+                if (_salesOrder.Count == 0 || !_salesOrder.Any(kv => kv.Value > 0))
+                { ShowSaleError("Select at least one weapon."); return; }
                 if (_selectedCountryIso == null) { ShowSaleError("Select a target country."); return; }
             }
 
@@ -1086,12 +1092,11 @@ namespace ArmsFair.UI
 
             panel.Add(MakeModalTitle("Confirm Sales Order"));
 
-            AddModalRow(panel, "SALE TYPE",  _selectedSaleType.ToString().ToUpper());
-            if (_selectedWeapon != null)
+            AddModalRow(panel, "SALE TYPE", _selectedSaleType.ToString().ToUpper());
+            foreach (var kv in _salesOrder.Where(kv => kv.Value > 0))
             {
-                var wName = WeaponCatalog.Items.FirstOrDefault(i => i.Category == _selectedWeapon)?.DisplayName ?? "";
-                var wText = _salesQuantity > 1 ? $"{wName}  x{_salesQuantity}" : wName;
-                AddModalRow(panel, "WEAPON", wText);
+                var e = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
+                AddModalRow(panel, "WEAPON", kv.Value > 1 ? $"{e?.DisplayName}  x{kv.Value}" : e?.DisplayName ?? "");
             }
             if (_selectedCountryIso != null)
                 AddModalRow(panel, "TARGET",
@@ -1152,14 +1157,16 @@ namespace ArmsFair.UI
         private async void SubmitSale()
         {
             if (_submitSaleBtn != null) _submitSaleBtn.SetEnabled(false);
-            await GameClient.Instance.SubmitActionAsync(new SubmitActionMessage(
-                SaleType       : _selectedSaleType,
-                TargetCountry  : _selectedCountryIso,
-                WeaponCategory : _selectedWeapon,
-                SupplierId     : null,
-                IsDualSupply   : _isDualSupply,
-                IsProxyRouted  : _isProxyRouted,
-                Quantity       : _salesQuantity));
+            var lines = _salesOrder
+                .Where(kv => kv.Value > 0)
+                .Select(kv => new OrderLine(kv.Key, kv.Value))
+                .ToList();
+            await GameClient.Instance.SubmitOrderAsync(new SubmitOrderMessage(
+                SaleType      : _selectedSaleType,
+                TargetCountry : _selectedCountryIso,
+                Weapons       : lines,
+                IsDualSupply  : _isDualSupply,
+                IsProxyRouted : _isProxyRouted));
         }
 
         // ── Modal helpers ─────────────────────────────────────────────────────

@@ -191,18 +191,48 @@ public class GameHub(
         if (state.Phase != GamePhase.Sales)
         { await SendError("WRONG_PHASE", "Actions can only be submitted during the Sales phase."); return; }
 
-        gameStateService.SetPendingAction(Context.ConnectionId, new PlayerAction
+        gameStateService.SetPendingActions(Context.ConnectionId, new List<PlayerAction>
         {
-            PlayerId       = playerId,
-            SaleType       = msg.SaleType,
-            TargetCountry  = msg.TargetCountry,
-            WeaponCategory = msg.WeaponCategory,
-            SupplierId     = msg.SupplierId,
-            IsDualSupply   = msg.IsDualSupply,
-            IsProxyRouted  = msg.IsProxyRouted,
-            Quantity       = Math.Max(1, msg.Quantity)
+            new PlayerAction
+            {
+                PlayerId       = playerId,
+                SaleType       = msg.SaleType,
+                TargetCountry  = msg.TargetCountry,
+                WeaponCategory = msg.WeaponCategory,
+                SupplierId     = msg.SupplierId,
+                IsDualSupply   = msg.IsDualSupply,
+                IsProxyRouted  = msg.IsProxyRouted,
+                Quantity       = Math.Max(1, msg.Quantity)
+            }
         });
 
+        await Clients.Caller.SendAsync("ActionAcknowledged", new { playerId, gameId });
+    }
+
+    public async Task SubmitOrder(string gameId, SubmitOrderMessage msg)
+    {
+        var playerId = GetPlayerId();
+        if (!gameStateService.TryGet(gameId, out var state))
+        { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
+        if (state.Phase != GamePhase.Sales)
+        { await SendError("WRONG_PHASE", "Orders can only be submitted during the Sales phase."); return; }
+        if (msg.Weapons == null || msg.Weapons.Count == 0)
+        { await SendError("EMPTY_ORDER", "No weapons in order."); return; }
+
+        var actions = msg.Weapons
+            .Where(w => w.Quantity > 0)
+            .Select(w => new PlayerAction
+            {
+                PlayerId       = playerId,
+                SaleType       = msg.SaleType,
+                TargetCountry  = msg.TargetCountry,
+                WeaponCategory = w.Category,
+                IsDualSupply   = msg.IsDualSupply,
+                IsProxyRouted  = msg.IsProxyRouted,
+                Quantity       = Math.Max(1, w.Quantity)
+            }).ToList();
+
+        gameStateService.SetPendingActions(Context.ConnectionId, actions);
         await Clients.Caller.SendAsync("ActionAcknowledged", new { playerId, gameId });
     }
 

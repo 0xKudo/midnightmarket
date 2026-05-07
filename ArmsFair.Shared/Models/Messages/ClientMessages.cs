@@ -12,6 +12,15 @@ public record SubmitActionMessage(
     bool            IsProxyRouted,
     int             Quantity = 1);
 
+public record OrderLine(WeaponCategory Category, int Quantity);
+
+public record SubmitOrderMessage(
+    SaleType        SaleType,
+    string?         TargetCountry,
+    List<OrderLine> Weapons,
+    bool            IsDualSupply,
+    bool            IsProxyRouted);
+
 public record ChatMessage(
     string  SenderId,
     string  Text,
