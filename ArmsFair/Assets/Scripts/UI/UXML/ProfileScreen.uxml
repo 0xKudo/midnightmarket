@@ -20,10 +20,19 @@
       <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
 
       <ui:Label name="ErrorLabel" text="" style="color:rgb(192,144,144); font-size:10px; display:none; margin-bottom:8px;" />
-      <ui:Label name="SuccessLabel" text="" style="color:rgb(138,184,112); font-size:10px; display:none; margin-bottom:8px;" />
 
       <ui:Button name="SaveBtn" text="SAVE PROFILE" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center;" />
       <ui:Button name="BackBtn" text="BACK"         style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:0;  font-size:13px; -unity-text-align:middle-center;" />
+    </ui:VisualElement>
+
+    <!-- Success modal -->
+    <ui:VisualElement name="SuccessModal" style="display:none; position:absolute; left:0; top:0; right:0; bottom:0; background-color:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
+      <ui:VisualElement style="background-color:rgb(17,17,8); border-color:rgb(58,90,42); border-width:1px; padding:28px 32px; width:320px; flex-direction:column; align-items:center;">
+        <ui:Label text="[ PROFILE SAVED ]" style="font-size:15px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:8px; white-space:nowrap;" />
+        <ui:VisualElement style="height:1px; background-color:rgb(58,90,42); margin-bottom:16px; width:100%;" />
+        <ui:Label text="OPERATIVE RECORD UPDATED" style="font-size:10px; color:rgb(138,134,112); margin-bottom:20px; white-space:nowrap;" />
+        <ui:Button name="SuccessOkBtn" text="OK" style="color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding:8px 40px; font-size:13px; -unity-text-align:middle-center;" />
+      </ui:VisualElement>
     </ui:VisualElement>
 
     <!-- Nation choice modal -->

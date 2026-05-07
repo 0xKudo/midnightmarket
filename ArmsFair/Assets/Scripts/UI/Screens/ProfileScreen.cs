@@ -13,7 +13,7 @@ namespace ArmsFair.UI
         private Button        _nationBtn;
         private TextField     _companyNameField;
         private Label         _errorLabel;
-        private Label         _successLabel;
+        private VisualElement _successModal;
 
         private VisualElement _choiceModal;
         private TextField     _choiceSearch;
@@ -44,12 +44,13 @@ namespace ArmsFair.UI
             _nationBtn        = _root.Q<Button>("NationBtn");
             _companyNameField = _root.Q<TextField>("CompanyNameField");
             _errorLabel       = _root.Q<Label>("ErrorLabel");
-            _successLabel     = _root.Q<Label>("SuccessLabel");
+            _successModal     = _root.Q<VisualElement>("SuccessModal");
             _choiceModal      = _root.Q<VisualElement>("ChoiceModal");
             _choiceSearch     = _root.Q<TextField>("ChoiceSearch");
             _choiceList       = _root.Q<ScrollView>("ChoiceList");
 
             _nationBtn.clicked += OpenNationModal;
+            _root.Q<Button>("SuccessOkBtn").clicked += () => _successModal.style.display = DisplayStyle.None;
             _choiceSearch.RegisterValueChangedCallback(evt => FilterChoices(evt.newValue));
 
             _root.Q<Button>("SaveBtn").clicked += OnSave;
@@ -68,7 +69,7 @@ namespace ArmsFair.UI
             if (_root == null) return;
             _root.style.display          = DisplayStyle.Flex;
             _errorLabel.style.display    = DisplayStyle.None;
-            _successLabel.style.display  = DisplayStyle.None;
+            _successModal.style.display  = DisplayStyle.None;
             _choiceModal.style.display   = DisplayStyle.None;
 
             var p = AccountManager.Instance.LocalPlayer;
@@ -187,13 +188,15 @@ namespace ArmsFair.UI
             try
             {
                 await AccountManager.Instance.SaveProfileAsync(iso, companyName);
-                _successLabel.text          = "PROFILE SAVED";
-                _successLabel.style.display = DisplayStyle.Flex;
+                _successModal.style.display = DisplayStyle.Flex;
             }
             catch (Exception ex)
             {
+                Debug.LogError($"[ProfileScreen] SaveProfile failed: {ex.Message}");
                 _errorLabel.text = ex.Message.Contains("401") ? "SESSION EXPIRED — PLEASE LOG IN AGAIN"
-                                 : "SAVE FAILED — CONNECTION ERROR";
+                                 : ex.Message.Contains("404") ? "ENDPOINT NOT FOUND (404)"
+                                 : ex.Message.Contains("500") ? "SERVER ERROR (500)"
+                                 : $"ERROR: {ex.Message}";
                 _errorLabel.style.display = DisplayStyle.Flex;
             }
         }
