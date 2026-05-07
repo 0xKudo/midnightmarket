@@ -69,6 +69,18 @@ public class GameHub(
 
     public async Task CreateGame(LobbySettingsMessage settings)
     {
+        try
+        {
+            await CreateGameInternalAsync(settings);
+        }
+        catch (Exception ex)
+        {
+            await SendError("CREATE_GAME_FAILED", ex.Message);
+        }
+    }
+
+    private async Task CreateGameInternalAsync(LobbySettingsMessage settings)
+    {
         var gameId   = Guid.NewGuid().ToString();
         var playerId = GetPlayerId();
 

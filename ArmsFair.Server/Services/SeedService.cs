@@ -40,18 +40,26 @@ public class SeedService(
 
     private async Task<List<CountryState>> SeedRealisticAsync(CancellationToken ct)
     {
-        var db  = redis.GetDatabase();
-        var raw = await db.StringGetAsync(RealisticCacheKey);
-        if (raw.HasValue)
+        try
         {
-            logger.LogInformation("SeedService: returning cached Realistic country list");
-            return JsonSerializer.Deserialize<List<CountryState>>(raw!) ?? new();
-        }
+            var db  = redis.GetDatabase();
+            var raw = await db.StringGetAsync(RealisticCacheKey);
+            if (raw.HasValue)
+            {
+                logger.LogInformation("SeedService: returning cached Realistic country list");
+                return JsonSerializer.Deserialize<List<CountryState>>(raw!) ?? new();
+            }
 
-        logger.LogInformation("SeedService: fetching fresh Realistic seed data from ACLED + GPI");
-        var countries = await BuildRealisticListAsync(ct);
-        await db.StringSetAsync(RealisticCacheKey, JsonSerializer.Serialize(countries), CacheTtl);
-        return countries;
+            logger.LogInformation("SeedService: fetching fresh Realistic seed data from ACLED + GPI");
+            var countries = await BuildRealisticListAsync(ct);
+            await db.StringSetAsync(RealisticCacheKey, JsonSerializer.Serialize(countries), CacheTtl);
+            return countries;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("SeedService: Realistic seed failed ({Msg}), falling back to EqualWorld seed", ex.Message);
+            return SeedEqualWorld();
+        }
     }
 
     private async Task<List<CountryState>> BuildRealisticListAsync(CancellationToken ct)
