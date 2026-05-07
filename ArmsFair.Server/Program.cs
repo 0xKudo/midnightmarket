@@ -15,8 +15,12 @@ builder.Services.AddDbContext<ArmsFairDb>(opt =>
 
 // ── Redis ───────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
-    ConnectionMultiplexer.Connect(
-        builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379"));
+{
+    var connStr = builder.Configuration.GetConnectionString("Redis") ?? "redis:6379";
+    var options = ConfigurationOptions.Parse(connStr);
+    options.AbortOnConnectFail = false;
+    return ConnectionMultiplexer.Connect(options);
+});
 
 // ── HTTP clients ────────────────────────────────────────────────────────────
 builder.Services.AddHttpClient("acled");
