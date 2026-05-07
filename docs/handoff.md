@@ -159,6 +159,32 @@ Each screen is its own child GameObject with its own UIDocument. Do NOT share a 
 
 ---
 
+## 🔴 BLOCKING — VPS Redeploy Required
+
+**ProfileScreen SAVE PROFILE returns "SAVE FAILED — CONNECTION ERROR"**
+
+The VPS is running stale code. The following changes exist in git (`main` branch, commit `cf9b522`) but have NOT been deployed to the VPS yet:
+
+1. **`ArmsFair.Server/Program.cs`** — `PATCH /api/auth/profile` changed to `POST /api/auth/profile` (UnityWebRequest does not reliably send Authorization headers with PATCH)
+2. **`ArmsFair.Server/Data/Entities/PlayerEntity.cs`** — `CompanyName` field added
+3. **`ArmsFair.Server/Program.cs`** — `companyName` included in register/login/me responses; PATCH→POST profile endpoint added; `UpdateProfileRequest` record added
+
+**Steps to fix:**
+```bash
+# On the VPS — pull latest and redeploy
+git pull origin main
+
+# Run the EF migration (adds CompanyName column)
+dotnet ef migrations add AddCompanyName --project ArmsFair.Server
+dotnet ef database update --project ArmsFair.Server
+
+# Restart the server (Docker or systemd — confirm method with user)
+```
+
+After redeploy, ProfileScreen SAVE PROFILE should work end-to-end.
+
+---
+
 ## Known Issues / Gotchas
 
 ### CSS Custom Properties Don't Inherit in Unity UI Toolkit
