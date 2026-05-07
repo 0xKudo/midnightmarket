@@ -74,6 +74,29 @@
       <ui:VisualElement name="WorldMapArea" style="flex-grow:1; align-items:center; justify-content:center;">
         <ui:Label name="PhaseStatusLabel" text="AWAITING PHASE START..." style="font-size:16px; color:rgb(138,134,112); white-space:nowrap;" />
 
+        <!-- Sales Phase Panel -->
+        <ui:VisualElement name="SalesPanel" style="display:none; flex-direction:column; width:480px; background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px;">
+          <ui:Label text="Submit Sales Order" style="font-size:16px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:16px;" />
+          <ui:Label text="SALE TYPE" style="font-size:12px; color:rgb(138,134,112); margin-bottom:6px;" />
+          <ui:VisualElement name="SaleTypeRow" style="flex-direction:row; margin-bottom:14px;" />
+          <ui:VisualElement name="WeaponRow" style="flex-direction:row; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <ui:Label text="WEAPON" style="font-size:12px; color:rgb(138,134,112);" />
+            <ui:Button name="WeaponPickerBtn" text="Select Weapon" style="font-size:13px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:5px; padding-bottom:5px; padding-left:10px; padding-right:10px;" />
+          </ui:VisualElement>
+          <ui:VisualElement name="CountryRow" style="flex-direction:row; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <ui:Label text="TARGET COUNTRY" style="font-size:12px; color:rgb(138,134,112);" />
+            <ui:Button name="CountryPickerBtn" text="Select Country" style="font-size:13px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:5px; padding-bottom:5px; padding-left:10px; padding-right:10px;" />
+          </ui:VisualElement>
+          <ui:VisualElement name="ModifierRow" style="flex-direction:row; margin-bottom:14px;" />
+          <ui:Label name="SaleEstimateLabel" text="" style="font-size:12px; color:rgb(138,134,112); margin-bottom:8px;" />
+          <ui:Label name="PeaceBrokerNote" text="Costs $2M. Earns 1 peace credit. No weapon or target required." style="font-size:12px; color:rgb(138,184,112); display:none; margin-bottom:12px;" />
+          <ui:Label name="SaleErrorLabel" text="" style="font-size:13px; color:rgb(192,100,100); display:none; margin-bottom:8px;" />
+          <ui:VisualElement style="flex-direction:row;">
+            <ui:Button name="PassSaleBtn"   text="PASS"         style="flex-grow:1; margin-right:8px; font-size:13px; color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:8px; padding-bottom:8px;" />
+            <ui:Button name="SubmitSaleBtn" text="SUBMIT ORDER" style="flex-grow:1; font-size:13px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:8px; padding-bottom:8px;" />
+          </ui:VisualElement>
+        </ui:VisualElement>
+
         <!-- Procurement Phase Panel -->
         <ui:VisualElement name="ProcurementPanel" style="display:none; flex-direction:column; width:480px; background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px;">
           <ui:Label text="Purchase Weapons" style="font-size:16px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:16px;" />
