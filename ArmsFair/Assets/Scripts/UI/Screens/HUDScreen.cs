@@ -215,12 +215,13 @@ namespace ArmsFair.UI
         private void OnPhaseStart(PhaseStartMessage msg)
         {
             if (_root == null || _root.style.display == DisplayStyle.None) return;
+            var round              = Math.Max(1, msg.Round);
             _phaseLabel.text       = msg.Phase.ToString().ToUpper();
-            _roundLabel.text       = msg.Round > 0 ? $"ROUND {msg.Round}" : "SETUP";
+            _roundLabel.text       = $"ROUND {round}";
             _phaseEndsAt           = msg.EndsAt;
             _timerRunning          = true;
             _phaseStatusLabel.text = $"PHASE: {msg.Phase.ToString().ToUpper()}";
-            _statusLabel.text      = $"PHASE STARTED — ROUND {msg.Round}";
+            _statusLabel.text      = $"PHASE STARTED — ROUND {round}";
             ShowPanel(msg.Phase);
         }
 
@@ -228,6 +229,21 @@ namespace ArmsFair.UI
         {
             if (_root == null || _root.style.display == DisplayStyle.None) return;
             if (_lastState == null) return;
+
+            // Update _lastState so the next Procurement phase reads correct capital
+            var updatedPlayers = _lastState.Players.Select(p =>
+            {
+                var profit = msg.ProfitUpdates.FirstOrDefault(u => u.PlayerId == p.Id);
+                var rep    = msg.ReputationUpdates.FirstOrDefault(u => u.PlayerId == p.Id);
+                var share  = msg.SharePriceUpdates.FirstOrDefault(u => u.PlayerId == p.Id);
+                return p with
+                {
+                    Capital    = profit != null ? profit.NewCapital  : p.Capital,
+                    Reputation = rep    != null ? rep.NewReputation  : p.Reputation,
+                    SharePrice = share  != null ? share.NewPrice     : p.SharePrice,
+                };
+            }).ToList();
+            _lastState = _lastState with { Players = updatedPlayers };
 
             var localId = AccountManager.Instance.LocalPlayer?.Id;
             foreach (var p in msg.ProfitUpdates)
@@ -861,15 +877,13 @@ namespace ArmsFair.UI
 
             var overlay  = MakeModalOverlay();
             var panel    = MakeModalPanel(320);
-            panel.style.maxHeight      = new StyleLength(Length.Percent(75));
-            panel.style.flexDirection  = FlexDirection.Column;
+            panel.style.overflow = Overflow.Hidden;
 
             var title    = MakeModalTitle("Select Target Country");
             panel.Add(title);
 
             var search   = new TextField();
             search.style.marginBottom    = 8;
-            search.style.flexShrink      = 0;
             search.style.backgroundColor = new StyleColor(new Color(25f/255f, 25f/255f, 15f/255f));
             search.style.borderTopColor  = search.style.borderBottomColor =
             search.style.borderLeftColor = search.style.borderRightColor  =
@@ -881,9 +895,8 @@ namespace ArmsFair.UI
             panel.Add(search);
 
             var scroll = new ScrollView();
-            scroll.style.flexGrow   = 1;
-            scroll.style.flexShrink = 1;
-            scroll.style.minHeight  = 80;
+            scroll.style.height   = 340;
+            scroll.style.flexGrow = 0;
             panel.Add(scroll);
 
             void Populate(string filter)
@@ -1187,8 +1200,8 @@ namespace ArmsFair.UI
         {
             BindTracks(state.Tracks);
 
-            _roundLabel.text = state.Round > 0 ? $"ROUND {state.Round}" : "SETUP";
-            _phaseLabel.text = state.Round > 0 ? state.Phase.ToString().ToUpper() : "AWAITING START";
+            _roundLabel.text = $"ROUND {Math.Max(1, state.Round)}";
+            _phaseLabel.text = state.Phase.ToString().ToUpper();
 
             // Local player stats
             var localId = AccountManager.Instance.LocalPlayer?.Id;
