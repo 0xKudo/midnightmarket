@@ -179,7 +179,8 @@ app.MapGet("/api/rooms/{id}", (string id, LobbyService lobby) =>
 // POST /api/rooms — create a room
 app.MapPost("/api/rooms", (CreateRoomRequest req, HttpContext ctx, LobbyService lobby, AuthService auth) =>
 {
-    var playerId = ctx.User.FindFirst("sub")?.Value;
+    var playerId = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? ctx.User.FindFirst("sub")?.Value;
     if (playerId is null) return Results.Unauthorized();
 
     var username = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
@@ -203,7 +204,8 @@ app.MapPost("/api/rooms", (CreateRoomRequest req, HttpContext ctx, LobbyService 
 // POST /api/rooms/{id}/join — join a room by id or invite code
 app.MapPost("/api/rooms/{id}/join", (string id, HttpContext ctx, LobbyService lobby) =>
 {
-    var playerId = ctx.User.FindFirst("sub")?.Value;
+    var playerId = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? ctx.User.FindFirst("sub")?.Value;
     if (playerId is null) return Results.Unauthorized();
 
     var room = lobby.GetByRoomId(id) ?? lobby.GetByInviteCode(id);
