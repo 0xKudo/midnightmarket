@@ -139,13 +139,13 @@ app.MapGet("/api/auth/me", async (HttpContext ctx, AuthService auth) =>
     });
 }).RequireAuthorization();
 
-app.MapPost("/api/auth/profile", async (UpdateProfileRequest req, HttpContext ctx, AuthService auth, ArmsFairDb db) =>
+app.MapPost("/api/auth/profile", async (UpdateProfileRequest req, HttpContext ctx, ArmsFairDb db) =>
 {
-    var authHeader = ctx.Request.Headers.Authorization.FirstOrDefault();
-    var token = authHeader?.StartsWith("Bearer ") == true ? authHeader[7..] : null;
-    if (token is null) return Results.Unauthorized();
+    var idStr = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+             ?? ctx.User.FindFirst("sub")?.Value;
+    if (!Guid.TryParse(idStr, out var id)) return Results.Unauthorized();
 
-    var player = await auth.ValidateTokenAsync(token);
+    var player = await db.Players.FindAsync(id);
     if (player is null) return Results.Unauthorized();
 
     if (req.HomeNationIso is not null) player.HomeNationIso = req.HomeNationIso;
