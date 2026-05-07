@@ -9,7 +9,8 @@ public record SubmitActionMessage(
     WeaponCategory? WeaponCategory,
     string?         SupplierId,
     bool            IsDualSupply,
-    bool            IsProxyRouted);
+    bool            IsProxyRouted,
+    int             Quantity = 1);
 
 public record ChatMessage(
     string  SenderId,

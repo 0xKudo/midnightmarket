@@ -11,4 +11,5 @@ public record PlayerAction
     public string?           SupplierId     { get; init; }
     public bool              IsDualSupply   { get; init; }
     public bool              IsProxyRouted  { get; init; }
+    public int               Quantity       { get; init; } = 1;
 }

@@ -210,9 +210,10 @@ public class PhaseOrchestrator(
             var player = state.Players.FirstOrDefault(p => p.Id == action.PlayerId);
             if (player is null) continue;
 
-            var profit = ProfitEngine.Calculate(
+            var unitProfit = ProfitEngine.Calculate(
                 weapon, country.Stage, action.SaleType,
                 action.IsDualSupply, tracks.MarketHeat, relationshipPoints: 0);
+            var profit = unitProfit * action.Quantity;
 
             profitUpdates.Add(new ProfitUpdate(action.PlayerId, profit, player.Capital + profit));
 

@@ -199,7 +199,8 @@ public class GameHub(
             WeaponCategory = msg.WeaponCategory,
             SupplierId     = msg.SupplierId,
             IsDualSupply   = msg.IsDualSupply,
-            IsProxyRouted  = msg.IsProxyRouted
+            IsProxyRouted  = msg.IsProxyRouted,
+            Quantity       = Math.Max(1, msg.Quantity)
         });
 
         await Clients.Caller.SendAsync("ActionAcknowledged", new { playerId, gameId });

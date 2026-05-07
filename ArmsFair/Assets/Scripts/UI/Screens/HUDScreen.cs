@@ -72,6 +72,7 @@ namespace ArmsFair.UI
         private string                       _selectedCountryIso = null;
         private bool                         _isDualSupply       = false;
         private bool                         _isProxyRouted      = false;
+        private int                          _salesQuantity      = 1;
         private Dictionary<SaleType, Button> _saleTypeBtns       = new();
 
         // Timer state
@@ -741,6 +742,7 @@ namespace ArmsFair.UI
             _selectedCountryIso = null;
             _isDualSupply       = false;
             _isProxyRouted      = false;
+            _salesQuantity      = 1;
             _saleTypeBtns.Clear();
 
             if (_saleTypeRow != null)
@@ -828,31 +830,119 @@ namespace ArmsFair.UI
             }
 
             var overlay = MakeModalOverlay();
-            var panel   = MakeModalPanel(260);
+            var panel   = MakeModalPanel(320);
+            panel.Add(MakeModalTitle("Select Weapon + Quantity"));
 
-            var title = MakeModalTitle("Select Weapon");
-            panel.Add(title);
+            var pending = new Dictionary<WeaponCategory, int>();
+            var qtyLabels = new Dictionary<WeaponCategory, Label>();
 
             foreach (var kv in available)
             {
                 var entry = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
                 if (entry == null) continue;
-                var cat = kv.Key;
-                var btn = new Button { text = $"{entry.DisplayName}  (x{kv.Value})" };
-                StyleModalRowBtn(btn);
-                btn.clicked += () =>
+                var cat    = kv.Key;
+                var maxQty = kv.Value;
+                pending[cat] = 0;
+
+                var row = new VisualElement();
+                row.style.flexDirection     = FlexDirection.Row;
+                row.style.alignItems        = Align.Center;
+                row.style.justifyContent    = Justify.SpaceBetween;
+                row.style.paddingTop        = 5;
+                row.style.paddingBottom     = 5;
+                row.style.borderBottomColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+                row.style.borderBottomWidth = 1;
+                row.style.marginBottom      = 4;
+
+                var nameLabel = new Label($"{entry.DisplayName}  (max {maxQty})");
+                nameLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+                nameLabel.style.fontSize = 13;
+                nameLabel.style.flexGrow = 1;
+
+                var qtyLabel = new Label("0");
+                qtyLabel.style.color          = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+                qtyLabel.style.fontSize       = 14;
+                qtyLabel.style.width          = 24;
+                qtyLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+                qtyLabels[cat]                = qtyLabel;
+
+                var minusBtn = MakeQtyButton("-");
+                var plusBtn  = MakeQtyButton("+");
+
+                minusBtn.clicked += () =>
                 {
-                    _selectedWeapon = cat;
-                    if (_weaponPickerBtn != null) _weaponPickerBtn.text = entry.DisplayName;
-                    if (_saleErrorLabel  != null) _saleErrorLabel.style.display = DisplayStyle.None;
-                    _root.Remove(overlay);
-                    UpdateSaleEstimate();
+                    if (pending[cat] <= 0) return;
+                    pending[cat]--;
+                    qtyLabel.text = pending[cat].ToString();
                 };
-                panel.Add(btn);
+                plusBtn.clicked += () =>
+                {
+                    if (pending[cat] >= maxQty) return;
+                    pending[cat]++;
+                    qtyLabel.text = pending[cat].ToString();
+                };
+
+                row.Add(nameLabel);
+                row.Add(minusBtn);
+                row.Add(qtyLabel);
+                row.Add(plusBtn);
+                panel.Add(row);
             }
 
-            var cancel = MakeModalCancelBtn(() => _root.Remove(overlay));
-            panel.Add(cancel);
+            var divider = new VisualElement();
+            divider.style.height          = 1;
+            divider.style.backgroundColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+            divider.style.marginTop       = 10;
+            divider.style.marginBottom    = 10;
+            panel.Add(divider);
+
+            var btnRow = new VisualElement();
+            btnRow.style.flexDirection = FlexDirection.Row;
+
+            var cancelBtn = MakeModalCancelBtn(() => _root.Remove(overlay));
+            cancelBtn.style.flexGrow   = 1;
+            cancelBtn.style.marginRight = 8;
+
+            var selectBtn = new Button { text = "SELECT" };
+            selectBtn.style.flexGrow        = 1;
+            selectBtn.style.paddingTop      = selectBtn.style.paddingBottom = 8;
+            selectBtn.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            selectBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 25f/255f, 8f/255f));
+            selectBtn.style.borderTopColor  = selectBtn.style.borderBottomColor =
+            selectBtn.style.borderLeftColor = selectBtn.style.borderRightColor  =
+                new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
+            selectBtn.style.borderTopWidth  = selectBtn.style.borderBottomWidth =
+            selectBtn.style.borderLeftWidth = selectBtn.style.borderRightWidth  = 1;
+
+            selectBtn.clicked += () =>
+            {
+                var chosen = pending.Where(kv => kv.Value > 0).ToList();
+                if (chosen.Count == 0)
+                {
+                    if (_saleErrorLabel != null)
+                    {
+                        _saleErrorLabel.text = "Set a quantity before selecting.";
+                        _saleErrorLabel.style.display = DisplayStyle.Flex;
+                    }
+                    return;
+                }
+                // Use the first (and typically only) non-zero entry
+                var pick  = chosen[0];
+                var entry = WeaponCatalog.Items.FirstOrDefault(i => i.Category == pick.Key);
+                _selectedWeapon = pick.Key;
+                _salesQuantity  = pick.Value;
+                if (_weaponPickerBtn != null)
+                    _weaponPickerBtn.text = pick.Value > 1
+                        ? $"{entry?.DisplayName}  x{pick.Value}"
+                        : entry?.DisplayName ?? pick.Key.ToString();
+                if (_saleErrorLabel != null) _saleErrorLabel.style.display = DisplayStyle.None;
+                _root.Remove(overlay);
+                UpdateSaleEstimate();
+            };
+
+            btnRow.Add(cancelBtn);
+            btnRow.Add(selectBtn);
+            panel.Add(btnRow);
             overlay.Add(panel);
             _root.Add(overlay);
         }
@@ -895,7 +985,7 @@ namespace ArmsFair.UI
             panel.Add(search);
 
             var scroll = new ScrollView();
-            scroll.style.height   = 340;
+            scroll.style.height   = 260;
             scroll.style.flexGrow = 0;
             panel.Add(scroll);
 
@@ -953,8 +1043,9 @@ namespace ArmsFair.UI
             if (country == null || entry == null) { _saleEstimateLabel.text = ""; return; }
 
             var stage  = (int)country.Stage;
-            var profit = (int)(entry.BaseProfitMillions * Balance.StageMultiplier[stage]);
-            _saleEstimateLabel.text = $"Est. profit: ${profit}M  (Stage {stage} market)";
+            var profit = (int)(entry.BaseProfitMillions * Balance.StageMultiplier[stage]) * _salesQuantity;
+            var qtyStr = _salesQuantity > 1 ? $" x{_salesQuantity}" : "";
+            _saleEstimateLabel.text = $"Est. profit: ${profit}M{qtyStr}  (Stage {stage} market)";
         }
 
         private void OnSubmitSale()
@@ -996,9 +1087,12 @@ namespace ArmsFair.UI
             panel.Add(MakeModalTitle("Confirm Sales Order"));
 
             AddModalRow(panel, "SALE TYPE",  _selectedSaleType.ToString().ToUpper());
-            if (_selectedWeapon     != null)
-                AddModalRow(panel, "WEAPON",
-                    WeaponCatalog.Items.FirstOrDefault(i => i.Category == _selectedWeapon)?.DisplayName ?? "");
+            if (_selectedWeapon != null)
+            {
+                var wName = WeaponCatalog.Items.FirstOrDefault(i => i.Category == _selectedWeapon)?.DisplayName ?? "";
+                var wText = _salesQuantity > 1 ? $"{wName}  x{_salesQuantity}" : wName;
+                AddModalRow(panel, "WEAPON", wText);
+            }
             if (_selectedCountryIso != null)
                 AddModalRow(panel, "TARGET",
                     _lastState?.Countries.FirstOrDefault(c => c.Iso == _selectedCountryIso)?.Name ?? _selectedCountryIso);
@@ -1064,7 +1158,8 @@ namespace ArmsFair.UI
                 WeaponCategory : _selectedWeapon,
                 SupplierId     : null,
                 IsDualSupply   : _isDualSupply,
-                IsProxyRouted  : _isProxyRouted));
+                IsProxyRouted  : _isProxyRouted,
+                Quantity       : _salesQuantity));
         }
 
         // ── Modal helpers ─────────────────────────────────────────────────────
