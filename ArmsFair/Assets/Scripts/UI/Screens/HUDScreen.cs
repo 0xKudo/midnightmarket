@@ -50,6 +50,9 @@ namespace ArmsFair.UI
         private Dictionary<WeaponCategory, int>  _inventory   = new();
         private int                              _procCapitalM;
 
+        // Reveal overlay
+        private VisualElement _revealOverlay;
+
         // Sales panel
         private VisualElement                _salesPanel;
         private VisualElement                _saleTypeRow;
@@ -152,6 +155,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnPhaseStart.AddListener(OnPhaseStart);
             GameClient.Instance.OnConsequences.AddListener(OnConsequences);
             GameClient.Instance.OnWorldUpdate.AddListener(OnWorldUpdate);
+            GameClient.Instance.OnReveal.AddListener(OnReveal);
         }
 
         private void OnDestroy()
@@ -161,6 +165,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnPhaseStart.RemoveListener(OnPhaseStart);
             GameClient.Instance.OnConsequences.RemoveListener(OnConsequences);
             GameClient.Instance.OnWorldUpdate.RemoveListener(OnWorldUpdate);
+            GameClient.Instance.OnReveal.RemoveListener(OnReveal);
         }
 
         public void Show()
@@ -248,10 +253,118 @@ namespace ArmsFair.UI
             BindTracks(msg.NewTracks);
         }
 
+        private void OnReveal(RevealMessage msg)
+        {
+            if (_root == null || _root.style.display == DisplayStyle.None) return;
+
+            if (_revealOverlay != null) { _root.Remove(_revealOverlay); _revealOverlay = null; }
+
+            _revealOverlay = MakeModalOverlay();
+
+            var panel = MakeModalPanel(460);
+            panel.Add(MakeModalTitle("ROUND REVEAL"));
+
+            if (msg.Actions == null || msg.Actions.Count == 0)
+            {
+                var empty = new Label("No orders were submitted this round.");
+                empty.style.color        = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                empty.style.fontSize     = 13;
+                empty.style.marginBottom = 14;
+                panel.Add(empty);
+            }
+            else
+            {
+                var localId = AccountManager.Instance.LocalPlayer?.Id;
+
+                foreach (var action in msg.Actions)
+                {
+                    var company = string.IsNullOrEmpty(action.CompanyName) ? "UNKNOWN" : action.CompanyName.ToUpper();
+                    var isMe    = action.PlayerId == localId;
+
+                    var row = new VisualElement();
+                    row.style.flexDirection     = FlexDirection.Row;
+                    row.style.alignItems        = Align.Center;
+                    row.style.paddingTop        = 7;
+                    row.style.paddingBottom     = 7;
+                    row.style.borderBottomColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+                    row.style.borderBottomWidth = 1;
+
+                    var companyLabel = new Label(isMe ? $"> {company}" : $"  {company}");
+                    companyLabel.style.color    = new StyleColor(isMe
+                        ? new Color(138f/255f, 184f/255f, 112f/255f)
+                        : new Color(212f/255f, 207f/255f, 184f/255f));
+                    companyLabel.style.fontSize = 13;
+                    companyLabel.style.width    = 160;
+                    companyLabel.style.flexShrink = 0;
+
+                    var saleTypeStr = action.SaleType switch
+                    {
+                        SaleType.Open        => "OPEN",
+                        SaleType.Covert      => "COVERT",
+                        SaleType.AidCover    => "AID COVER",
+                        SaleType.PeaceBroker => "PEACE BROKER",
+                        _                    => action.SaleType.ToString().ToUpper()
+                    };
+
+                    var detail = new Label();
+                    if (action.SaleType == SaleType.PeaceBroker)
+                    {
+                        detail.text = "PEACE BROKER";
+                    }
+                    else
+                    {
+                        var weaponStr  = action.WeaponCategory.HasValue
+                            ? WeaponCatalog.Items.FirstOrDefault(i => i.Category == action.WeaponCategory.Value)?.DisplayName ?? action.WeaponCategory.Value.ToString()
+                            : "?";
+                        var countryStr = action.TargetIso != null
+                            ? (_lastState?.Countries.FirstOrDefault(c => c.Iso == action.TargetIso)?.Name ?? action.TargetIso)
+                            : "?";
+                        detail.text = $"{saleTypeStr}  {weaponStr}  →  {countryStr}";
+                    }
+                    detail.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                    detail.style.fontSize = 13;
+                    detail.style.flexGrow = 1;
+
+                    row.Add(companyLabel);
+                    row.Add(detail);
+                    panel.Add(row);
+                }
+            }
+
+            var divider = new VisualElement();
+            divider.style.height          = 1;
+            divider.style.backgroundColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+            divider.style.marginTop       = 12;
+            divider.style.marginBottom    = 12;
+            panel.Add(divider);
+
+            var closeBtn = new Button { text = "CLOSE" };
+            closeBtn.style.paddingTop      = closeBtn.style.paddingBottom = 8;
+            closeBtn.style.color           = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+            closeBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
+            closeBtn.style.borderTopColor  = closeBtn.style.borderBottomColor =
+            closeBtn.style.borderLeftColor = closeBtn.style.borderRightColor  =
+                new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+            closeBtn.style.borderTopWidth  = closeBtn.style.borderBottomWidth =
+            closeBtn.style.borderLeftWidth = closeBtn.style.borderRightWidth  = 1;
+            closeBtn.clicked += () =>
+            {
+                if (_revealOverlay != null) { _root.Remove(_revealOverlay); _revealOverlay = null; }
+            };
+            panel.Add(closeBtn);
+
+            _revealOverlay.Add(panel);
+            _root.Add(_revealOverlay);
+
+            if (_statusLabel != null) _statusLabel.text = "REVEAL: ALL ORDERS DISCLOSED";
+        }
+
         // ── Panel switching ───────────────────────────────────────────────────
 
         private void ShowPanel(GamePhase phase)
         {
+            if (_revealOverlay != null) { _root.Remove(_revealOverlay); _revealOverlay = null; }
+
             var isProcurement = phase == GamePhase.Procurement;
             var isSales       = phase == GamePhase.Sales;
 
