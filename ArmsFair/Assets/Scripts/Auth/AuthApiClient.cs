@@ -100,8 +100,8 @@ namespace ArmsFair.Auth
         public async Task<PlayerProfile> PatchProfileAsync(string token, string homeNationIso, string companyName)
         {
             var json = $"{{\"homeNationIso\":\"{homeNationIso}\",\"companyName\":\"{companyName}\"}}";
-            var url  = _baseUrl + "/api/auth/profile";
-            var request = new UnityWebRequest(url, "PATCH");
+            var url     = _baseUrl + "/api/auth/profile";
+            var request = new UnityWebRequest(url, "POST");
             request.uploadHandler   = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");

@@ -139,7 +139,7 @@ app.MapGet("/api/auth/me", async (HttpContext ctx, AuthService auth) =>
     });
 }).RequireAuthorization();
 
-app.MapPatch("/api/auth/profile", async (UpdateProfileRequest req, HttpContext ctx, AuthService auth, ArmsFairDb db) =>
+app.MapPost("/api/auth/profile", async (UpdateProfileRequest req, HttpContext ctx, AuthService auth, ArmsFairDb db) =>
 {
     var authHeader = ctx.Request.Headers.Authorization.FirstOrDefault();
     var token = authHeader?.StartsWith("Bearer ") == true ? authHeader[7..] : null;
