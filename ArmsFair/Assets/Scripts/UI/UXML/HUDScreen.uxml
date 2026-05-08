@@ -29,7 +29,7 @@
     <ui:VisualElement name="TracksBar" style="flex-direction:row; justify-content:center; align-items:center; background-color:rgb(13,13,8); border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-top:7px; padding-bottom:7px;">
       <ui:Label name="MarketHeatLabel"    text="MARKET HEAT: --"    style="font-size:16px; color:rgb(212,207,184); margin-right:32px; white-space:nowrap;" />
       <ui:Label name="CivilianCostLabel"  text="CIVILIAN COST: --"  style="font-size:16px; color:rgb(212,207,184); margin-right:32px; white-space:nowrap;" />
-      <ui:Label name="StabilityLabel"     text="STABILITY: --"      style="font-size:16px; color:rgb(212,207,184); margin-right:32px; white-space:nowrap;" />
+      <ui:Label name="InstabilityLabel"   text="INSTABILITY: --"    style="font-size:16px; color:rgb(212,207,184); margin-right:32px; white-space:nowrap;" />
       <ui:Label name="SanctionsRiskLabel" text="SANCTIONS: --"      style="font-size:16px; color:rgb(212,207,184); margin-right:32px; white-space:nowrap;" />
       <ui:Label name="GeoTensionLabel"    text="GEO TENSION: --"    style="font-size:16px; color:rgb(212,207,184); white-space:nowrap;" />
     </ui:VisualElement>

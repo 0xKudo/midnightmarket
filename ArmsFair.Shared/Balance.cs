@@ -10,28 +10,28 @@ public static class Balance
     // Mode 1 — Realistic (default)
     public const int StartMarketHeat       = 30;
     public const int StartCivilianCost     = 20;
-    public const int StartStability        = 25;
+    public const int StartInstability        = 25;
     public const int StartSanctionsRisk    = 10;
     public const int StartGeoTension       = 35;
 
     // Mode 2 — Equal World
     public const int EqualWorldMarketHeat    = 20;
     public const int EqualWorldCivilianCost  = 10;
-    public const int EqualWorldStability     = 15;
+    public const int EqualWorldInstability     = 15;
     public const int EqualWorldSanctionsRisk = 5;
     public const int EqualWorldGeoTension    = 20;
 
     // Mode 3 — Blank Slate
     public const int BlankSlateMarketHeat    = 10;
     public const int BlankSlateCivilianCost  = 5;
-    public const int BlankSlateStability     = 10;
+    public const int BlankSlateInstability     = 10;
     public const int BlankSlateSanctionsRisk = 0;
     public const int BlankSlateGeoTension    = 10;
 
     // Mode 4 — Hot World
     public const int HotWorldMarketHeat      = 55;
     public const int HotWorldCivilianCost    = 45;
-    public const int HotWorldStability       = 50;
+    public const int HotWorldInstability       = 50;
     public const int HotWorldSanctionsRisk   = 30;
     public const int HotWorldGeoTension      = 55;
 
@@ -98,7 +98,7 @@ public static class Balance
     // Peace broker flat deltas
     public const int PeaceMarketHeat   = -1;
     public const int PeaceCivilianCost = -1;
-    public const int PeaceStability    = -2;
+    public const int PeaceInstability    = -2;
     public const int PeaceCostToPlayer = 2;   // $M
     public const int PeaceCreditEarned = 1;
 
@@ -154,8 +154,8 @@ public static class Balance
     public const float SpreadStage4Bonus        = +0.04f;
     public const float SpreadMin                = 0.00f;
     public const float SpreadMax                = 0.60f;
-    public const float SpreadHighStabilityMul   = 2.0f;
-    public const int   SpreadHighStabilityThresh = 80;
+    public const float SpreadHighInstabilityMul   = 2.0f;
+    public const int   SpreadHighInstabilityThresh = 80;
 
     // ── Track thresholds ─────────────────────────────────────────────────
     public const int   MarketHeatBonusThresh   = 80;
@@ -168,8 +168,8 @@ public static class Balance
     public const int CivCostSanctionsThresh    = 75;
     public const int CivCostEndingThresh       = 100;
 
-    public const int StabilitySpreadMulThresh  = 80;
-    public const int StabilityEndingThresh     = 100;
+    public const int InstabilitySpreadMulThresh  = 80;
+    public const int InstabilityEndingThresh     = 100;
 
     public const int SanctionsLicenseCostThresh = 60;
     public const int SanctionsInvestThresh      = 80;
@@ -225,7 +225,7 @@ public static class Balance
 
     // ── Peacekeeping investment ───────────────────────────────────────────
     public const int   PeacekeepingCost            = 10;  // $M
-    public const int   PeacekeepingStabilityDelta  = -3;
+    public const int   PeacekeepingInstabilityDelta  = -3;
     public const int   PeacekeepingCivilianDelta   = -2;
     public const int   PeacekeepingCoSignatories   = 1;
     public const float PeacekeepingSpreadReduction = 0.04f;
@@ -244,13 +244,13 @@ public static class Balance
     public const int PhaseConsequences = 60_000;
 
     // ── Ending conditions ─────────────────────────────────────────────────
-    public const int   WorldPeaceStabilityThresh      = 15;
+    public const int   WorldPeaceInstabilityThresh      = 15;
     public const int   WorldPeaceCivCostThresh        = 25;
     public const int   WorldPeaceMaxCountryStage      = 2;
     public const int   WorldPeaceMinReconstruction    = 3;
     public const int   WorldPeaceLegacyBonus          = 200;
     public const float MarketSaturationFailedPct      = 0.40f;
-    public const int   NegotiatedPeaceStabilityThresh = 20;
+    public const int   NegotiatedPeaceInstabilityThresh = 20;
     public const int   NegotiatedPeaceCreditBonus     = 20;  // $M for 5+ peace credits
     public const int   NegotiatedPeaceMinCredits      = 5;
     public const int   GlobalSanctionsEndgameRounds   = 3;
@@ -261,8 +261,8 @@ public static class Balance
     public const int   LegacyPerPeaceCredit        = 5;
     public const int   LegacyPerCeasefire          = 20;
     public const int   LegacyPerReconstruction     = 15;
-    public const int   LegacyMaxStabilityBonus     = 100;
-    public const int   LegacyStabilityBonusThresh  = 20;
+    public const int   LegacyMaxInstabilityBonus     = 100;
+    public const int   LegacyInstabilityBonusThresh  = 20;
     public const int   LegacyPenaltyPerFailedState = -10;
     public const float LegacyCivilianCostPenalty   = 0.5f;
 }

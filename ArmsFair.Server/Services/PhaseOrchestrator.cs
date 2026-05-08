@@ -126,14 +126,14 @@ public class PhaseOrchestrator(
 
             var neighbors = adjacency.TryGetValue(country.Iso, out var n) ? n : [];
             int salesInto = salesPerCountry.GetValueOrDefault(country.Iso, 0);
-            bool highStability = state.Tracks.Stability >= Balance.SpreadHighStabilityThresh;
+            bool highInstability = state.Tracks.Instability >= Balance.SpreadHighInstabilityThresh;
 
             var spreadChance = SpreadEngine.ComputeSpreadChance(
                 salesIntoZone:         salesInto,
                 treatySignatories:     0,   // treaty system deferred
                 peacekeepingInvestors: 0,
                 isStage4:              country.Stage == CountryStage.HumanitarianCrisis,
-                highStability:         highStability);
+                highInstability:       highInstability);
 
             foreach (var neighborIso in SpreadEngine.ComputeSpreads(country.Iso, neighbors, spreadChance, rng))
             {

@@ -4,7 +4,7 @@ namespace ArmsFair.Shared.Models.Messages;
 
 public record PhaseStartMessage(GamePhase Phase, int Round, long EndsAt);
 
-public record TrackDeltas(int MarketHeat, int CivilianCost, int Stability, int SanctionsRisk, int GeoTension);
+public record TrackDeltas(int MarketHeat, int CivilianCost, int Instability, int SanctionsRisk, int GeoTension);
 
 public record SpreadEvent(string FromIso, string ToIso, int NewStage);
 

@@ -356,7 +356,7 @@ public class GameHub(
 
         var newTracks = (state.Tracks with
         {
-            Stability    = state.Tracks.Stability    + Balance.PeacekeepingStabilityDelta,
+            Instability  = state.Tracks.Instability  + Balance.PeacekeepingInstabilityDelta,
             CivilianCost = state.Tracks.CivilianCost + Balance.PeacekeepingCivilianDelta
         }).Clamp();
 

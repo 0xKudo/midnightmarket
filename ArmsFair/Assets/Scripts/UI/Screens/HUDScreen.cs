@@ -20,7 +20,7 @@ namespace ArmsFair.UI
         // Top bar
         private Label _marketHeatLabel;
         private Label _civilianCostLabel;
-        private Label _stabilityLabel;
+        private Label _instabilityLabel;
         private Label _sanctionsRiskLabel;
         private Label _geoTensionLabel;
         private Label _phaseLabel;
@@ -120,7 +120,7 @@ namespace ArmsFair.UI
 
             _marketHeatLabel    = _root.Q<Label>("MarketHeatLabel");
             _civilianCostLabel  = _root.Q<Label>("CivilianCostLabel");
-            _stabilityLabel     = _root.Q<Label>("StabilityLabel");
+            _instabilityLabel     = _root.Q<Label>("InstabilityLabel");
             _sanctionsRiskLabel = _root.Q<Label>("SanctionsRiskLabel");
             _geoTensionLabel    = _root.Q<Label>("GeoTensionLabel");
             _phaseLabel         = _root.Q<Label>("PhaseLabel");
@@ -1224,7 +1224,7 @@ namespace ArmsFair.UI
             {
                 var entry = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
                 if (entry == null) continue;
-                total += (int)(entry.BaseProfitMillions * stageMul * typeMul * dualMul) * kv.Value;
+                total += (int)MathF.Round(entry.BaseProfitMillions * stageMul * typeMul * dualMul * kv.Value, MidpointRounding.AwayFromZero);
             }
             _saleEstimateLabel.text = $"Est. profit: ${total}M  (Stage {stage} market)";
         }
@@ -1577,13 +1577,13 @@ namespace ArmsFair.UI
         {
             _marketHeatLabel.text    = $"MARKET HEAT: {t.MarketHeat}";
             _civilianCostLabel.text  = $"CIVILIAN COST: {t.CivilianCost}";
-            _stabilityLabel.text     = $"STABILITY: {t.Stability}";
+            _instabilityLabel.text     = $"INSTABILITY: {t.Instability}";
             _sanctionsRiskLabel.text = $"SANCTIONS: {t.SanctionsRisk}";
             _geoTensionLabel.text    = $"GEO TENSION: {t.GeoTension}";
 
             SetTrackColor(_marketHeatLabel,    t.MarketHeat,    inverted: false);
             SetTrackColor(_civilianCostLabel,  t.CivilianCost,  inverted: false);
-            SetTrackColor(_stabilityLabel,     t.Stability,     inverted: true);
+            SetTrackColor(_instabilityLabel,     t.Instability,   inverted: false);
             SetTrackColor(_sanctionsRiskLabel, t.SanctionsRisk, inverted: false);
             SetTrackColor(_geoTensionLabel,    t.GeoTension,    inverted: false);
         }

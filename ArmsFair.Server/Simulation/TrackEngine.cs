@@ -20,7 +20,7 @@ public static class TrackEngine
         {
             MarketHeat   = tracks.MarketHeat   + Balance.PeaceMarketHeat,
             CivilianCost = tracks.CivilianCost + Balance.PeaceCivilianCost,
-            Stability    = tracks.Stability    + Balance.PeaceStability,
+            Instability    = tracks.Instability    + Balance.PeaceInstability,
         }).Clamp();
 
     public static WorldTracks ApplyCovertTrace(WorldTracks tracks) =>
@@ -35,7 +35,7 @@ public static class TrackEngine
         {
             MarketHeat    = tracks.MarketHeat    + Round(deltas[0] * mul),
             CivilianCost  = tracks.CivilianCost  + Round(deltas[1] * mul),
-            Stability     = tracks.Stability     + Round(deltas[2] * mul),
+            Instability     = tracks.Instability     + Round(deltas[2] * mul),
             SanctionsRisk = tracks.SanctionsRisk + Round(deltas[3] * mul),
             GeoTension    = tracks.GeoTension    + Round(deltas[4] * mul),
         }).Clamp();

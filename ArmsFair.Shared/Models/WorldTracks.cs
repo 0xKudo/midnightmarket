@@ -6,7 +6,7 @@ public record WorldTracks
 {
     public int MarketHeat    { get; init; }
     public int CivilianCost  { get; init; }
-    public int Stability     { get; init; }
+    public int Instability     { get; init; }
     public int SanctionsRisk { get; init; }
     public int GeoTension    { get; init; }
 
@@ -16,7 +16,7 @@ public record WorldTracks
         {
             MarketHeat    = Balance.EqualWorldMarketHeat,
             CivilianCost  = Balance.EqualWorldCivilianCost,
-            Stability     = Balance.EqualWorldStability,
+            Instability     = Balance.EqualWorldInstability,
             SanctionsRisk = Balance.EqualWorldSanctionsRisk,
             GeoTension    = Balance.EqualWorldGeoTension,
         },
@@ -24,7 +24,7 @@ public record WorldTracks
         {
             MarketHeat    = Balance.BlankSlateMarketHeat,
             CivilianCost  = Balance.BlankSlateCivilianCost,
-            Stability     = Balance.BlankSlateStability,
+            Instability     = Balance.BlankSlateInstability,
             SanctionsRisk = Balance.BlankSlateSanctionsRisk,
             GeoTension    = Balance.BlankSlateGeoTension,
         },
@@ -32,7 +32,7 @@ public record WorldTracks
         {
             MarketHeat    = Balance.HotWorldMarketHeat,
             CivilianCost  = Balance.HotWorldCivilianCost,
-            Stability     = Balance.HotWorldStability,
+            Instability     = Balance.HotWorldInstability,
             SanctionsRisk = Balance.HotWorldSanctionsRisk,
             GeoTension    = Balance.HotWorldGeoTension,
         },
@@ -40,7 +40,7 @@ public record WorldTracks
         {           // Custom overrides individual values after construction.
             MarketHeat    = Balance.StartMarketHeat,
             CivilianCost  = Balance.StartCivilianCost,
-            Stability     = Balance.StartStability,
+            Instability     = Balance.StartInstability,
             SanctionsRisk = Balance.StartSanctionsRisk,
             GeoTension    = Balance.StartGeoTension,
         }
@@ -50,7 +50,7 @@ public record WorldTracks
     {
         MarketHeat    = Math.Clamp(MarketHeat,    0, 100),
         CivilianCost  = Math.Clamp(CivilianCost,  0, 100),
-        Stability     = Math.Clamp(Stability,     0, 100),
+        Instability     = Math.Clamp(Instability,     0, 100),
         SanctionsRisk = Math.Clamp(SanctionsRisk, 0, 100),
         GeoTension    = Math.Clamp(GeoTension,    0, 100),
     };

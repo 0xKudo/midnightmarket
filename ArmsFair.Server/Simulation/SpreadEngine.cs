@@ -9,7 +9,7 @@ public static class SpreadEngine
         int treatySignatories,
         int peacekeepingInvestors,
         bool isStage4,
-        bool highStability)
+        bool highInstability)
     {
         float chance = Balance.SpreadBaseChance
             + salesIntoZone      * Balance.SpreadPerSale
@@ -20,7 +20,7 @@ public static class SpreadEngine
 
         chance = MathF.Max(Balance.SpreadMin, chance);
 
-        if (highStability) chance *= Balance.SpreadHighStabilityMul;
+        if (highInstability) chance *= Balance.SpreadHighInstabilityMul;
 
         return MathF.Min(Balance.SpreadMax, chance);
     }

@@ -11,7 +11,7 @@ public static class EndingChecker
     {
         var t = state.Tracks;
 
-        if (t.Stability    >= 100) return new EndingCondition("total_war");
+        if (t.Instability    >= 100) return new EndingCondition("total_war");
         if (t.CivilianCost >= 100) return new EndingCondition("global_sanctions");
         if (t.GeoTension   >= 100) return new EndingCondition("great_power_confrontation");
 
@@ -34,7 +34,7 @@ public static class EndingChecker
 
     private static bool IsNegotiatedPeace(GameState state, HashSet<string> ceaseFireVoters)
     {
-        if (state.Tracks.Stability >= 20) return false;
+        if (state.Tracks.Instability >= 20) return false;
         var activeIds = state.Players
             .Where(p => p.Status == "active")
             .Select(p => p.Id)
