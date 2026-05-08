@@ -267,8 +267,7 @@ namespace ArmsFair.UI
             if (scene.name != "MapGlobe") return;
             if (ArmsFair.Map.GlobeBridge.Instance != null)
                 ArmsFair.Map.GlobeBridge.Instance.OnCountryClicked += OnGlobeCountryClicked;
-            var ctrl = FindObjectOfType<ArmsFair.Map.GlobeCameraController>();
-            if (ctrl != null) _globeCamera = ctrl.GetComponent<Camera>();
+            if (_globeCamera == null) _globeCamera = Camera.main;
             UpdateGlobeViewport();
         }
 
@@ -334,6 +333,7 @@ namespace ArmsFair.UI
         private void OnStateSync(StateSync msg)
         {
             _lastState = msg.FullState;
+            ArmsFair.Map.GlobeBridge.Instance?.RegisterCountries(msg.FullState.Countries);
             if (_root == null || _root.style.display == DisplayStyle.None) return;
             BindState(msg.FullState);
 
@@ -505,7 +505,9 @@ namespace ArmsFair.UI
             if (_root == null || _root.style.display == DisplayStyle.None) return;
             if (_countryInfoCard == null) return;
 
-            var country = _lastState?.Countries.FirstOrDefault(c => c.Iso == iso);
+            var country = _lastState?.Countries.FirstOrDefault(c => c.Iso == iso)
+                       ?? _lastState?.Countries.FirstOrDefault(c =>
+                              string.Equals(c.Name, iso, System.StringComparison.OrdinalIgnoreCase));
             if (country == null) return;
 
             _cardIso = iso;

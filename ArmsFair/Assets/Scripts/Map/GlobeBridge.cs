@@ -1,129 +1,139 @@
-using System.Collections;
 using System.Collections.Generic;
+using WPM;
+using UnityEngine;
 using ArmsFair.Shared.Enums;
 using ArmsFair.Shared.Models;
 using ArmsFair.Shared.Models.Messages;
-using UnityEngine;
 
 namespace ArmsFair.Map
 {
-    [RequireComponent(typeof(GlobeRenderer))]
+    // Lives on the Globe GameObject in MapGlobe scene.
+    // Bridges the WPM WorldMapGlobe asset to ArmsFair game logic.
     public class GlobeBridge : MonoBehaviour
     {
         public static GlobeBridge Instance { get; private set; }
 
         public event System.Action<string, Vector2> OnCountryClicked;
 
-        private GlobeRenderer _globe;
-        private readonly Dictionary<string, float> _stageMap = new();
-        private readonly List<GameObject> _arcObjects = new();
+        private WorldMapGlobe _map;
+
+        // ISO code → WPM country name (populated via RegisterCountries from game state)
+        private readonly Dictionary<string, string> _isoToWpm  = new();
+        // WPM country name → ISO code
+        private readonly Dictionary<string, string> _wpmToIso  = new();
 
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
+
+            // Disable old custom globe components; WPM handles rendering
+            var gr = GetComponent<GlobeRenderer>();
+            if (gr != null) gr.enabled = false;
+            var mr = GetComponent<MeshRenderer>();
+            if (mr != null) mr.enabled = false;
+            var sc = GetComponent<SphereCollider>();
+            if (sc != null) sc.enabled = false;
+
+            // Instantiate WPM globe if not already present
+            if (WorldMapGlobe.instance == null)
+            {
+                var prefab = Resources.Load<GameObject>("Prefabs/WorldMapGlobe");
+                if (prefab != null) Instantiate(prefab);
+                else Debug.LogError("[GlobeBridge] Could not load Prefabs/WorldMapGlobe from Resources");
+            }
         }
 
         private void Start()
         {
-            _globe = GetComponent<GlobeRenderer>();
-            _globe.OnCountrySelected += OnGlobeClick;
+            _map = WorldMapGlobe.instance;
+            if (_map == null) { Debug.LogError("[GlobeBridge] WPM WorldMapGlobe.instance is null"); return; }
+
+            // Disable our custom orbit camera controller; WPM spins the globe itself
+            var ctrl = FindObjectOfType<GlobeCameraController>();
+            if (ctrl != null) ctrl.enabled = false;
+
+            _map.enableCountryHighlight = true;
+            _map.fillColor = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.35f); // terminal green
+            _map.frontiersColor = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.6f);
+            _map.showFrontiers = true;
+            _map.showCountryNames = false;
         }
 
         private void OnDestroy()
         {
-            if (_globe != null) _globe.OnCountrySelected -= OnGlobeClick;
             if (Instance == this) Instance = null;
         }
 
-        private void OnGlobeClick(string iso)
+        private void Update()
         {
-            var cam = Camera.main?.GetComponent<GlobeCameraController>();
-            var screenPos = cam != null ? cam.ClickScreenPos : Vector2.zero;
-            OnCountryClicked?.Invoke(iso, screenPos);
+            if (_map == null) return;
+
+            // Detect country click: mouse released, not a drag, a country was last under cursor
+            if (_map.input.GetMouseButtonUp(0) && !_map.hasDragged && _map.countryLastClicked >= 0)
+            {
+                var wpmName = _map.countries[_map.countryLastClicked].name;
+                var iso = _wpmToIso.TryGetValue(wpmName, out var found) ? found : wpmName;
+                OnCountryClicked?.Invoke(iso, (Vector2)_map.input.mousePosition);
+            }
+        }
+
+        // Called from HUDScreen on each StateSync to build ISO ↔ WPM name lookups.
+        public void RegisterCountries(IEnumerable<CountryState> countries)
+        {
+            _isoToWpm.Clear();
+            _wpmToIso.Clear();
+            if (_map?.countries == null) return;
+
+            foreach (var gs in countries)
+            {
+                for (int i = 0; i < _map.countries.Length; i++)
+                {
+                    var wpmName = _map.countries[i].name;
+                    if (string.Equals(wpmName, gs.Name, System.StringComparison.OrdinalIgnoreCase) ||
+                        wpmName.IndexOf(gs.Name, System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        gs.Name.IndexOf(wpmName, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        _isoToWpm[gs.Iso] = wpmName;
+                        _wpmToIso[wpmName] = gs.Iso;
+                        break;
+                    }
+                }
+            }
         }
 
         public void SetCountryStage(string iso, CountryStage stage)
         {
-            _stageMap[iso] = stage switch
+            if (_map == null) return;
+            if (!_isoToWpm.TryGetValue(iso, out var wpmName)) return;
+
+            var color = stage switch
             {
-                CountryStage.Dormant            => 0f,
-                CountryStage.Simmering          => 0.2f,
-                CountryStage.Active             => 0.4f,
-                CountryStage.HotWar             => 0.6f,
-                CountryStage.HumanitarianCrisis => 0.8f,
-                CountryStage.FailedState        => 1.0f,
-                _                               => 0f
-            };
-            _globe.UpdateCountryTensions(_stageMap);
-        }
-
-        public void PlayArcs(List<ArcAnimation> arcs, IReadOnlyList<PlayerProfile> players)
-        {
-            ClearArcs();
-            foreach (var arc in arcs)
-                StartCoroutine(DrawArc(arc, players));
-        }
-
-        public void HighlightCountry(string iso) { }
-        public void ClearHighlights() { }
-
-        private IEnumerator DrawArc(ArcAnimation arc, IReadOnlyList<PlayerProfile> players)
-        {
-            if (arc.DelayMs > 0)
-                yield return new WaitForSeconds(arc.DelayMs / 1000f);
-
-            var player   = players != null ? System.Linq.Enumerable.FirstOrDefault(players, p => p.Id == arc.PlayerId) : null;
-            var fromIso  = player?.HomeNation ?? "US";
-            var fromPt   = _globe.GetWorldPoint(fromIso);
-            var toPt     = _globe.GetWorldPoint(arc.TargetIso);
-
-            if (fromPt == Vector3.zero || toPt == Vector3.zero) yield break;
-
-            var color = arc.SaleType switch
-            {
-                "Open"        => new Color(138f/255f, 184f/255f, 112f/255f),
-                "Covert"      => new Color(192f/255f, 144f/255f, 80f/255f),
-                "AidCover"    => new Color(80f/255f,  144f/255f, 192f/255f),
-                "PeaceBroker" => new Color(212f/255f, 207f/255f, 184f/255f),
-                _             => Color.white
+                CountryStage.Dormant            => new Color(0.20f, 0.35f, 0.20f, 0.25f),
+                CountryStage.Simmering          => new Color(0.55f, 0.45f, 0.10f, 0.35f),
+                CountryStage.Active             => new Color(0.75f, 0.30f, 0.10f, 0.45f),
+                CountryStage.HotWar             => new Color(0.85f, 0.10f, 0.10f, 0.55f),
+                CountryStage.HumanitarianCrisis => new Color(0.60f, 0.10f, 0.50f, 0.55f),
+                CountryStage.FailedState        => new Color(0.35f, 0.00f, 0.00f, 0.70f),
+                _                               => Color.clear
             };
 
-            var go = new GameObject($"Arc_{arc.PlayerId}_{arc.TargetIso}");
-            go.transform.SetParent(_globe.transform, worldPositionStays: true);
-            _arcObjects.Add(go);
-
-            var lr            = go.AddComponent<LineRenderer>();
-            lr.positionCount  = 24;
-            lr.startWidth     = 0.04f;
-            lr.endWidth       = 0.02f;
-            lr.useWorldSpace  = true;
-            lr.material       = new Material(Shader.Find("Sprites/Default"));
-            lr.startColor     = color;
-            lr.endColor       = new Color(color.r, color.g, color.b, 0f);
-
-            var center  = _globe.transform.position;
-            float radius = _globe.GlobeRadius;
-            var fromDir  = (fromPt - center).normalized;
-            var toDir    = (toPt   - center).normalized;
-            float height = radius * 0.25f;
-
-            for (int i = 0; i < 24; i++)
-            {
-                float t = i / 23f;
-                var dir = Vector3.Slerp(fromDir, toDir, t);
-                float h = height * Mathf.Sin(t * Mathf.PI);
-                lr.SetPosition(i, center + dir * (radius + h));
-            }
-
-            Destroy(go, 6f);
+            if (color.a > 0f)
+                _map.ToggleCountrySurface(wpmName, true, color);
         }
 
-        private void ClearArcs()
+        // Stub — arc rendering via WPM can be added later
+        public void PlayArcs(List<ArcAnimation> arcs, IReadOnlyList<PlayerProfile> players) { }
+
+        public void HighlightCountry(string iso)
         {
-            foreach (var go in _arcObjects)
-                if (go != null) Destroy(go);
-            _arcObjects.Clear();
+            if (_map == null || !_isoToWpm.TryGetValue(iso, out var wpmName)) return;
+            _map.ToggleCountrySurface(wpmName, true, new Color(138f/255f, 184f/255f, 112f/255f, 0.5f));
+        }
+
+        public void ClearHighlights()
+        {
+            _map?.HideCountrySurfaces();
         }
     }
 }
