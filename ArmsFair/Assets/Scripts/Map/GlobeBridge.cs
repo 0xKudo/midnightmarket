@@ -79,6 +79,12 @@ namespace ArmsFair.Map
             _map.showFrontiers           = true;
             _map.showCountryNames        = false;
             _map.earthAtmosphereVisible  = false;
+            _map.rightButtonDrag         = false;
+            _map.rightClickCenters       = true;
+            _map.zoomSpeed               = 0.3f;
+            _map.zoomMinDistance         = 0.5f;
+            _map.zoomMaxDistance         = 5.0f;
+            _map.autoRotationSpeed       = 0f;
         }
 
         private void OnDestroy()

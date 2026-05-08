@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using ArmsFair.Auth;
@@ -89,7 +89,7 @@ namespace ArmsFair.UI
         private ScrollView    _repList;
         private ScrollView    _sharePriceList;
 
-        // Open modal overlays — cleared on every phase transition
+        // Open modal overlays â€” cleared on every phase transition
         private readonly List<VisualElement> _openModals = new();
 
         // Sales panel
@@ -331,7 +331,7 @@ namespace ArmsFair.UI
             _timerLabel.text = $"{secs / 60:D2}:{secs % 60:D2}";
         }
 
-        // ── Event handlers ───────────────────────────────────────────────────
+        // â”€â”€ Event handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         private void OnStateSync(StateSync msg)
         {
@@ -357,7 +357,7 @@ namespace ArmsFair.UI
             _phaseEndsAt           = msg.EndsAt;
             _timerRunning          = true;
             _phaseStatusLabel.text = $"PHASE: {msg.Phase.ToString().ToUpper()}";
-            _statusLabel.text      = $"PHASE STARTED — ROUND {round}";
+            _statusLabel.text      = $"PHASE STARTED â€” ROUND {round}";
 
             // Keep _lastState phase in sync so phase guards (e.g. procurement) work correctly.
             // StateSync is not sent on every phase transition, so we update it here.
@@ -386,7 +386,7 @@ namespace ArmsFair.UI
             if (_readyBtn != null)
             {
                 _readyBtn.SetEnabled(false);
-                _readyBtn.text = "READY ✓";
+                _readyBtn.text = "READY âœ“";
             }
             await GameClient.Instance.MarkReadyAsync();
         }
@@ -399,7 +399,7 @@ namespace ArmsFair.UI
             // Capture old share prices before state is overwritten
             var oldSharePrices = _lastState.Players.ToDictionary(p => p.Id, p => p.SharePrice);
 
-            // Sum all profit entries per player — multi-weapon orders produce one entry per weapon
+            // Sum all profit entries per player â€” multi-weapon orders produce one entry per weapon
             var updatedPlayers = _lastState.Players.Select(p =>
             {
                 var totalEarned = msg.ProfitUpdates.Where(u => u.PlayerId == p.Id).Sum(u => u.ProfitEarned);
@@ -446,7 +446,7 @@ namespace ArmsFair.UI
                         var name = _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.CompanyName
                                 ?? _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.Username
                                 ?? u.PlayerId;
-                        _profitList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  +${u.ProfitEarned}M  →  ${u.NewCapital}M"));
+                        _profitList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  +${u.ProfitEarned}M  â†’  ${u.NewCapital}M"));
                     }
                 }
             }
@@ -465,7 +465,7 @@ namespace ArmsFair.UI
                         var name = _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.CompanyName
                                 ?? _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.Username
                                 ?? b.PlayerId;
-                        _blowbackList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {b.Weapon}  →  {b.CountryIso}  TRACED"));
+                        _blowbackList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {b.Weapon}  â†’  {b.CountryIso}  TRACED"));
                     }
                 }
             }
@@ -490,7 +490,7 @@ namespace ArmsFair.UI
                             "covert_traced" => "covert sale traced",
                             _               => r.Reason
                         };
-                        _repList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  →  {r.NewReputation}  ({reasonText})"));
+                        _repList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  â†’  {r.NewReputation}  ({reasonText})"));
                     }
                 }
             }
@@ -512,7 +512,7 @@ namespace ArmsFair.UI
                         var oldPrice = oldSharePrices.TryGetValue(s.PlayerId, out var op) ? op : s.NewPrice;
                         var delta    = s.NewPrice - oldPrice;
                         var sign     = delta >= 0 ? "+" : "";
-                        _sharePriceList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  ${oldPrice}  →  ${s.NewPrice}  ({sign}${delta})"));
+                        _sharePriceList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  ${oldPrice}  â†’  ${s.NewPrice}  ({sign}${delta})"));
                     }
                 }
             }
@@ -548,13 +548,19 @@ namespace ArmsFair.UI
             if (sellBtn != null)
                 sellBtn.style.display = _lastState?.Phase == GamePhase.Sales ? DisplayStyle.Flex : DisplayStyle.None;
 
-            // Convert Unity screen pos (y=0 at bottom) to WorldMapArea-relative UI Toolkit coords
-            var worldMapArea = _root.Q("WorldMapArea");
-            var wb = worldMapArea?.worldBound ?? Rect.zero;
-            float uiX = (screenPos.x - wb.x) + 10f;
-            float uiY = (Screen.height - screenPos.y) - wb.y + 10f;
-            _countryInfoCard.style.left = uiX;
-            _countryInfoCard.style.top  = uiY;
+            // Convert Unity screen pos (y=0 at bottom) to WorldMapArea-local UI Toolkit coords
+            var wb       = _worldMapArea?.worldBound ?? Rect.zero;
+            float panelH = _root.panel.visualTree.worldBound.height;
+            float uitX   = screenPos.x;
+            float uitY   = panelH - screenPos.y;
+            float localX = uitX - wb.x + 10f;
+            float localY = uitY - wb.y + 10f;
+            const float cardW = 210f;
+            const float cardH = 130f;
+            localX = Mathf.Clamp(localX, 0f, Mathf.Max(0f, wb.width  - cardW));
+            localY = Mathf.Clamp(localY, 0f, Mathf.Max(0f, wb.height - cardH));
+            _countryInfoCard.style.left    = localX;
+            _countryInfoCard.style.top     = localY;
             _countryInfoCard.style.display = DisplayStyle.Flex;
         }
 
@@ -588,7 +594,7 @@ namespace ArmsFair.UI
             {
                 var empty = new Label("No orders were submitted this round.");
                 empty.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                empty.style.fontSize = 13;
+                empty.style.fontSize = 16;
                 _revealList.Add(empty);
             }
             else
@@ -610,7 +616,7 @@ namespace ArmsFair.UI
 
                     var companyLabel = new Label(isMe ? $"> {company}" : $"  {company}");
                     companyLabel.style.color     = new StyleColor(isMe ? new Color(138f/255f, 184f/255f, 112f/255f) : new Color(212f/255f, 207f/255f, 184f/255f));
-                    companyLabel.style.fontSize  = 13;
+                    companyLabel.style.fontSize = 16;
                     companyLabel.style.width     = 160;
                     companyLabel.style.flexShrink = 0;
 
@@ -636,10 +642,10 @@ namespace ArmsFair.UI
                         var countryStr = action.TargetIso != null
                             ? (_lastState?.Countries.FirstOrDefault(c => c.Iso == action.TargetIso)?.Name ?? action.TargetIso)
                             : "?";
-                        detail.text = $"{saleTypeStr}  {weaponStr}  →  {countryStr}";
+                        detail.text = $"{saleTypeStr}  {weaponStr}  â†’  {countryStr}";
                     }
                     detail.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                    detail.style.fontSize = 13;
+                    detail.style.fontSize = 16;
                     detail.style.flexGrow = 1;
 
                     row.Add(companyLabel);
@@ -665,12 +671,12 @@ namespace ArmsFair.UI
             if (_voteCeaseFireBtn != null)
             {
                 _voteCeaseFireBtn.SetEnabled(false);
-                _voteCeaseFireBtn.text = "VOTED ✓";
+                _voteCeaseFireBtn.text = "VOTED âœ“";
             }
             await GameClient.Instance.VoteCeaseFireAsync();
         }
 
-        // ── Panel switching ───────────────────────────────────────────────────
+        // â”€â”€ Panel switching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         private void ShowPanel(GamePhase phase)
         {
@@ -728,12 +734,12 @@ namespace ArmsFair.UI
 
                 var nameLabel = new Label(entry.DisplayName);
                 nameLabel.style.color    = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
-                nameLabel.style.fontSize = 14;
+                nameLabel.style.fontSize = 17;
                 nameLabel.style.flexGrow = 1;
 
                 var costLabel = new Label($"${entry.BaseCostMillions}M ea");
                 costLabel.style.color          = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                costLabel.style.fontSize       = 12;
+                costLabel.style.fontSize = 15;
                 costLabel.style.width          = 60;
                 costLabel.style.unityTextAlign = TextAnchor.MiddleRight;
                 costLabel.style.marginRight    = 10;
@@ -803,7 +809,7 @@ namespace ArmsFair.UI
 
                 var chip = new Label($"{entry.DisplayName} x{kv.Value}");
                 chip.style.color            = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
-                chip.style.fontSize         = 12;
+                chip.style.fontSize = 15;
                 chip.style.backgroundColor  = new StyleColor(new Color(20f/255f, 30f/255f, 12f/255f));
                 chip.style.borderTopColor   = chip.style.borderBottomColor =
                 chip.style.borderLeftColor  = chip.style.borderRightColor  =
@@ -823,7 +829,7 @@ namespace ArmsFair.UI
             var btn = new Button { text = label };
             btn.style.width           = 26;
             btn.style.height          = 26;
-            btn.style.fontSize        = 14;
+            btn.style.fontSize = 17;
             btn.style.paddingTop      = 0;
             btn.style.paddingBottom   = 0;
             btn.style.paddingLeft     = 0;
@@ -844,7 +850,7 @@ namespace ArmsFair.UI
             var btn = new Button { text = "MAX" };
             btn.style.width           = 40;
             btn.style.height          = 26;
-            btn.style.fontSize        = 11;
+            btn.style.fontSize = 14;
             btn.style.paddingTop      = 0;
             btn.style.paddingBottom   = 0;
             btn.style.paddingLeft     = 2;
@@ -874,7 +880,7 @@ namespace ArmsFair.UI
             if (inner != null)
             {
                 inner.style.color           = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                inner.style.fontSize        = 13;
+                inner.style.fontSize = 16;
                 inner.style.backgroundColor = new StyleColor(new Color(20f/255f, 25f/255f, 10f/255f));
                 inner.style.borderTopColor  = inner.style.borderBottomColor =
                 inner.style.borderLeftColor = inner.style.borderRightColor  =
@@ -950,7 +956,7 @@ namespace ArmsFair.UI
             panel.style.paddingLeft     = panel.style.paddingRight  = 20;
 
             var title = new Label("Confirm Purchase");
-            title.style.fontSize       = 16;
+            title.style.fontSize = 19;
             title.style.color          = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
             title.style.unityFontStyleAndWeight = FontStyle.Bold;
             title.style.marginBottom   = 14;
@@ -970,11 +976,11 @@ namespace ArmsFair.UI
 
                 var nameLabel = new Label($"{entry.DisplayName} x{kv.Value}");
                 nameLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                nameLabel.style.fontSize = 13;
+                nameLabel.style.fontSize = 16;
 
                 var costLabel = new Label($"${lineCost}M");
                 costLabel.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                costLabel.style.fontSize = 13;
+                costLabel.style.fontSize = 16;
 
                 row.Add(nameLabel);
                 row.Add(costLabel);
@@ -995,17 +1001,17 @@ namespace ArmsFair.UI
 
             var totalLabel = new Label("TOTAL");
             totalLabel.style.color          = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-            totalLabel.style.fontSize       = 14;
+            totalLabel.style.fontSize = 17;
             totalLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
 
             var totalAmt = new Label($"${totalM}M");
             totalAmt.style.color          = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-            totalAmt.style.fontSize       = 14;
+            totalAmt.style.fontSize = 17;
             totalAmt.style.unityFontStyleAndWeight = FontStyle.Bold;
 
             var afterLabel = new Label($"Capital after: ${capitalM - totalM}M");
             afterLabel.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-            afterLabel.style.fontSize = 12;
+            afterLabel.style.fontSize = 15;
             afterLabel.style.marginBottom = 16;
 
             totalRow.Add(totalLabel);
@@ -1079,7 +1085,7 @@ namespace ArmsFair.UI
             if (_confirmProcBtn != null) _confirmProcBtn.SetEnabled(true);
         }
 
-        // ── Sales panel ──────────────────────────────────────────────────────
+        // â”€â”€ Sales panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         private void BuildSalesPanel()
         {
@@ -1099,7 +1105,7 @@ namespace ArmsFair.UI
                 {
                     var t   = types[i];
                     var btn = new Button { text = labels[i] };
-                    btn.style.fontSize      = 12;
+                    btn.style.fontSize = 15;
                     btn.style.paddingTop    = 5; btn.style.paddingBottom = 5;
                     btn.style.paddingLeft   = 8; btn.style.paddingRight  = 8;
                     btn.style.marginRight   = 6;
@@ -1194,7 +1200,7 @@ namespace ArmsFair.UI
                         var company = (player?.CompanyName ?? player?.Username ?? action.PlayerId).ToUpper();
                         var detail  = action.SaleType == SaleType.PeaceBroker
                             ? "PEACE BROKER"
-                            : $"{action.SaleType.ToString().ToUpper()}  {action.WeaponCategory?.ToString() ?? "?"}  →  {action.TargetIso ?? "?"}";
+                            : $"{action.SaleType.ToString().ToUpper()}  {action.WeaponCategory?.ToString() ?? "?"}  â†’  {action.TargetIso ?? "?"}";
                         _negoRevealList.Add(MakeOverlayRowLabel($"{company}  {detail}"));
                     }
                 }
@@ -1267,7 +1273,7 @@ namespace ArmsFair.UI
 
                 var nameLabel = new Label($"{entry.DisplayName}  (max {maxQty})");
                 nameLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                nameLabel.style.fontSize = 13;
+                nameLabel.style.fontSize = 16;
                 nameLabel.style.flexGrow = 1;
 
                 var qtyField = MakeQtyField(pending[cat]);
@@ -1406,7 +1412,7 @@ namespace ArmsFair.UI
             search.style.borderTopWidth  = search.style.borderBottomWidth =
             search.style.borderLeftWidth = search.style.borderRightWidth  = 1;
             search.style.color           = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-            search.style.fontSize        = 13;
+            search.style.fontSize = 16;
             panel.Add(search);
 
             var scroll = new ScrollView();
@@ -1554,7 +1560,7 @@ namespace ArmsFair.UI
             {
                 var est = new Label(_saleEstimateLabel.text);
                 est.style.color          = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                est.style.fontSize       = 12;
+                est.style.fontSize = 15;
                 est.style.marginBottom   = 14;
                 panel.Add(est);
             }
@@ -1564,7 +1570,7 @@ namespace ArmsFair.UI
                 : "This order is sealed. Other players will not see it until Reveal.";
             var note = new Label(noteText);
             note.style.color        = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-            note.style.fontSize     = 11;
+            note.style.fontSize = 14;
             note.style.marginBottom = 16;
             panel.Add(note);
 
@@ -1619,7 +1625,7 @@ namespace ArmsFair.UI
                 IsProxyRouted : _isProxyRouted));
         }
 
-        // ── Modal helpers ─────────────────────────────────────────────────────
+        // â”€â”€ Modal helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         private VisualElement MakeModalOverlay()
         {
@@ -1684,7 +1690,7 @@ namespace ArmsFair.UI
         private Label MakeModalTitle(string text)
         {
             var t = new Label(text);
-            t.style.fontSize                    = 15;
+            t.style.fontSize = 18;
             t.style.color                       = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
             t.style.unityFontStyleAndWeight     = FontStyle.Bold;
             t.style.marginBottom                = 14;
@@ -1710,7 +1716,7 @@ namespace ArmsFair.UI
         {
             var l = new Label(text);
             l.style.color        = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
-            l.style.fontSize     = 11;
+            l.style.fontSize = 14;
             l.style.marginTop    = 10;
             l.style.marginBottom = 4;
             return l;
@@ -1720,14 +1726,14 @@ namespace ArmsFair.UI
         {
             var l = new Label(text);
             l.style.color        = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-            l.style.fontSize     = 14;
+            l.style.fontSize = 17;
             l.style.marginBottom = 2;
             return l;
         }
 
         private static void StyleModalRowBtn(Button btn)
         {
-            btn.style.fontSize        = 13;
+            btn.style.fontSize = 16;
             btn.style.color           = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
             btn.style.backgroundColor = new StyleColor(new Color(25f/255f, 25f/255f, 15f/255f));
             btn.style.borderTopColor  = btn.style.borderBottomColor =
@@ -1748,10 +1754,10 @@ namespace ArmsFair.UI
             row.style.marginBottom   = 6;
             var l = new Label(label);
             l.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-            l.style.fontSize = 13;
+            l.style.fontSize = 16;
             var v = new Label(value);
             v.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-            v.style.fontSize = 13;
+            v.style.fontSize = 16;
             row.Add(l); row.Add(v);
             parent.Add(row);
         }
@@ -1759,7 +1765,7 @@ namespace ArmsFair.UI
         private static Button MakeSaleToggleBtn(string label)
         {
             var btn = new Button { text = label };
-            btn.style.fontSize      = 12;
+            btn.style.fontSize = 15;
             btn.style.paddingTop    = 5; btn.style.paddingBottom = 5;
             btn.style.paddingLeft   = 8; btn.style.paddingRight  = 8;
             btn.style.marginRight   = 6;
@@ -1799,7 +1805,7 @@ namespace ArmsFair.UI
             btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
         }
 
-        // ── Binding ──────────────────────────────────────────────────────────
+        // â”€â”€ Binding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         private void BindState(GameState state)
         {
@@ -1811,7 +1817,7 @@ namespace ArmsFair.UI
             // Local player stats
             var localId = AccountManager.Instance.LocalPlayer?.Id;
             var me = state.Players.Find(p => p.Id == localId);
-            _companyLabel.text      = AccountManager.Instance.LocalPlayer?.CompanyName ?? AccountManager.Instance.LocalPlayer?.Username ?? "—";
+            _companyLabel.text      = AccountManager.Instance.LocalPlayer?.CompanyName ?? AccountManager.Instance.LocalPlayer?.Username ?? "â€”";
             _capitalLabel.text      = me != null ? $"${me.Capital}M"                : "$--M";
             _reputationLabel.text   = me != null ? me.Reputation.ToString()          : "--";
             _sharePriceLabel.text   = me != null ? $"${me.SharePrice}"               : "$--";
@@ -1826,7 +1832,7 @@ namespace ArmsFair.UI
             if (_playerList == null) return;
             var localId = AccountManager.Instance.LocalPlayer?.Id;
 
-            // Players footer — horizontal cards showing name + capital
+            // Players footer â€” horizontal cards showing name + capital
             _playerList.Clear();
             foreach (var player in players)
             {
@@ -1852,12 +1858,12 @@ namespace ArmsFair.UI
                 nameLabel.style.color     = new StyleColor(isMe
                     ? new Color(138f/255f, 184f/255f, 112f/255f)
                     : new Color(0.831f, 0.812f, 0.722f));
-                nameLabel.style.fontSize  = 12;
+                nameLabel.style.fontSize = 15;
                 nameLabel.style.whiteSpace = WhiteSpace.NoWrap;
 
                 var capLabel = new Label(capital);
                 capLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                capLabel.style.fontSize = 11;
+                capLabel.style.fontSize = 14;
                 capLabel.style.whiteSpace = WhiteSpace.NoWrap;
 
                 card.Add(nameLabel);
@@ -1900,3 +1906,4 @@ namespace ArmsFair.UI
         }
     }
 }
+
