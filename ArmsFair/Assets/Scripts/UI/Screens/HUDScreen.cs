@@ -152,6 +152,8 @@ namespace ArmsFair.UI
             _peaceCreditsLabel  = _root.Q<Label>("PeaceCreditsLabel");
             _latentRiskLabel    = _root.Q<Label>("LatentRiskLabel");
             _playerList         = _root.Q<ScrollView>("PlayerList");
+            if (_playerList != null)
+                _playerList.contentContainer.style.flexDirection = FlexDirection.Row;
             _phaseStatusLabel   = _root.Q<Label>("PhaseStatusLabel");
             _statusLabel        = _root.Q<Label>("StatusLabel");
 
@@ -270,7 +272,6 @@ namespace ArmsFair.UI
         {
             if (_root == null) return;
             _root.style.display = DisplayStyle.Flex;
-            _inventory.Clear();
             RefreshInventoryBar();
             if (_lastState != null) BindState(_lastState);
         }
@@ -472,8 +473,11 @@ namespace ArmsFair.UI
             if (_cardTensionLabel != null) _cardTensionLabel.text = $"TENSION: {country.Tension}";
 
             // Convert Unity screen pos (y=0 bottom) to UI Toolkit pos (y=0 top)
+            // WorldMapArea is the card's parent; subtract its world origin so coordinates are relative.
+            var worldMapArea = _root.Q("WorldMapArea");
+            float parentOffsetY = worldMapArea?.worldBound.y ?? 0f;
             float uiX = screenPos.x + 10f;
-            float uiY = Screen.height - screenPos.y + 10f;
+            float uiY = (Screen.height - screenPos.y) - parentOffsetY + 10f;
             _countryInfoCard.style.left = uiX;
             _countryInfoCard.style.top  = uiY;
             _countryInfoCard.style.display = DisplayStyle.Flex;
@@ -806,6 +810,7 @@ namespace ArmsFair.UI
         private void OnConfirmProcurement()
         {
             if (_confirmProcBtn == null) return;
+            if (_lastState?.Phase != GamePhase.Procurement) return;
             var total = _quantities.Sum(kv =>
                 (WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key)?.BaseCostMillions ?? 0) * kv.Value);
 
@@ -1723,21 +1728,42 @@ namespace ArmsFair.UI
             _peaceCreditsLabel.text = me != null ? me.PeaceCredits.ToString()        : "--";
             _latentRiskLabel.text   = me != null ? me.LatentRisk.ToString()          : "--";
 
-            // Player list
+            // Players footer — horizontal cards showing name + capital
             _playerList.Clear();
             foreach (var player in state.Players)
             {
-                bool isMe   = player.Id == localId;
-                var  label  = new Label(isMe ? $"> {player.Username.ToUpper()}  [YOU]"
-                                             : $"  {player.Username.ToUpper()}");
-                label.style.color      = new StyleColor(isMe
+                bool isMe    = player.Id == localId;
+                var  name    = (player.CompanyName ?? player.Username ?? "?").ToUpper();
+                var  capital = $"${player.Capital}M";
+
+                var card = new VisualElement();
+                card.style.flexDirection   = FlexDirection.Column;
+                card.style.borderTopWidth  = card.style.borderRightWidth =
+                    card.style.borderBottomWidth = card.style.borderLeftWidth = 1;
+                card.style.borderTopColor  = card.style.borderRightColor =
+                    card.style.borderBottomColor = card.style.borderLeftColor =
+                    new StyleColor(isMe ? new Color(58f/255f, 90f/255f, 42f/255f)
+                                        : new Color(58f/255f, 58f/255f, 42f/255f));
+                card.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
+                card.style.paddingTop = card.style.paddingBottom = 4;
+                card.style.paddingLeft = card.style.paddingRight = 10;
+                card.style.marginRight = 8;
+
+                var nameLabel = new Label(isMe ? $"> {name}" : name);
+                nameLabel.style.color     = new StyleColor(isMe
                     ? new Color(138f/255f, 184f/255f, 112f/255f)
                     : new Color(0.831f, 0.812f, 0.722f));
-                label.style.fontSize   = 14;
-                label.style.paddingTop    = 3;
-                label.style.paddingBottom = 3;
-                label.style.whiteSpace = WhiteSpace.NoWrap;
-                _playerList.Add(label);
+                nameLabel.style.fontSize  = 12;
+                nameLabel.style.whiteSpace = WhiteSpace.NoWrap;
+
+                var capLabel = new Label(capital);
+                capLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+                capLabel.style.fontSize = 11;
+                capLabel.style.whiteSpace = WhiteSpace.NoWrap;
+
+                card.Add(nameLabel);
+                card.Add(capLabel);
+                _playerList.Add(card);
             }
         }
 
