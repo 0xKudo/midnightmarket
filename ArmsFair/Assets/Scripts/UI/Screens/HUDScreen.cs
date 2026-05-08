@@ -89,7 +89,7 @@ namespace ArmsFair.UI
         private ScrollView    _repList;
         private ScrollView    _sharePriceList;
 
-        // Open modal overlays â€” cleared on every phase transition
+        // Open modal overlays -- cleared on every phase transition
         private readonly List<VisualElement> _openModals = new();
 
         // Sales panel
@@ -331,7 +331,7 @@ namespace ArmsFair.UI
             _timerLabel.text = $"{secs / 60:D2}:{secs % 60:D2}";
         }
 
-        // â”€â”€ Event handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // â"€â"€ Event handlers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
         private void OnStateSync(StateSync msg)
         {
@@ -357,7 +357,7 @@ namespace ArmsFair.UI
             _phaseEndsAt           = msg.EndsAt;
             _timerRunning          = true;
             _phaseStatusLabel.text = $"PHASE: {msg.Phase.ToString().ToUpper()}";
-            _statusLabel.text      = $"PHASE STARTED â€” ROUND {round}";
+            _statusLabel.text      = $"PHASE STARTED -- ROUND {round}";
 
             // Keep _lastState phase in sync so phase guards (e.g. procurement) work correctly.
             // StateSync is not sent on every phase transition, so we update it here.
@@ -386,7 +386,7 @@ namespace ArmsFair.UI
             if (_readyBtn != null)
             {
                 _readyBtn.SetEnabled(false);
-                _readyBtn.text = "READY âœ“";
+                _readyBtn.text = "READY";
             }
             await GameClient.Instance.MarkReadyAsync();
         }
@@ -399,7 +399,7 @@ namespace ArmsFair.UI
             // Capture old share prices before state is overwritten
             var oldSharePrices = _lastState.Players.ToDictionary(p => p.Id, p => p.SharePrice);
 
-            // Sum all profit entries per player â€” multi-weapon orders produce one entry per weapon
+            // Sum all profit entries per player -- multi-weapon orders produce one entry per weapon
             var updatedPlayers = _lastState.Players.Select(p =>
             {
                 var totalEarned = msg.ProfitUpdates.Where(u => u.PlayerId == p.Id).Sum(u => u.ProfitEarned);
@@ -674,12 +674,12 @@ namespace ArmsFair.UI
             if (_voteCeaseFireBtn != null)
             {
                 _voteCeaseFireBtn.SetEnabled(false);
-                _voteCeaseFireBtn.text = “VOTED”;
+                _voteCeaseFireBtn.text = "VOTED";
             }
             await GameClient.Instance.VoteCeaseFireAsync();
         }
 
-        // â”€â”€ Panel switching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // â"€â"€ Panel switching â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
         private void ShowPanel(GamePhase phase)
         {
@@ -1088,7 +1088,7 @@ namespace ArmsFair.UI
             if (_confirmProcBtn != null) _confirmProcBtn.SetEnabled(true);
         }
 
-        // â”€â”€ Sales panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // â"€â"€ Sales panel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
         private void BuildSalesPanel()
         {
@@ -1628,7 +1628,7 @@ namespace ArmsFair.UI
                 IsProxyRouted : _isProxyRouted));
         }
 
-        // â”€â”€ Modal helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // â"€â"€ Modal helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
         private VisualElement MakeModalOverlay()
         {
@@ -1808,7 +1808,7 @@ namespace ArmsFair.UI
             btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
         }
 
-        // â”€â”€ Binding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // â"€â"€ Binding â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
         private void BindState(GameState state)
         {
@@ -1820,7 +1820,7 @@ namespace ArmsFair.UI
             // Local player stats
             var localId = AccountManager.Instance.LocalPlayer?.Id;
             var me = state.Players.Find(p => p.Id == localId);
-            _companyLabel.text      = AccountManager.Instance.LocalPlayer?.CompanyName ?? AccountManager.Instance.LocalPlayer?.Username ?? "â€”";
+            _companyLabel.text      = AccountManager.Instance.LocalPlayer?.CompanyName ?? AccountManager.Instance.LocalPlayer?.Username ?? "--";
             _capitalLabel.text      = me != null ? $"${me.Capital}M"                : "$--M";
             _reputationLabel.text   = me != null ? me.Reputation.ToString()          : "--";
             _sharePriceLabel.text   = me != null ? $"${me.SharePrice}"               : "$--";
@@ -1835,7 +1835,7 @@ namespace ArmsFair.UI
             if (_playerList == null) return;
             var localId = AccountManager.Instance.LocalPlayer?.Id;
 
-            // Players footer â€” horizontal cards showing name + capital
+            // Players footer -- horizontal cards showing name + capital
             _playerList.Clear();
             foreach (var player in players)
             {
