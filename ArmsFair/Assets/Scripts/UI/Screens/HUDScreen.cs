@@ -54,9 +54,22 @@ namespace ArmsFair.UI
         private VisualElement _inventoryBar;
         private VisualElement _inventoryItems;
 
+        // Negotiation panel
+        private VisualElement _negotiationPanel;
+        private VisualElement _negoIntelTab;
+        private VisualElement _negoPeaceTab;
+        private VisualElement _negoTreatyTab;
+        private ScrollView    _negoTracksList;
+        private ScrollView    _negoRevealList;
+        private Label         _ceaseFireVotersLabel;
+        private Button        _voteCeaseFireBtn;
+        private bool          _hasVotedCeaseFire;
+        private int           _ceaseFireVoterCount;
+
         // Reveal panel
         private VisualElement _revealPanel;
         private ScrollView    _revealList;
+        private RevealMessage _lastReveal;
 
         // Consequences panel
         private VisualElement _consequencesPanel;
@@ -169,6 +182,23 @@ namespace ArmsFair.UI
             var passSaleBtn = _root.Q<Button>("PassSaleBtn");
             if (passSaleBtn != null) passSaleBtn.clicked += OnPassSale;
 
+            _negotiationPanel     = _root.Q("NegotiationPanel");
+            _negoIntelTab         = _root.Q("NegoIntelTab");
+            _negoPeaceTab         = _root.Q("NegoPeaceTab");
+            _negoTreatyTab        = _root.Q("NegoTreatyTab");
+            _negoTracksList       = _root.Q<ScrollView>("NegoTracksList");
+            _negoRevealList       = _root.Q<ScrollView>("NegoRevealList");
+            _ceaseFireVotersLabel = _root.Q<Label>("CeaseFireVotersLabel");
+            _voteCeaseFireBtn     = _root.Q<Button>("VoteCeaseFireBtn");
+            if (_voteCeaseFireBtn != null) _voteCeaseFireBtn.clicked += OnVoteCeaseFire;
+
+            var negoIntelBtn  = _root.Q<Button>("NegoIntelBtn");
+            var negoPeaceBtn  = _root.Q<Button>("NegoPeaceBtn");
+            var negoTreatyBtn = _root.Q<Button>("NegoTreatyBtn");
+            if (negoIntelBtn  != null) negoIntelBtn.clicked  += () => SwitchNegoTab(0);
+            if (negoPeaceBtn  != null) negoPeaceBtn.clicked  += () => SwitchNegoTab(1);
+            if (negoTreatyBtn != null) negoTreatyBtn.clicked += () => SwitchNegoTab(2);
+
             _revealPanel = _root.Q("RevealPanel");
             _revealList  = _root.Q<ScrollView>("RevealList");
             var revealCloseBtn = _root.Q<Button>("RevealCloseBtn");
@@ -199,6 +229,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnWorldUpdate.AddListener(OnWorldUpdate);
             GameClient.Instance.OnReveal.AddListener(OnReveal);
             GameClient.Instance.OnPlayerReady.AddListener(OnPlayerReady);
+            GameClient.Instance.OnCeaseFireVote.AddListener(OnCeaseFireVoteReceived);
         }
 
         private void OnDestroy()
@@ -210,6 +241,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnWorldUpdate.RemoveListener(OnWorldUpdate);
             GameClient.Instance.OnReveal.RemoveListener(OnReveal);
             GameClient.Instance.OnPlayerReady.RemoveListener(OnPlayerReady);
+            GameClient.Instance.OnCeaseFireVote.RemoveListener(OnCeaseFireVoteReceived);
         }
 
         public void Show()
@@ -403,6 +435,7 @@ namespace ArmsFair.UI
 
         private void OnReveal(RevealMessage msg)
         {
+            _lastReveal = msg;
             if (_revealList == null) return;
 
             _revealList.Clear();
@@ -474,28 +507,44 @@ namespace ArmsFair.UI
             if (_statusLabel != null) _statusLabel.text = "REVEAL: ALL ORDERS DISCLOSED";
         }
 
+        private void OnCeaseFireVoteReceived(string voterId)
+        {
+            _ceaseFireVoterCount++;
+            if (_ceaseFireVotersLabel != null)
+                _ceaseFireVotersLabel.text = $"CEASE-FIRE VOTES: {_ceaseFireVoterCount}";
+        }
+
+        private async void OnVoteCeaseFire()
+        {
+            if (_hasVotedCeaseFire) return;
+            _hasVotedCeaseFire = true;
+            if (_voteCeaseFireBtn != null)
+            {
+                _voteCeaseFireBtn.SetEnabled(false);
+                _voteCeaseFireBtn.text = "VOTED ✓";
+            }
+            await GameClient.Instance.VoteCeaseFireAsync();
+        }
+
         // ── Panel switching ───────────────────────────────────────────────────
 
         private void ShowPanel(GamePhase phase)
         {
             CloseAllModals();
 
-            var isProcurement = phase == GamePhase.Procurement;
-            var isSales       = phase == GamePhase.Sales;
-
+            var isProcurement  = phase == GamePhase.Procurement;
+            var isSales        = phase == GamePhase.Sales;
+            var isNegotiation  = phase == GamePhase.Negotiation;
             var isReveal       = phase == GamePhase.Reveal;
             var isConsequences = phase == GamePhase.Consequences;
+            var hasPanel       = isProcurement || isSales || isNegotiation || isReveal || isConsequences;
 
-            if (_procurementPanel != null)
-                _procurementPanel.style.display = isProcurement ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_salesPanel != null)
-                _salesPanel.style.display = isSales ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_revealPanel != null)
-                _revealPanel.style.display = isReveal ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_consequencesPanel != null)
-                _consequencesPanel.style.display = isConsequences ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_phaseStatusLabel != null)
-                _phaseStatusLabel.style.display = (isProcurement || isSales || isReveal || isConsequences) ? DisplayStyle.None : DisplayStyle.Flex;
+            if (_procurementPanel  != null) _procurementPanel.style.display  = isProcurement  ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_salesPanel        != null) _salesPanel.style.display        = isSales        ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_negotiationPanel  != null) _negotiationPanel.style.display  = isNegotiation  ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_revealPanel       != null) _revealPanel.style.display       = isReveal       ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_consequencesPanel != null) _consequencesPanel.style.display = isConsequences ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_phaseStatusLabel  != null) _phaseStatusLabel.style.display  = hasPanel ? DisplayStyle.None : DisplayStyle.Flex;
 
             if (isProcurement)
             {
@@ -505,6 +554,8 @@ namespace ArmsFair.UI
             }
 
             if (isSales) BuildSalesPanel();
+
+            if (isNegotiation) BuildNegotiationPanel();
         }
 
         private void BuildProcurementPanel()
@@ -963,6 +1014,73 @@ namespace ArmsFair.UI
             }
 
             UpdateSaleEstimate();
+        }
+
+        private void BuildNegotiationPanel()
+        {
+            _ceaseFireVoterCount = 0;
+            _hasVotedCeaseFire   = false;
+
+            if (_ceaseFireVotersLabel != null) _ceaseFireVotersLabel.text = "CEASE-FIRE VOTES: 0";
+            if (_voteCeaseFireBtn     != null) { _voteCeaseFireBtn.SetEnabled(true); _voteCeaseFireBtn.text = "VOTE CEASE-FIRE"; }
+
+            SwitchNegoTab(0);
+
+            if (_negoTracksList != null && _lastState != null)
+            {
+                _negoTracksList.Clear();
+                var t = _lastState.Tracks;
+                _negoTracksList.Add(MakeOverlayRowLabel($"MARKET HEAT: {t.MarketHeat}   CIVILIAN COST: {t.CivilianCost}   INSTABILITY: {t.Instability}"));
+                _negoTracksList.Add(MakeOverlayRowLabel($"SANCTIONS: {t.SanctionsRisk}   GEO TENSION: {t.GeoTension}"));
+            }
+
+            if (_negoRevealList != null)
+            {
+                _negoRevealList.Clear();
+                if (_lastReveal == null || _lastReveal.Actions == null || _lastReveal.Actions.Count == 0)
+                {
+                    _negoRevealList.Add(MakeOverlayRowLabel("NO DATA FROM LAST ROUND"));
+                }
+                else
+                {
+                    foreach (var action in _lastReveal.Actions)
+                    {
+                        var player  = _lastState?.Players.FirstOrDefault(p => p.Id == action.PlayerId);
+                        var company = (player?.CompanyName ?? player?.Username ?? action.PlayerId).ToUpper();
+                        var detail  = action.SaleType == SaleType.PeaceBroker
+                            ? "PEACE BROKER"
+                            : $"{action.SaleType.ToString().ToUpper()}  {action.WeaponCategory?.ToString() ?? "?"}  →  {action.TargetIso ?? "?"}";
+                        _negoRevealList.Add(MakeOverlayRowLabel($"{company}  {detail}"));
+                    }
+                }
+            }
+        }
+
+        private void SwitchNegoTab(int tab)
+        {
+            if (_negoIntelTab  != null) _negoIntelTab.style.display  = tab == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_negoPeaceTab  != null) _negoPeaceTab.style.display  = tab == 1 ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_negoTreatyTab != null) _negoTreatyTab.style.display = tab == 2 ? DisplayStyle.Flex : DisplayStyle.None;
+
+            var activeColor   = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            var inactiveColor = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+            var activeBg      = new StyleColor(new Color(15f/255f, 25f/255f,  8f/255f));
+            var inactiveBg    = new StyleColor(new Color(15f/255f, 15f/255f,  8f/255f));
+            var activeBorder  = new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
+            var inactiveBorder= new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+
+            void StyleTab(Button btn, bool active)
+            {
+                if (btn == null) return;
+                btn.style.color           = active ? activeColor   : inactiveColor;
+                btn.style.backgroundColor = active ? activeBg      : inactiveBg;
+                btn.style.borderTopColor = btn.style.borderRightColor = btn.style.borderBottomColor = btn.style.borderLeftColor
+                    = active ? activeBorder : inactiveBorder;
+            }
+
+            StyleTab(_root?.Q<Button>("NegoIntelBtn"),  tab == 0);
+            StyleTab(_root?.Q<Button>("NegoPeaceBtn"),  tab == 1);
+            StyleTab(_root?.Q<Button>("NegoTreatyBtn"), tab == 2);
         }
 
         private void OpenWeaponPicker()

@@ -46,6 +46,7 @@ namespace ArmsFair.Network
         public UnityEvent<ChatMessage>            OnChatMessage     = new();
         public UnityEvent<ErrorMessage>           OnError           = new();
         public UnityEvent<string>                 OnPlayerReady     = new();
+        public UnityEvent<string>                 OnCeaseFireVote   = new();
 
         // ── Lifecycle ────────────────────────────────────────────────────────
 
@@ -163,6 +164,9 @@ namespace ArmsFair.Network
             _hub.On<string>("PlayerReady", playerId =>
                 RunOnMainThread(() => OnPlayerReady.Invoke(playerId)));
 
+            _hub.On<CeaseFireVotePayload>("CeaseFireVote", p =>
+                RunOnMainThread(() => OnCeaseFireVote.Invoke(p?.playerId ?? "")));
+
             _hub.Reconnected += connectionId =>
             {
                 Debug.Log($"[GameClient] Reconnected: {connectionId}");
@@ -175,6 +179,8 @@ namespace ArmsFair.Network
                 return Task.CompletedTask;
             };
         }
+
+        private class CeaseFireVotePayload { public string playerId { get; set; } public string gameId { get; set; } }
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
