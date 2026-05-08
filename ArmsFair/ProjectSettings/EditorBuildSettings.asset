@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MapFlat.unity
     guid: e6a29ceb651f6c34cab05ac07a2630cf
+  - enabled: 1
+    path: Assets/Scenes/MapGlobe.unity
+    guid: 1332631a0f1f0404b9ca97f1c82ae933
   m_configObjects:
     com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: 1f8ac0f7957f5aa47a84593d930dd1b2, type: 2}
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 6313ebce5d1ad6b42902a1c68ceed29c, type: 2}

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using WPM;
 using UnityEngine;
@@ -17,10 +18,10 @@ namespace ArmsFair.Map
 
         private WorldMapGlobe _map;
 
-        // ISO code → WPM country name (populated via RegisterCountries from game state)
-        private readonly Dictionary<string, string> _isoToWpm  = new();
+        // ISO code → WPM country name
+        private readonly Dictionary<string, string> _isoToWpm = new();
         // WPM country name → ISO code
-        private readonly Dictionary<string, string> _wpmToIso  = new();
+        private readonly Dictionary<string, string> _wpmToIso = new();
 
         private void Awake()
         {
@@ -35,28 +36,47 @@ namespace ArmsFair.Map
             var sc = GetComponent<SphereCollider>();
             if (sc != null) sc.enabled = false;
 
-            // Instantiate WPM globe if not already present
-            if (WorldMapGlobe.instance == null)
+            // Instantiate WPM globe if not already in the scene
+            if (GameObject.Find("WorldMapGlobe") == null)
             {
                 var prefab = Resources.Load<GameObject>("Prefabs/WorldMapGlobe");
-                if (prefab != null) Instantiate(prefab);
-                else Debug.LogError("[GlobeBridge] Could not load Prefabs/WorldMapGlobe from Resources");
+                if (prefab != null)
+                {
+                    var go = Instantiate(prefab);
+                    go.name = "WorldMapGlobe"; // WPM finds itself by this exact name
+                }
+                else
+                {
+                    Debug.LogError("[GlobeBridge] Could not load Prefabs/WorldMapGlobe from Resources");
+                }
             }
         }
 
         private void Start()
         {
-            _map = WorldMapGlobe.instance;
-            if (_map == null) { Debug.LogError("[GlobeBridge] WPM WorldMapGlobe.instance is null"); return; }
-
-            // Disable our custom orbit camera controller; WPM spins the globe itself
-            var ctrl = FindObjectOfType<GlobeCameraController>();
+            // Disable our custom orbit controller; WPM spins the globe by dragging
+            var ctrl = FindObjectOfType<GlobeCameraController>(true);
             if (ctrl != null) ctrl.enabled = false;
 
+            // Give WPM one frame to finish its own Awake/Start before we configure it
+            StartCoroutine(InitWPM());
+        }
+
+        private IEnumerator InitWPM()
+        {
+            yield return null; // wait one frame
+
+            _map = WorldMapGlobe.instance;
+            if (_map == null)
+            {
+                Debug.LogError("[GlobeBridge] WorldMapGlobe.instance still null after one frame");
+                yield break;
+            }
+
             _map.enableCountryHighlight = true;
-            _map.fillColor = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.35f); // terminal green
+            _map.fillColor     = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.35f);
             _map.frontiersColor = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.6f);
-            _map.showFrontiers = true;
+            _map.showFrontiers   = true;
             _map.showCountryNames = false;
         }
 
@@ -69,7 +89,7 @@ namespace ArmsFair.Map
         {
             if (_map == null) return;
 
-            // Detect country click: mouse released, not a drag, a country was last under cursor
+            // Detect a non-drag left-click on a country
             if (_map.input.GetMouseButtonUp(0) && !_map.hasDragged && _map.countryLastClicked >= 0)
             {
                 var wpmName = _map.countries[_map.countryLastClicked].name;
@@ -122,18 +142,14 @@ namespace ArmsFair.Map
                 _map.ToggleCountrySurface(wpmName, true, color);
         }
 
-        // Stub — arc rendering via WPM can be added later
         public void PlayArcs(List<ArcAnimation> arcs, IReadOnlyList<PlayerProfile> players) { }
 
         public void HighlightCountry(string iso)
         {
             if (_map == null || !_isoToWpm.TryGetValue(iso, out var wpmName)) return;
-            _map.ToggleCountrySurface(wpmName, true, new Color(138f/255f, 184f/255f, 112f/255f, 0.5f));
+            _map.ToggleCountrySurface(wpmName, true, new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.5f));
         }
 
-        public void ClearHighlights()
-        {
-            _map?.HideCountrySurfaces();
-        }
+        public void ClearHighlights() => _map?.HideCountrySurfaces();
     }
 }
