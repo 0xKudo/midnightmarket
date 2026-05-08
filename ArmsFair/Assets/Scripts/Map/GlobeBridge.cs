@@ -83,7 +83,7 @@ namespace ArmsFair.Map
             _map.mouseWheelSensitivity   = 1.5f;
             _map.autoRotationSpeed       = 0f;
             _map.SetZoomLevel(0.6f);
-            if (Camera.main != null) Camera.main.fieldOfView = 90f;
+            if (Camera.main != null) Camera.main.fieldOfView = 80f;
         }
 
         private void OnDestroy()
