@@ -82,6 +82,7 @@ namespace ArmsFair.Map
             _map.centerOnRightClick      = true;
             _map.mouseWheelSensitivity   = 1.5f;
             _map.autoRotationSpeed       = 0f;
+            _map.SetZoomLevel(0.6f);
         }
 
         private void OnDestroy()
@@ -101,10 +102,10 @@ namespace ArmsFair.Map
                 OnCountryClicked?.Invoke(iso, (Vector2)_map.input.mousePosition);
             }
 
-            // Clamp zoom: 0=closest, 1=furthest; keep between 10% and 85%
+            // Clamp zoom: 0=closest, 1=furthest; keep between 35% and 90%
             float z = _map.GetZoomLevel();
-            if      (z < 0.10f) _map.SetZoomLevel(0.10f);
-            else if (z > 0.85f) _map.SetZoomLevel(0.85f);
+            if      (z < 0.35f) _map.SetZoomLevel(0.35f);
+            else if (z > 0.90f) _map.SetZoomLevel(0.90f);
         }
 
         // Called from HUDScreen on each StateSync to build ISO ↔ WPM name lookups.

@@ -532,6 +532,7 @@ namespace ArmsFair.UI
         {
             if (_root == null || _root.style.display == DisplayStyle.None) return;
             if (_countryInfoCard == null) return;
+            if (_openModals.Count > 0) return;
 
             var country = _lastState?.Countries.FirstOrDefault(c => c.Iso == iso)
                        ?? _lastState?.Countries.FirstOrDefault(c =>
