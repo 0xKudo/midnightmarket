@@ -1164,6 +1164,14 @@ namespace ArmsFair.UI
                 .Where(kv => kv.Value > 0)
                 .Select(kv => new OrderLine(kv.Key, kv.Value))
                 .ToList();
+
+            foreach (var line in lines)
+            {
+                if (_inventory.TryGetValue(line.Category, out var cur))
+                    _inventory[line.Category] = Math.Max(0, cur - line.Quantity);
+            }
+            RefreshInventoryBar();
+
             await GameClient.Instance.SubmitOrderAsync(new SubmitOrderMessage(
                 SaleType      : _selectedSaleType,
                 TargetCountry : _selectedCountryIso,
