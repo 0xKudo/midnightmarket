@@ -15,7 +15,7 @@ namespace ArmsFair.Map
         [SerializeField] private string globeSceneName = "MapGlobe";
 
         public enum MapView { Flat, Globe }
-        public MapView CurrentView { get; private set; } = MapView.Flat;
+        public MapView CurrentView { get; private set; } = MapView.Globe;
 
         private void Awake()
         {
@@ -24,11 +24,24 @@ namespace ArmsFair.Map
             DontDestroyOnLoad(gameObject);
         }
 
+        private void Start()
+        {
+            StartCoroutine(SwitchToGlobe());
+        }
+
         private void Update()
         {
             var kb = Keyboard.current;
             if (kb != null && kb.gKey.wasPressedThisFrame)
                 ToggleView();
+        }
+
+        public void EnsureGlobeVisible()
+        {
+            if (CurrentView != MapView.Globe)
+                StartCoroutine(SwitchToGlobe());
+            else if (!IsSceneLoaded(globeSceneName))
+                StartCoroutine(SwitchToGlobe());
         }
 
         public void ToggleView()

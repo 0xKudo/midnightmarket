@@ -272,6 +272,7 @@ namespace ArmsFair.UI
         {
             if (_root == null) return;
             _root.style.display = DisplayStyle.Flex;
+            ArmsFair.Map.ViewToggleManager.Instance?.EnsureGlobeVisible();
             RefreshInventoryBar();
             if (_lastState != null) BindState(_lastState);
         }
@@ -374,6 +375,7 @@ namespace ArmsFair.UI
                 };
             }).ToList();
             _lastState = _lastState with { Players = updatedPlayers };
+            RefreshPlayerFooter(_lastState.Players);
 
             var localId = AccountManager.Instance.LocalPlayer?.Id;
             var me = _lastState.Players.FirstOrDefault(p => p.Id == localId);
@@ -1734,9 +1736,17 @@ namespace ArmsFair.UI
             _peaceCreditsLabel.text = me != null ? me.PeaceCredits.ToString()        : "--";
             _latentRiskLabel.text   = me != null ? me.LatentRisk.ToString()          : "--";
 
+            RefreshPlayerFooter(state.Players);
+        }
+
+        private void RefreshPlayerFooter(List<PlayerProfile> players)
+        {
+            if (_playerList == null) return;
+            var localId = AccountManager.Instance.LocalPlayer?.Id;
+
             // Players footer — horizontal cards showing name + capital
             _playerList.Clear();
-            foreach (var player in state.Players)
+            foreach (var player in players)
             {
                 bool isMe    = player.Id == localId;
                 var  name    = (player.CompanyName ?? player.Username ?? "?").ToUpper();
@@ -1755,7 +1765,8 @@ namespace ArmsFair.UI
                 card.style.paddingLeft = card.style.paddingRight = 10;
                 card.style.marginRight = 8;
 
-                var nameLabel = new Label(isMe ? $"> {name}" : name);
+                var nameText  = isMe ? $"> {name}" : name;
+                var nameLabel = new Label(nameText);
                 nameLabel.style.color     = new StyleColor(isMe
                     ? new Color(138f/255f, 184f/255f, 112f/255f)
                     : new Color(0.831f, 0.812f, 0.722f));
