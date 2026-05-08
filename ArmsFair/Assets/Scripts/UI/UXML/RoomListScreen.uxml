@@ -1,32 +1,32 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+﻿<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
   <ui:Style src="../USS/variables.uss" />
   <ui:Style src="../USS/terminal.uss" />
   <ui:Style src="../USS/scrollbar.uss" />
   <ui:VisualElement name="RoomListScreen" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background-color:rgb(13,13,13);">
 
     <ui:VisualElement name="FormPanel" style="background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px; flex-direction:column; width:480px;">
-      <ui:Label text="OPEN ROOMS" style="font-size:15px; color:rgb(212,207,184); -unity-font-style:bold; margin-bottom:4px;" />
-      <ui:Label text="SELECT AN ENGAGEMENT" style="font-size:9px; color:rgb(138,134,112); margin-bottom:16px; white-space:nowrap;" />
+      <ui:Label text="OPEN ROOMS" style="font-size:20px; color:rgb(212,207,184); -unity-font-style:bold; margin-bottom:4px;" />
+      <ui:Label text="SELECT AN ENGAGEMENT" style="font-size:14px; color:rgb(138,134,112); margin-bottom:16px; white-space:nowrap;" />
       <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
 
       <!-- Join by invite code -->
-      <ui:Label text="INVITE CODE" style="font-size:9px; color:rgb(138,134,112); margin-bottom:4px;" />
+      <ui:Label text="INVITE CODE" style="font-size:14px; color:rgb(138,134,112); margin-bottom:4px;" />
       <ui:VisualElement style="flex-direction:row; margin-bottom:16px;">
         <ui:TextField name="InviteCodeField" style="flex-grow:1; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; margin-right:8px;" />
-        <ui:Button name="JoinByCodeBtn" text="JOIN BY CODE" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:6px 12px; font-size:11px; white-space:nowrap;" />
+        <ui:Button name="JoinByCodeBtn" text="JOIN BY CODE" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:6px 12px; font-size:16px; white-space:nowrap;" />
       </ui:VisualElement>
 
       <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
 
       <!-- Room list -->
-      <ui:Label name="StatusLabel" text="LOADING..." style="font-size:10px; color:rgb(138,134,112); margin-bottom:8px; display:none;" />
+      <ui:Label name="StatusLabel" text="LOADING..." style="font-size:15px; color:rgb(138,134,112); margin-bottom:8px; display:none;" />
       <ui:ScrollView name="RoomList" vertical-scroller-visibility="AlwaysVisible" style="height:360px; overflow:hidden; margin-bottom:12px;" />
 
       <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
 
-      <ui:Label name="ErrorLabel" text="" style="color:rgb(192,144,144); font-size:10px; display:none; margin-bottom:8px;" />
-      <ui:Button name="RefreshBtn" text="REFRESH" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center;" />
-      <ui:Button name="BackBtn"    text="BACK"    style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:0;  font-size:13px; -unity-text-align:middle-center;" />
+      <ui:Label name="ErrorLabel" text="" style="color:rgb(192,144,144); font-size:15px; display:none; margin-bottom:8px;" />
+      <ui:Button name="RefreshBtn" text="REFRESH" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:18px; -unity-text-align:middle-center;" />
+      <ui:Button name="BackBtn"    text="BACK"    style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:0;  font-size:18px; -unity-text-align:middle-center;" />
     </ui:VisualElement>
 
   </ui:VisualElement>

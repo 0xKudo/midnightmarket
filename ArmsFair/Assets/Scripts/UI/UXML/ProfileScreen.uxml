@@ -1,46 +1,46 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+﻿<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
   <ui:Style src="../USS/variables.uss" />
   <ui:Style src="../USS/terminal.uss" />
   <ui:Style src="../USS/scrollbar.uss" />
   <ui:VisualElement name="ProfileScreen" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background-color:rgb(13,13,13);">
 
     <ui:VisualElement name="FormPanel" style="background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px; flex-direction:column; width:420px;">
-      <ui:Label text="OPERATIVE PROFILE" style="font-size:15px; color:rgb(212,207,184); -unity-font-style:bold; margin-bottom:4px;" />
-      <ui:Label name="UsernameLabel" text="OPERATIVE: —" style="font-size:9px; color:rgb(138,134,112); margin-bottom:16px; white-space:nowrap;" />
+      <ui:Label text="OPERATIVE PROFILE" style="font-size:20px; color:rgb(212,207,184); -unity-font-style:bold; margin-bottom:4px;" />
+      <ui:Label name="UsernameLabel" text="OPERATIVE: —" style="font-size:14px; color:rgb(138,134,112); margin-bottom:16px; white-space:nowrap;" />
       <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
 
       <!-- Home Nation -->
-      <ui:Label text="HOME NATION" style="font-size:9px; color:rgb(138,134,112); margin-bottom:4px;" />
-      <ui:Button name="NationBtn" text="SELECT NATION" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; padding:6px 10px; margin-bottom:12px; font-size:12px; -unity-text-align:middle-left; white-space:nowrap;" />
+      <ui:Label text="HOME NATION" style="font-size:14px; color:rgb(138,134,112); margin-bottom:4px;" />
+      <ui:Button name="NationBtn" text="SELECT NATION" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; padding:6px 10px; margin-bottom:12px; font-size:17px; -unity-text-align:middle-left; white-space:nowrap;" />
 
       <!-- Company Name -->
-      <ui:Label text="BROKERAGE NAME" style="font-size:9px; color:rgb(138,134,112); margin-bottom:4px;" />
+      <ui:Label text="BROKERAGE NAME" style="font-size:14px; color:rgb(138,134,112); margin-bottom:4px;" />
       <ui:TextField name="CompanyNameField" style="margin-bottom:16px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px;" />
 
       <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
 
-      <ui:Label name="ErrorLabel" text="" style="color:rgb(192,144,144); font-size:10px; display:none; margin-bottom:8px;" />
+      <ui:Label name="ErrorLabel" text="" style="color:rgb(192,144,144); font-size:15px; display:none; margin-bottom:8px;" />
 
-      <ui:Button name="SaveBtn" text="SAVE PROFILE" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:13px; -unity-text-align:middle-center;" />
-      <ui:Button name="BackBtn" text="BACK"         style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:0;  font-size:13px; -unity-text-align:middle-center;" />
+      <ui:Button name="SaveBtn" text="SAVE PROFILE" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:18px; -unity-text-align:middle-center;" />
+      <ui:Button name="BackBtn" text="BACK"         style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:0;  font-size:18px; -unity-text-align:middle-center;" />
     </ui:VisualElement>
 
     <!-- Success modal -->
     <ui:VisualElement name="SuccessModal" style="display:none; position:absolute; left:0; top:0; right:0; bottom:0; background-color:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
       <ui:VisualElement style="background-color:rgb(17,17,8); border-color:rgb(58,90,42); border-width:1px; padding:28px 32px; width:320px; flex-direction:column; align-items:center;">
-        <ui:Label text="[ PROFILE SAVED ]" style="font-size:15px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:8px; white-space:nowrap;" />
+        <ui:Label text="[ PROFILE SAVED ]" style="font-size:20px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:8px; white-space:nowrap;" />
         <ui:VisualElement style="height:1px; background-color:rgb(58,90,42); margin-bottom:16px; width:100%;" />
-        <ui:Label text="OPERATIVE RECORD UPDATED" style="font-size:10px; color:rgb(138,134,112); margin-bottom:20px; white-space:nowrap;" />
-        <ui:Button name="SuccessOkBtn" text="OK" style="color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding:8px 40px; font-size:13px; -unity-text-align:middle-center;" />
+        <ui:Label text="OPERATIVE RECORD UPDATED" style="font-size:15px; color:rgb(138,134,112); margin-bottom:20px; white-space:nowrap;" />
+        <ui:Button name="SuccessOkBtn" text="OK" style="color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding:8px 40px; font-size:18px; -unity-text-align:middle-center;" />
       </ui:VisualElement>
     </ui:VisualElement>
 
     <!-- Nation choice modal -->
     <ui:VisualElement name="ChoiceModal" style="display:none; position:absolute; left:0; top:0; right:0; bottom:0; background-color:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
       <ui:VisualElement name="ChoicePanel" style="background-color:rgb(17,17,8); border-color:rgb(90,90,58); border-width:1px; padding:16px; width:380px; height:460px; overflow:hidden; flex-direction:column;">
-        <ui:Label text="SELECT HOME NATION" style="font-size:9px; color:rgb(138,134,112); margin-bottom:8px; white-space:nowrap; flex-shrink:0;" />
+        <ui:Label text="SELECT HOME NATION" style="font-size:14px; color:rgb(138,134,112); margin-bottom:8px; white-space:nowrap; flex-shrink:0;" />
         <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:8px; flex-shrink:0;" />
-        <ui:TextField name="ChoiceSearch" style="margin-bottom:8px; flex-shrink:0; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; font-size:11px;" />
+        <ui:TextField name="ChoiceSearch" style="margin-bottom:8px; flex-shrink:0; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; font-size:16px;" />
         <ui:ScrollView name="ChoiceList" vertical-scroller-visibility="AlwaysVisible" style="flex-grow:1; flex-shrink:1; overflow:hidden;" />
       </ui:VisualElement>
     </ui:VisualElement>

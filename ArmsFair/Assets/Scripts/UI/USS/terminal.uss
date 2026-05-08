@@ -1,4 +1,4 @@
-TemplateContainer {
+﻿TemplateContainer {
     position: absolute;
     left: 0;
     top: 0;
@@ -46,13 +46,13 @@ TemplateContainer {
 }
 
 .term-heading {
-    font-size: 10px;
+    font-size: 15px;
     color: rgb(138, 134, 112);
     letter-spacing: 2px;
 }
 
 .term-title {
-    font-size: 15px;
+    font-size: 20px;
     color: rgb(212, 207, 184);
     letter-spacing: 2px;
     -unity-font-style: bold;
@@ -60,7 +60,7 @@ TemplateContainer {
 }
 
 .term-subtitle {
-    font-size: 9px;
+    font-size: 14px;
     color: rgb(138, 134, 112);
     letter-spacing: 2px;
     margin-bottom: 20px;
@@ -68,7 +68,7 @@ TemplateContainer {
 }
 
 .term-meta {
-    font-size: 9px;
+    font-size: 14px;
     color: rgb(138, 134, 112);
     letter-spacing: 1px;
     margin-bottom: 12px;
@@ -85,7 +85,7 @@ TemplateContainer {
 }
 
 .term-btn {
-    font-size: 13px;
+    font-size: 18px;
     color: rgb(212, 207, 184);
     background-color: rgb(15, 15, 8);
     border-color: rgb(90, 90, 58);
@@ -100,7 +100,7 @@ TemplateContainer {
 
 Button.term-btn {
     color: rgb(212, 207, 184);
-    font-size: 13px;
+    font-size: 18px;
     -unity-text-align: middle-center;
 }
 
@@ -109,7 +109,7 @@ Button.term-btn {
 .term-btn .unity-text-element,
 .term-btn > .unity-text-element {
     color: rgb(212, 207, 184);
-    font-size: 13px;
+    font-size: 18px;
     -unity-text-align: middle-center;
 }
 
@@ -165,7 +165,7 @@ Button.term-btn {
     border-color: rgb(74, 74, 48);
     border-width: 1px;
     color: rgb(212, 207, 184);
-    font-size: 13px;
+    font-size: 18px;
     padding: 4px 8px;
     margin-bottom: 12px;
 }
@@ -181,7 +181,7 @@ Button.term-btn {
 }
 
 .term-field-label {
-    font-size: 9px;
+    font-size: 14px;
     color: rgb(138, 134, 112);
     letter-spacing: 2px;
     margin-bottom: 4px;
@@ -196,16 +196,16 @@ Button.term-btn {
 }
 
 .term-toggle-label {
-    font-size: 10px;
+    font-size: 15px;
     color: rgb(212, 207, 184);
     letter-spacing: 1px;
 }
 
-.term-toggle-value--on  { font-size: 10px; color: rgb(106, 150, 80); }
-.term-toggle-value--off { font-size: 10px; color: rgb(138, 134, 112); }
+.term-toggle-value--on  { font-size: 15px; color: rgb(106, 150, 80); }
+.term-toggle-value--off { font-size: 15px; color: rgb(138, 134, 112); }
 
 .term-section-label {
-    font-size: 9px;
+    font-size: 14px;
     color: rgb(106, 100, 80);
     letter-spacing: 2px;
     background-color: rgb(10, 10, 6);
@@ -230,12 +230,12 @@ Button.term-btn {
     margin-bottom: 4px;
 }
 
-.term-list-row-name { font-size: 13px; color: rgb(212, 207, 184); white-space: nowrap; }
-.term-list-row-meta { font-size: 10px; color: rgb(138, 134, 112); white-space: nowrap; }
-.term-list-empty    { font-size: 10px; color: rgb(58, 58, 42); font-style: italic; white-space: nowrap; }
+.term-list-row-name { font-size: 18px; color: rgb(212, 207, 184); white-space: nowrap; }
+.term-list-row-meta { font-size: 15px; color: rgb(138, 134, 112); white-space: nowrap; }
+.term-list-empty    { font-size: 15px; color: rgb(58, 58, 42); font-style: italic; white-space: nowrap; }
 
 .term-footer-note {
-    font-size: 9px;
+    font-size: 14px;
     color: rgb(90, 88, 80);
     font-style: italic;
     margin-top: 8px;
@@ -252,20 +252,20 @@ Button.term-btn {
     white-space: nowrap;
 }
 
-.term-player-name  { font-size: 13px; color: rgb(212, 207, 184); }
-.term-player-host  { font-size: 13px; color: rgb(192, 168, 64); }
-.term-player-ready { font-size: 10px; color: rgb(106, 150, 80); }
-.term-player-wait  { font-size: 10px; color: rgb(138, 134, 112); }
-.term-player-empty { font-size: 10px; color: rgb(58, 58, 42); font-style: italic; }
+.term-player-name  { font-size: 18px; color: rgb(212, 207, 184); }
+.term-player-host  { font-size: 18px; color: rgb(192, 168, 64); }
+.term-player-ready { font-size: 15px; color: rgb(106, 150, 80); }
+.term-player-wait  { font-size: 15px; color: rgb(138, 134, 112); }
+.term-player-empty { font-size: 15px; color: rgb(58, 58, 42); font-style: italic; }
 
-.term-star--on  { font-size: 13px; color: rgb(192, 168, 64); }
-.term-star--off { font-size: 13px; color: rgb(58, 58, 42); }
+.term-star--on  { font-size: 18px; color: rgb(192, 168, 64); }
+.term-star--off { font-size: 18px; color: rgb(58, 58, 42); }
 
 .hidden { display: none; }
 
 .term-error {
     color: rgb(192, 144, 144);
-    font-size: 10px;
+    font-size: 15px;
 }
 
 .nowrap {
