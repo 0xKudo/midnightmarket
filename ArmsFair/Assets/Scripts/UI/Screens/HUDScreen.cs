@@ -277,6 +277,7 @@ namespace ArmsFair.UI
             var rootBound = _root.panel.visualTree.worldBound;
             if (rootBound.width <= 0f) return;
             var wb = _worldMapArea.worldBound;
+            if (wb.width <= 0f) return;
             float nx = wb.x / rootBound.width;
             float nw = wb.width / rootBound.width;
             _globeCamera.rect = new Rect(nx, 0f, nw, 1f);

@@ -24,10 +24,7 @@ namespace ArmsFair.Map
             DontDestroyOnLoad(gameObject);
         }
 
-        private void Start()
-        {
-            StartCoroutine(SwitchToGlobe());
-        }
+        private void Start() { }
 
         private void Update()
         {
