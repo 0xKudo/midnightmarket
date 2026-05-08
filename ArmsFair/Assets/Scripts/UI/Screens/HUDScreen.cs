@@ -54,6 +54,12 @@ namespace ArmsFair.UI
         private VisualElement _inventoryBar;
         private VisualElement _inventoryItems;
 
+        // Country info card (globe click popup)
+        private VisualElement _countryInfoCard;
+        private Label         _cardCountryName;
+        private Label         _cardStageLabel;
+        private Label         _cardTensionLabel;
+
         // Negotiation panel
         private VisualElement _negotiationPanel;
         private VisualElement _negoIntelTab;
@@ -217,6 +223,16 @@ namespace ArmsFair.UI
                 if (_consequencesPanel != null) _consequencesPanel.style.display = DisplayStyle.None;
             };
 
+            _countryInfoCard = _root.Q("CountryInfoCard");
+            _cardCountryName = _root.Q<Label>("CardCountryName");
+            _cardStageLabel  = _root.Q<Label>("CardStageLabel");
+            _cardTensionLabel= _root.Q<Label>("CardTensionLabel");
+            var cardCloseBtn = _root.Q<Button>("CardCloseBtn");
+            if (cardCloseBtn != null) cardCloseBtn.clicked += () =>
+            {
+                if (_countryInfoCard != null) _countryInfoCard.style.display = DisplayStyle.None;
+            };
+
             UIManager.Instance.Register("HUD", this);
         }
 
@@ -230,6 +246,9 @@ namespace ArmsFair.UI
             GameClient.Instance.OnReveal.AddListener(OnReveal);
             GameClient.Instance.OnPlayerReady.AddListener(OnPlayerReady);
             GameClient.Instance.OnCeaseFireVote.AddListener(OnCeaseFireVoteReceived);
+
+            if (ArmsFair.Map.GlobeBridge.Instance != null)
+                ArmsFair.Map.GlobeBridge.Instance.OnCountryClicked += OnGlobeCountryClicked;
         }
 
         private void OnDestroy()
@@ -242,6 +261,9 @@ namespace ArmsFair.UI
             GameClient.Instance.OnReveal.RemoveListener(OnReveal);
             GameClient.Instance.OnPlayerReady.RemoveListener(OnPlayerReady);
             GameClient.Instance.OnCeaseFireVote.RemoveListener(OnCeaseFireVoteReceived);
+
+            if (ArmsFair.Map.GlobeBridge.Instance != null)
+                ArmsFair.Map.GlobeBridge.Instance.OnCountryClicked -= OnGlobeCountryClicked;
         }
 
         public void Show()
@@ -431,11 +453,39 @@ namespace ArmsFair.UI
         {
             if (_root == null || _root.style.display == DisplayStyle.None) return;
             BindTracks(msg.NewTracks);
+
+            if (ArmsFair.Map.GlobeBridge.Instance != null && msg.CountryChanges != null)
+                foreach (var cc in msg.CountryChanges)
+                    ArmsFair.Map.GlobeBridge.Instance.SetCountryStage(cc.Iso, (CountryStage)cc.NewStage);
+        }
+
+        private void OnGlobeCountryClicked(string iso, Vector2 screenPos)
+        {
+            if (_root == null || _root.style.display == DisplayStyle.None) return;
+            if (_countryInfoCard == null) return;
+
+            var country = _lastState?.Countries.FirstOrDefault(c => c.Iso == iso);
+            if (country == null) return;
+
+            if (_cardCountryName  != null) _cardCountryName.text  = country.Name?.ToUpper() ?? iso;
+            if (_cardStageLabel   != null) _cardStageLabel.text   = $"STAGE: {country.Stage}";
+            if (_cardTensionLabel != null) _cardTensionLabel.text = $"TENSION: {country.Tension}";
+
+            // Convert Unity screen pos (y=0 bottom) to UI Toolkit pos (y=0 top)
+            float uiX = screenPos.x + 10f;
+            float uiY = Screen.height - screenPos.y + 10f;
+            _countryInfoCard.style.left = uiX;
+            _countryInfoCard.style.top  = uiY;
+            _countryInfoCard.style.display = DisplayStyle.Flex;
         }
 
         private void OnReveal(RevealMessage msg)
         {
             _lastReveal = msg;
+
+            if (ArmsFair.Map.GlobeBridge.Instance != null && msg.Animations != null && msg.Animations.Count > 0)
+                ArmsFair.Map.GlobeBridge.Instance.PlayArcs(msg.Animations, _lastState?.Players);
+
             if (_revealList == null) return;
 
             _revealList.Clear();

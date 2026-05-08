@@ -125,5 +125,26 @@ namespace ArmsFair.Map
         }
 
         public string SelectedIso => _selectedIso;
+
+        public float GlobeRadius => globeRadius;
+
+        public Vector3 GetWorldPoint(string iso)
+        {
+            if (_centroids == null || !_centroids.TryGetValue(iso, out var latLng))
+                return Vector3.zero;
+            float lat = latLng.x * Mathf.Deg2Rad;
+            float lng = latLng.y * Mathf.Deg2Rad;
+            var local = new Vector3(
+                Mathf.Cos(lat) * Mathf.Cos(lng),
+                Mathf.Sin(lat),
+               -Mathf.Cos(lat) * Mathf.Sin(lng));
+            return transform.TransformPoint(local * globeRadius);
+        }
+
+        public Vector2? GetCentroid(string iso)
+        {
+            if (_centroids != null && _centroids.TryGetValue(iso, out var c)) return c;
+            return null;
+        }
     }
 }
