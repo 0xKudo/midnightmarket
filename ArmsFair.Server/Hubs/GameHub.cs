@@ -19,7 +19,8 @@ public class GameHub(
     SeedService seedService,
     PhaseOrchestrator phaseOrchestrator,
     GameStateService gameStateService,
-    TickerService ticker) : Hub
+    TickerService ticker,
+    ILogger<GameHub> logger) : Hub
 {
     // ── Connection lifecycle ─────────────────────────────────────────────────
 
@@ -239,18 +240,29 @@ public class GameHub(
     public async Task MarkReady(string gameId)
     {
         var playerId = GetPlayerId();
+        logger.LogInformation("[MarkReady] game={GameId} player={PlayerId}", gameId, playerId);
+
         if (!gameStateService.TryGet(gameId, out var state))
         { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
 
+        var playerIds = state.Players.Select(p => p.Id).ToList();
+        logger.LogInformation("[MarkReady] players in state: {Players}", string.Join(", ", playerIds));
+
         gameStateService.MarkReady(gameId, playerId);
+
         await Clients.Group(gameId).SendAsync("PlayerReady", playerId);
 
-        if (gameStateService.AreAllReady(gameId, state.Players.Select(p => p.Id)))
+        if (gameStateService.AreAllReady(gameId, playerIds))
         {
+            logger.LogInformation("[MarkReady] all ready — advancing game {GameId}", gameId);
             ticker.CancelPhaseTimer(gameId);
             await phaseOrchestrator.AdvanceForGameAsync(gameId);
             if (gameStateService.TryGet(gameId, out var next))
                 ticker.SetPhase(gameId, next.Phase);
+        }
+        else
+        {
+            logger.LogInformation("[MarkReady] not all ready yet for game {GameId}", gameId);
         }
     }
 
