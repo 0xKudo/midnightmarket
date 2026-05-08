@@ -139,7 +139,7 @@ namespace ArmsFair.UI
                     label.style.color      = new StyleColor(isThisHost
                         ? new Color(138f/255f, 184f/255f, 112f/255f)
                         : new Color(0.831f, 0.812f, 0.722f));
-                    label.style.fontSize   = 11;
+                    label.style.fontSize   = 16;
                     label.style.paddingTop    = 5;
                     label.style.paddingBottom = 5;
                     label.style.paddingLeft   = 8;

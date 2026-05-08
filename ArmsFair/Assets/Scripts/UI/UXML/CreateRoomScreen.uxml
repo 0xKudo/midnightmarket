@@ -11,7 +11,7 @@
       <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
 
       <ui:Label text="ROOM NAME" style="font-size:14px; color:rgb(138,134,112); margin-bottom:4px;" />
-      <ui:TextField name="RoomNameField" style="margin-bottom:12px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px;" />
+      <ui:TextField name="RoomNameField" style="margin-bottom:12px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; font-size:18px;" />
 
       <ui:Label text="PLAYER SLOTS" style="font-size:14px; color:rgb(138,134,112); margin-bottom:4px;" />
       <ui:Button name="SlotsBtn" text="4 PLAYERS" class="term-btn" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; padding:6px 10px; margin-bottom:12px; font-size:17px; -unity-text-align:middle-left; white-space:nowrap;" />
