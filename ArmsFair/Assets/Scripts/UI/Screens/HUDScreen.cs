@@ -56,6 +56,9 @@ namespace ArmsFair.UI
         // Reveal overlay
         private VisualElement _revealOverlay;
 
+        // Open modal overlays — cleared on every phase transition
+        private readonly List<VisualElement> _openModals = new();
+
         // Sales panel
         private VisualElement                _salesPanel;
         private VisualElement                _saleTypeRow;
@@ -417,7 +420,8 @@ namespace ArmsFair.UI
 
         private void ShowPanel(GamePhase phase)
         {
-            if (_revealOverlay != null) { _root.Remove(_revealOverlay); _revealOverlay = null; }
+            CloseAllModals();
+            _revealOverlay = null;
 
             var isProcurement = phase == GamePhase.Procurement;
             var isSales       = phase == GamePhase.Sales;
@@ -776,10 +780,10 @@ namespace ArmsFair.UI
             confirmBtn.style.borderTopWidth  = confirmBtn.style.borderBottomWidth =
             confirmBtn.style.borderLeftWidth = confirmBtn.style.borderRightWidth  = 1;
 
-            cancelBtn.clicked  += () => _root.Remove(overlay);
+            cancelBtn.clicked  += () => CloseModal(overlay);
             confirmBtn.clicked += () =>
             {
-                _root.Remove(overlay);
+                CloseModal(overlay);
                 SubmitProcurement();
             };
 
@@ -989,7 +993,7 @@ namespace ArmsFair.UI
             var btnRow = new VisualElement();
             btnRow.style.flexDirection = FlexDirection.Row;
 
-            var cancelBtn = MakeModalCancelBtn(() => _root.Remove(overlay));
+            var cancelBtn = MakeModalCancelBtn(() => CloseModal(overlay));
             cancelBtn.style.flexGrow   = 1;
             cancelBtn.style.marginRight = 8;
 
@@ -1029,7 +1033,7 @@ namespace ArmsFair.UI
                     _weaponPickerBtn.text = string.Join(", ", parts);
                 }
                 if (_saleErrorLabel != null) _saleErrorLabel.style.display = DisplayStyle.None;
-                _root.Remove(overlay);
+                CloseModal(overlay);
                 UpdateSaleEstimate();
             };
 
@@ -1060,12 +1064,15 @@ namespace ArmsFair.UI
 
             var overlay  = MakeModalOverlay();
             var panel    = MakeModalPanel(320);
+            panel.style.flexDirection = FlexDirection.Column;
+            panel.style.maxHeight     = new StyleLength(Length.Percent(72));
 
             var title    = MakeModalTitle("Select Target Country");
             panel.Add(title);
 
             var search   = new TextField();
             search.style.marginBottom    = 8;
+            search.style.flexShrink      = 0;
             search.style.backgroundColor = new StyleColor(new Color(25f/255f, 25f/255f, 15f/255f));
             search.style.borderTopColor  = search.style.borderBottomColor =
             search.style.borderLeftColor = search.style.borderRightColor  =
@@ -1076,13 +1083,11 @@ namespace ArmsFair.UI
             search.style.fontSize        = 13;
             panel.Add(search);
 
-            var listRow = new VisualElement();
-            listRow.style.flexShrink = 0;
             var scroll = new ScrollView();
-            scroll.style.height   = 220;
-            scroll.style.flexGrow = 0;
-            listRow.Add(scroll);
-            panel.Add(listRow);
+            scroll.style.flexGrow   = 1;
+            scroll.style.flexShrink = 1;
+            scroll.style.minHeight  = 80;
+            panel.Add(scroll);
 
             void Populate(string filter)
             {
@@ -1102,7 +1107,7 @@ namespace ArmsFair.UI
                         _selectedCountryIso = iso;
                         if (_countryPickerBtn != null) _countryPickerBtn.text = name;
                         if (_saleErrorLabel   != null) _saleErrorLabel.style.display = DisplayStyle.None;
-                        _root.Remove(overlay);
+                        CloseModal(overlay);
                         UpdateSaleEstimate();
                     };
                     scroll.Add(btn);
@@ -1115,7 +1120,7 @@ namespace ArmsFair.UI
             var cancelRow = new VisualElement();
             cancelRow.style.marginTop  = 8;
             cancelRow.style.flexShrink = 0;
-            var cancel = MakeModalCancelBtn(() => _root.Remove(overlay));
+            var cancel = MakeModalCancelBtn(() => CloseModal(overlay));
             cancelRow.Add(cancel);
             panel.Add(cancelRow);
             overlay.Add(panel);
@@ -1234,7 +1239,7 @@ namespace ArmsFair.UI
             var btnRow = new VisualElement();
             btnRow.style.flexDirection = FlexDirection.Row;
 
-            var cancelBtn  = MakeModalCancelBtn(() => _root.Remove(overlay));
+            var cancelBtn  = MakeModalCancelBtn(() => CloseModal(overlay));
             cancelBtn.style.flexGrow   = 1;
             cancelBtn.style.marginRight = 8;
 
@@ -1249,8 +1254,8 @@ namespace ArmsFair.UI
             confirmBtn.style.borderTopWidth  = confirmBtn.style.borderBottomWidth =
             confirmBtn.style.borderLeftWidth = confirmBtn.style.borderRightWidth  = 1;
 
-            cancelBtn.clicked  += () => _root.Remove(overlay);
-            confirmBtn.clicked += () => { _root.Remove(overlay); SubmitSale(); };
+            cancelBtn.clicked  += () => CloseModal(overlay);
+            confirmBtn.clicked += () => { CloseModal(overlay); SubmitSale(); };
 
             btnRow.Add(cancelBtn);
             btnRow.Add(confirmBtn);
@@ -1292,7 +1297,21 @@ namespace ArmsFair.UI
             overlay.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.85f));
             overlay.style.alignItems      = Align.Center;
             overlay.style.justifyContent  = Justify.Center;
+            _openModals.Add(overlay);
             return overlay;
+        }
+
+        private void CloseModal(VisualElement overlay)
+        {
+            _openModals.Remove(overlay);
+            if (_root.Contains(overlay)) _root.Remove(overlay);
+        }
+
+        private void CloseAllModals()
+        {
+            foreach (var m in _openModals.ToList())
+                if (_root.Contains(m)) _root.Remove(m);
+            _openModals.Clear();
         }
 
         private VisualElement MakeModalPanel(int width)
