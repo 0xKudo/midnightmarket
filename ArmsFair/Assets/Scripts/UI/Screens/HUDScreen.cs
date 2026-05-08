@@ -478,7 +478,9 @@ namespace ArmsFair.UI
                 var qtyLabel = new Label("0");
                 qtyLabel.style.color          = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
                 qtyLabel.style.fontSize       = 14;
-                qtyLabel.style.width          = 24;
+                qtyLabel.style.width          = 44;
+                qtyLabel.style.flexShrink     = 0;
+                qtyLabel.style.whiteSpace     = WhiteSpace.NoWrap;
                 qtyLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
 
                 var minusBtn = MakeQtyButton("-");
@@ -882,7 +884,9 @@ namespace ArmsFair.UI
                 var qtyLabel = new Label(pending[cat].ToString());
                 qtyLabel.style.color          = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
                 qtyLabel.style.fontSize       = 14;
-                qtyLabel.style.width          = 24;
+                qtyLabel.style.width          = 44;
+                qtyLabel.style.flexShrink     = 0;
+                qtyLabel.style.whiteSpace     = WhiteSpace.NoWrap;
                 qtyLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
                 qtyLabels[cat]                = qtyLabel;
 
