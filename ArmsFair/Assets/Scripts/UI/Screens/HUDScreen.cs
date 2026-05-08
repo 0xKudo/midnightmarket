@@ -383,8 +383,13 @@ namespace ArmsFair.UI
                         var name = _lastState.Players.FirstOrDefault(p => p.Id == r.PlayerId)?.CompanyName
                                 ?? _lastState.Players.FirstOrDefault(p => p.Id == r.PlayerId)?.Username
                                 ?? r.PlayerId;
-                        var sign = r.Delta >= 0 ? "+" : "";
-                        _repList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  →  {r.NewReputation}  ({r.Reason})"));
+                        var sign       = r.Delta >= 0 ? "+" : "";
+                        var reasonText = r.Reason switch
+                        {
+                            "covert_traced" => "covert sale traced",
+                            _               => r.Reason
+                        };
+                        _repList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  →  {r.NewReputation}  ({reasonText})"));
                     }
                 }
             }
@@ -1291,7 +1296,10 @@ namespace ArmsFair.UI
                 panel.Add(est);
             }
 
-            var note = new Label("This order is sealed. Other players will not see it until Reveal.");
+            var noteText = _selectedSaleType == SaleType.Open
+                ? "This order is public. Other players will see it on the ticker immediately."
+                : "This order is sealed. Other players will not see it until Reveal.";
+            var note = new Label(noteText);
             note.style.color        = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
             note.style.fontSize     = 11;
             note.style.marginBottom = 16;
