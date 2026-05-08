@@ -59,6 +59,7 @@ namespace ArmsFair.UI
         private Label         _cardCountryName;
         private Label         _cardStageLabel;
         private Label         _cardTensionLabel;
+        private string        _cardIso;
 
         // Negotiation panel
         private VisualElement _negotiationPanel;
@@ -234,6 +235,8 @@ namespace ArmsFair.UI
             {
                 if (_countryInfoCard != null) _countryInfoCard.style.display = DisplayStyle.None;
             };
+            var cardSellBtn = _root.Q<Button>("CardSellBtn");
+            if (cardSellBtn != null) cardSellBtn.clicked += OnCardSellClicked;
 
             UIManager.Instance.Register("HUD", this);
         }
@@ -482,19 +485,39 @@ namespace ArmsFair.UI
             var country = _lastState?.Countries.FirstOrDefault(c => c.Iso == iso);
             if (country == null) return;
 
+            _cardIso = iso;
             if (_cardCountryName  != null) _cardCountryName.text  = country.Name?.ToUpper() ?? iso;
             if (_cardStageLabel   != null) _cardStageLabel.text   = $"STAGE: {country.Stage}";
             if (_cardTensionLabel != null) _cardTensionLabel.text = $"TENSION: {country.Tension}";
 
-            // Convert Unity screen pos (y=0 bottom) to UI Toolkit pos (y=0 top)
-            // WorldMapArea is the card's parent; subtract its world origin so coordinates are relative.
+            // Show SELL TO only during sales phase
+            var sellBtn = _root.Q<Button>("CardSellBtn");
+            if (sellBtn != null)
+                sellBtn.style.display = _lastState?.Phase == GamePhase.Sales ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Convert Unity screen pos (y=0 at bottom) to WorldMapArea-relative UI Toolkit coords
             var worldMapArea = _root.Q("WorldMapArea");
-            float parentOffsetY = worldMapArea?.worldBound.y ?? 0f;
-            float uiX = screenPos.x + 10f;
-            float uiY = (Screen.height - screenPos.y) - parentOffsetY + 10f;
+            var wb = worldMapArea?.worldBound ?? Rect.zero;
+            float uiX = (screenPos.x - wb.x) + 10f;
+            float uiY = (Screen.height - screenPos.y) - wb.y + 10f;
             _countryInfoCard.style.left = uiX;
             _countryInfoCard.style.top  = uiY;
             _countryInfoCard.style.display = DisplayStyle.Flex;
+        }
+
+        private void OnCardSellClicked()
+        {
+            if (_cardIso == null) return;
+            var country = _lastState?.Countries.FirstOrDefault(c => c.Iso == _cardIso);
+            if (country == null) return;
+
+            // Pre-fill the country in the sales form
+            _selectedCountryIso = _cardIso;
+            if (_countryPickerBtn != null) _countryPickerBtn.text = country.Name ?? _cardIso;
+
+            // Hide the info card and make sure sales panel is visible
+            if (_countryInfoCard != null) _countryInfoCard.style.display = DisplayStyle.None;
+            UpdateSaleEstimate();
         }
 
         private void OnReveal(RevealMessage msg)
