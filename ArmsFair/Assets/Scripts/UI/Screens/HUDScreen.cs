@@ -56,6 +56,9 @@ namespace ArmsFair.UI
         // Reveal overlay
         private VisualElement _revealOverlay;
 
+        // Consequences overlay
+        private VisualElement _consequencesOverlay;
+
         // Open modal overlays — cleared on every phase transition
         private readonly List<VisualElement> _openModals = new();
 
@@ -302,6 +305,96 @@ namespace ArmsFair.UI
                 if (s.PlayerId != localId) continue;
                 _sharePriceLabel.text = $"${s.NewPrice}";
             }
+
+            // Build consequences overlay (survives next PhaseStart, cleaned up there)
+            if (_consequencesOverlay != null) { _root.Remove(_consequencesOverlay); _consequencesOverlay = null; }
+            _consequencesOverlay = MakePersistentOverlay();
+
+            var panel = MakeModalPanel(520);
+            panel.Add(MakeModalTitle("CONSEQUENCES"));
+
+            // Profit
+            panel.Add(MakeOverlaySectionLabel("PROFIT"));
+            if (msg.ProfitUpdates.Count == 0)
+            {
+                panel.Add(MakeOverlayRowLabel("NONE"));
+            }
+            else
+            {
+                var scroll = new ScrollView(); scroll.style.height = 90;
+                foreach (var u in msg.ProfitUpdates)
+                {
+                    var name = _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.CompanyName
+                            ?? _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.Username
+                            ?? u.PlayerId;
+                    scroll.Add(MakeOverlayRowLabel($"{name.ToUpper()}  +${u.ProfitEarned}M  →  ${u.NewCapital}M"));
+                }
+                panel.Add(scroll);
+            }
+
+            // Blowback
+            panel.Add(MakeOverlaySectionLabel("BLOWBACK"));
+            if (msg.BlowbackEvents.Count == 0)
+            {
+                panel.Add(MakeOverlayRowLabel("NONE"));
+            }
+            else
+            {
+                var scroll = new ScrollView(); scroll.style.height = 70;
+                foreach (var b in msg.BlowbackEvents)
+                {
+                    var name = _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.CompanyName
+                            ?? _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.Username
+                            ?? b.PlayerId;
+                    scroll.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {b.Weapon}  →  {b.CountryIso}  TRACED"));
+                }
+                panel.Add(scroll);
+            }
+
+            // Reputation
+            panel.Add(MakeOverlaySectionLabel("REPUTATION"));
+            if (msg.ReputationUpdates.Count == 0)
+            {
+                panel.Add(MakeOverlayRowLabel("NONE"));
+            }
+            else
+            {
+                var scroll = new ScrollView(); scroll.style.height = 70;
+                foreach (var r in msg.ReputationUpdates)
+                {
+                    var name = _lastState.Players.FirstOrDefault(p => p.Id == r.PlayerId)?.CompanyName
+                            ?? _lastState.Players.FirstOrDefault(p => p.Id == r.PlayerId)?.Username
+                            ?? r.PlayerId;
+                    var sign = r.Delta >= 0 ? "+" : "";
+                    scroll.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  →  {r.NewReputation}  ({r.Reason})"));
+                }
+                panel.Add(scroll);
+            }
+
+            var closeDivider = new VisualElement();
+            closeDivider.style.height          = 1;
+            closeDivider.style.backgroundColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+            closeDivider.style.marginTop       = 12;
+            closeDivider.style.marginBottom    = 12;
+            panel.Add(closeDivider);
+
+            var closeBtn = new Button { text = "CLOSE" };
+            closeBtn.style.paddingTop      = closeBtn.style.paddingBottom = 8;
+            closeBtn.style.color           = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+            closeBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
+            closeBtn.style.borderTopColor  = closeBtn.style.borderBottomColor =
+            closeBtn.style.borderLeftColor = closeBtn.style.borderRightColor  =
+                new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+            closeBtn.style.borderTopWidth  = closeBtn.style.borderBottomWidth =
+            closeBtn.style.borderLeftWidth = closeBtn.style.borderRightWidth  = 1;
+            closeBtn.clicked += () =>
+            {
+                if (_consequencesOverlay != null) { _root.Remove(_consequencesOverlay); _consequencesOverlay = null; }
+            };
+            panel.Add(closeBtn);
+
+            _consequencesOverlay.Add(panel);
+            _root.Add(_consequencesOverlay);
         }
 
         private void OnWorldUpdate(WorldUpdateMessage msg)
@@ -316,7 +409,7 @@ namespace ArmsFair.UI
 
             if (_revealOverlay != null) { _root.Remove(_revealOverlay); _revealOverlay = null; }
 
-            _revealOverlay = MakeModalOverlay();
+            _revealOverlay = MakePersistentOverlay();
 
             var panel = MakeModalPanel(460);
             panel.Add(MakeModalTitle("ROUND REVEAL"));
@@ -421,7 +514,8 @@ namespace ArmsFair.UI
         private void ShowPanel(GamePhase phase)
         {
             CloseAllModals();
-            _revealOverlay = null;
+            if (_revealOverlay != null) { _root.Remove(_revealOverlay); _revealOverlay = null; }
+            if (_consequencesOverlay != null) { _root.Remove(_consequencesOverlay); _consequencesOverlay = null; }
 
             var isProcurement = phase == GamePhase.Procurement;
             var isSales       = phase == GamePhase.Sales;
@@ -1303,6 +1397,19 @@ namespace ArmsFair.UI
             return overlay;
         }
 
+        // Like MakeModalOverlay but NOT tracked in _openModals — survives CloseAllModals() / phase transitions.
+        // Caller is responsible for cleanup via its own _xxxOverlay field.
+        private VisualElement MakePersistentOverlay()
+        {
+            var overlay = new VisualElement();
+            overlay.style.position        = Position.Absolute;
+            overlay.style.left = overlay.style.top = overlay.style.right = overlay.style.bottom = 0;
+            overlay.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.85f));
+            overlay.style.alignItems      = Align.Center;
+            overlay.style.justifyContent  = Justify.Center;
+            return overlay;
+        }
+
         private void CloseModal(VisualElement overlay)
         {
             _openModals.Remove(overlay);
@@ -1354,6 +1461,25 @@ namespace ArmsFair.UI
             btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
             btn.clicked += onCancel;
             return btn;
+        }
+
+        private Label MakeOverlaySectionLabel(string text)
+        {
+            var l = new Label(text);
+            l.style.color        = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            l.style.fontSize     = 11;
+            l.style.marginTop    = 10;
+            l.style.marginBottom = 4;
+            return l;
+        }
+
+        private Label MakeOverlayRowLabel(string text)
+        {
+            var l = new Label(text);
+            l.style.color        = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+            l.style.fontSize     = 11;
+            l.style.marginBottom = 2;
+            return l;
         }
 
         private static void StyleModalRowBtn(Button btn)
