@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 2010974455}
   - component: {fileID: 2010974454}
   - component: {fileID: 2010974453}
+  - component: {fileID: 2010974459}
   m_Layer: 0
   m_Name: Globe
   m_TagString: Untagged
@@ -140,6 +141,18 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &2010974459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2010974452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cabd1d29685e90a44951606651aa1996, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ArmsFair.Map.GlobeBridge
 --- !u!114 &2010974453
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -150,7 +163,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3600e2f63777e9f4da8fc8ce694331ba, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::ArmsFair.Map.GlobeTensionBridge
 --- !u!114 &2010974454
 MonoBehaviour:

@@ -249,7 +249,12 @@ namespace ArmsFair.UI
             GameClient.Instance.OnPlayerReady.AddListener(OnPlayerReady);
             GameClient.Instance.OnCeaseFireVote.AddListener(OnCeaseFireVoteReceived);
 
-            if (ArmsFair.Map.GlobeBridge.Instance != null)
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name == "MapGlobe" && ArmsFair.Map.GlobeBridge.Instance != null)
                 ArmsFair.Map.GlobeBridge.Instance.OnCountryClicked += OnGlobeCountryClicked;
         }
 
@@ -264,6 +269,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnPlayerReady.RemoveListener(OnPlayerReady);
             GameClient.Instance.OnCeaseFireVote.RemoveListener(OnCeaseFireVoteReceived);
 
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
             if (ArmsFair.Map.GlobeBridge.Instance != null)
                 ArmsFair.Map.GlobeBridge.Instance.OnCountryClicked -= OnGlobeCountryClicked;
         }
