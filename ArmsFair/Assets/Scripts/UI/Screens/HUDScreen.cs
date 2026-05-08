@@ -475,36 +475,48 @@ namespace ArmsFair.UI
                 costLabel.style.unityTextAlign = TextAnchor.MiddleRight;
                 costLabel.style.marginRight    = 10;
 
-                var qtyLabel = new Label("0");
-                qtyLabel.style.color          = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                qtyLabel.style.fontSize       = 14;
-                qtyLabel.style.width          = 44;
-                qtyLabel.style.flexShrink     = 0;
-                qtyLabel.style.whiteSpace     = WhiteSpace.NoWrap;
-                qtyLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-
+                var qtyField = MakeQtyField(0);
+                var maxBtn   = MakeMaxButton();
                 var minusBtn = MakeQtyButton("-");
                 var plusBtn  = MakeQtyButton("+");
+
+                maxBtn.clicked += () =>
+                {
+                    var maxAffordable = entry.BaseCostMillions > 0
+                        ? Math.Max(0, _procCapitalM / entry.BaseCostMillions) : 0;
+                    _quantities[cat] = maxAffordable;
+                    qtyField.SetValueWithoutNotify(maxAffordable);
+                    UpdateProcTotal();
+                };
 
                 minusBtn.clicked += () =>
                 {
                     if (_quantities[cat] <= 0) return;
                     _quantities[cat]--;
-                    qtyLabel.text = _quantities[cat].ToString();
+                    qtyField.SetValueWithoutNotify(_quantities[cat]);
                     UpdateProcTotal();
                 };
 
                 plusBtn.clicked += () =>
                 {
                     _quantities[cat]++;
-                    qtyLabel.text = _quantities[cat].ToString();
+                    qtyField.SetValueWithoutNotify(_quantities[cat]);
                     UpdateProcTotal();
                 };
 
+                qtyField.RegisterValueChangedCallback(evt =>
+                {
+                    var clamped = Math.Max(0, evt.newValue);
+                    _quantities[cat] = clamped;
+                    if (clamped != evt.newValue) qtyField.SetValueWithoutNotify(clamped);
+                    UpdateProcTotal();
+                });
+
                 row.Add(nameLabel);
                 row.Add(costLabel);
+                row.Add(maxBtn);
                 row.Add(minusBtn);
-                row.Add(qtyLabel);
+                row.Add(qtyField);
                 row.Add(plusBtn);
                 _weaponList.Add(row);
             }
@@ -562,6 +574,53 @@ namespace ArmsFair.UI
             btn.style.borderTopWidth  = btn.style.borderBottomWidth =
             btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
             return btn;
+        }
+
+        private static Button MakeMaxButton()
+        {
+            var btn = new Button { text = "MAX" };
+            btn.style.width           = 40;
+            btn.style.height          = 26;
+            btn.style.fontSize        = 11;
+            btn.style.paddingTop      = 0;
+            btn.style.paddingBottom   = 0;
+            btn.style.paddingLeft     = 2;
+            btn.style.paddingRight    = 2;
+            btn.style.marginRight     = 4;
+            btn.style.flexShrink      = 0;
+            btn.style.unityTextAlign  = TextAnchor.MiddleCenter;
+            btn.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            btn.style.backgroundColor = new StyleColor(new Color(15f/255f, 25f/255f, 8f/255f));
+            btn.style.borderTopColor  = btn.style.borderBottomColor =
+            btn.style.borderLeftColor = btn.style.borderRightColor  =
+                new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
+            btn.style.borderTopWidth  = btn.style.borderBottomWidth =
+            btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
+            return btn;
+        }
+
+        private static IntegerField MakeQtyField(int initial)
+        {
+            var field = new IntegerField { value = initial };
+            field.style.width      = 55;
+            field.style.height     = 26;
+            field.style.flexShrink = 0;
+            field.style.marginLeft = field.style.marginRight = 2;
+
+            var inner = field.Q<VisualElement>(className: "unity-base-text-field__input");
+            if (inner != null)
+            {
+                inner.style.color           = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+                inner.style.fontSize        = 13;
+                inner.style.backgroundColor = new StyleColor(new Color(20f/255f, 25f/255f, 10f/255f));
+                inner.style.borderTopColor  = inner.style.borderBottomColor =
+                inner.style.borderLeftColor = inner.style.borderRightColor  =
+                    new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
+                inner.style.borderTopWidth  = inner.style.borderBottomWidth =
+                inner.style.borderLeftWidth = inner.style.borderRightWidth  = 1;
+                inner.style.unityTextAlign  = TextAnchor.MiddleCenter;
+            }
+            return field;
         }
 
         private void UpdateProcTotal()
@@ -856,7 +915,6 @@ namespace ArmsFair.UI
             panel.Add(MakeModalTitle("Select Weapon + Quantity"));
 
             var pending = new Dictionary<WeaponCategory, int>();
-            var qtyLabels = new Dictionary<WeaponCategory, Label>();
 
             foreach (var kv in available)
             {
@@ -881,34 +939,42 @@ namespace ArmsFair.UI
                 nameLabel.style.fontSize = 13;
                 nameLabel.style.flexGrow = 1;
 
-                var qtyLabel = new Label(pending[cat].ToString());
-                qtyLabel.style.color          = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                qtyLabel.style.fontSize       = 14;
-                qtyLabel.style.width          = 44;
-                qtyLabel.style.flexShrink     = 0;
-                qtyLabel.style.whiteSpace     = WhiteSpace.NoWrap;
-                qtyLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-                qtyLabels[cat]                = qtyLabel;
-
+                var qtyField = MakeQtyField(pending[cat]);
+                var maxBtn   = MakeMaxButton();
                 var minusBtn = MakeQtyButton("-");
                 var plusBtn  = MakeQtyButton("+");
+
+                maxBtn.clicked += () =>
+                {
+                    pending[cat] = maxQty;
+                    qtyField.SetValueWithoutNotify(maxQty);
+                };
 
                 minusBtn.clicked += () =>
                 {
                     if (pending[cat] <= 0) return;
                     pending[cat]--;
-                    qtyLabel.text = pending[cat].ToString();
+                    qtyField.SetValueWithoutNotify(pending[cat]);
                 };
+
                 plusBtn.clicked += () =>
                 {
                     if (pending[cat] >= maxQty) return;
                     pending[cat]++;
-                    qtyLabel.text = pending[cat].ToString();
+                    qtyField.SetValueWithoutNotify(pending[cat]);
                 };
 
+                qtyField.RegisterValueChangedCallback(evt =>
+                {
+                    var clamped = Math.Clamp(evt.newValue, 0, maxQty);
+                    pending[cat] = clamped;
+                    if (clamped != evt.newValue) qtyField.SetValueWithoutNotify(clamped);
+                });
+
                 row.Add(nameLabel);
+                row.Add(maxBtn);
                 row.Add(minusBtn);
-                row.Add(qtyLabel);
+                row.Add(qtyField);
                 row.Add(plusBtn);
                 panel.Add(row);
             }
