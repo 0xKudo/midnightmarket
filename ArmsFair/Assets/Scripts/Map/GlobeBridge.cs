@@ -79,11 +79,8 @@ namespace ArmsFair.Map
             _map.showFrontiers           = true;
             _map.showCountryNames        = false;
             _map.earthAtmosphereVisible  = false;
-            _map.rightButtonDrag         = false;
-            _map.rightClickCenters       = true;
-            _map.zoomSpeed               = 0.3f;
-            _map.zoomMinDistance         = 0.5f;
-            _map.zoomMaxDistance         = 5.0f;
+            _map.centerOnRightClick      = true;
+            _map.mouseWheelSensitivity   = 1.5f;
             _map.autoRotationSpeed       = 0f;
         }
 
@@ -103,6 +100,11 @@ namespace ArmsFair.Map
                 var iso = _wpmToIso.TryGetValue(wpmName, out var found) ? found : wpmName;
                 OnCountryClicked?.Invoke(iso, (Vector2)_map.input.mousePosition);
             }
+
+            // Clamp zoom: 0=closest, 1=furthest; keep between 10% and 85%
+            float z = _map.GetZoomLevel();
+            if      (z < 0.10f) _map.SetZoomLevel(0.10f);
+            else if (z > 0.85f) _map.SetZoomLevel(0.85f);
         }
 
         // Called from HUDScreen on each StateSync to build ISO ↔ WPM name lookups.

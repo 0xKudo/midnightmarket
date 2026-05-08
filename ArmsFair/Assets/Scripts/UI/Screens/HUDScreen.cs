@@ -446,7 +446,7 @@ namespace ArmsFair.UI
                         var name = _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.CompanyName
                                 ?? _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.Username
                                 ?? u.PlayerId;
-                        _profitList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  +${u.ProfitEarned}M  â†’  ${u.NewCapital}M"));
+                        _profitList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  +${u.ProfitEarned}M  ->  ${u.NewCapital}M"));
                     }
                 }
             }
@@ -465,7 +465,7 @@ namespace ArmsFair.UI
                         var name = _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.CompanyName
                                 ?? _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.Username
                                 ?? b.PlayerId;
-                        _blowbackList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {b.Weapon}  â†’  {b.CountryIso}  TRACED"));
+                        _blowbackList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {b.Weapon}  ->  {b.CountryIso}  TRACED"));
                     }
                 }
             }
@@ -490,7 +490,7 @@ namespace ArmsFair.UI
                             "covert_traced" => "covert sale traced",
                             _               => r.Reason
                         };
-                        _repList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  â†’  {r.NewReputation}  ({reasonText})"));
+                        _repList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  ->  {r.NewReputation}  ({reasonText})"));
                     }
                 }
             }
@@ -512,7 +512,7 @@ namespace ArmsFair.UI
                         var oldPrice = oldSharePrices.TryGetValue(s.PlayerId, out var op) ? op : s.NewPrice;
                         var delta    = s.NewPrice - oldPrice;
                         var sign     = delta >= 0 ? "+" : "";
-                        _sharePriceList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  ${oldPrice}  â†’  ${s.NewPrice}  ({sign}${delta})"));
+                        _sharePriceList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  ${oldPrice}  ->  ${s.NewPrice}  ({sign}${delta})"));
                     }
                 }
             }
@@ -548,13 +548,16 @@ namespace ArmsFair.UI
             if (sellBtn != null)
                 sellBtn.style.display = _lastState?.Phase == GamePhase.Sales ? DisplayStyle.Flex : DisplayStyle.None;
 
-            // Convert Unity screen pos (y=0 at bottom) to WorldMapArea-local UI Toolkit coords
-            var wb       = _worldMapArea?.worldBound ?? Rect.zero;
-            float panelH = _root.panel.visualTree.worldBound.height;
-            float uitX   = screenPos.x;
-            float uitY   = panelH - screenPos.y;
-            float localX = uitX - wb.x + 10f;
-            float localY = uitY - wb.y + 10f;
+            // Convert Unity screen pos (y=0 at bottom) to WorldMapArea-local UI Toolkit coords.
+            // PanelSettings may use a scale factor, so normalise via panel/screen ratio.
+            var panelBound = _root.panel.visualTree.worldBound;
+            float scaleX   = panelBound.width  / Screen.width;
+            float scaleY   = panelBound.height / Screen.height;
+            var wb         = _worldMapArea?.worldBound ?? Rect.zero;
+            float uitX     = screenPos.x * scaleX;
+            float uitY     = (Screen.height - screenPos.y) * scaleY;
+            float localX   = uitX - wb.x + 10f;
+            float localY   = uitY - wb.y + 10f;
             const float cardW = 210f;
             const float cardH = 130f;
             localX = Mathf.Clamp(localX, 0f, Mathf.Max(0f, wb.width  - cardW));
@@ -642,7 +645,7 @@ namespace ArmsFair.UI
                         var countryStr = action.TargetIso != null
                             ? (_lastState?.Countries.FirstOrDefault(c => c.Iso == action.TargetIso)?.Name ?? action.TargetIso)
                             : "?";
-                        detail.text = $"{saleTypeStr}  {weaponStr}  â†’  {countryStr}";
+                        detail.text = $"{saleTypeStr}  {weaponStr}  ->  {countryStr}";
                     }
                     detail.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
                     detail.style.fontSize = 16;
@@ -671,7 +674,7 @@ namespace ArmsFair.UI
             if (_voteCeaseFireBtn != null)
             {
                 _voteCeaseFireBtn.SetEnabled(false);
-                _voteCeaseFireBtn.text = "VOTED âœ“";
+                _voteCeaseFireBtn.text = “VOTED”;
             }
             await GameClient.Instance.VoteCeaseFireAsync();
         }
@@ -1200,7 +1203,7 @@ namespace ArmsFair.UI
                         var company = (player?.CompanyName ?? player?.Username ?? action.PlayerId).ToUpper();
                         var detail  = action.SaleType == SaleType.PeaceBroker
                             ? "PEACE BROKER"
-                            : $"{action.SaleType.ToString().ToUpper()}  {action.WeaponCategory?.ToString() ?? "?"}  â†’  {action.TargetIso ?? "?"}";
+                            : $"{action.SaleType.ToString().ToUpper()}  {action.WeaponCategory?.ToString() ?? "?"}  ->  {action.TargetIso ?? "?"}";
                         _negoRevealList.Add(MakeOverlayRowLabel($"{company}  {detail}"));
                     }
                 }
