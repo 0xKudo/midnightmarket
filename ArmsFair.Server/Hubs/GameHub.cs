@@ -236,6 +236,24 @@ public class GameHub(
         await Clients.Caller.SendAsync("ActionAcknowledged", new { playerId, gameId });
     }
 
+    public async Task MarkReady(string gameId)
+    {
+        var playerId = GetPlayerId();
+        if (!gameStateService.TryGet(gameId, out var state))
+        { await SendError("GAME_NOT_FOUND", "Game not found."); return; }
+
+        gameStateService.MarkReady(gameId, playerId);
+        await Clients.Group(gameId).SendAsync("PlayerReady", playerId);
+
+        if (gameStateService.AreAllReady(gameId, state.Players.Select(p => p.Id)))
+        {
+            ticker.CancelPhaseTimer(gameId);
+            await phaseOrchestrator.AdvanceForGameAsync(gameId);
+            if (gameStateService.TryGet(gameId, out var next))
+                ticker.SetPhase(gameId, next.Phase);
+        }
+    }
+
     public async Task SendChat(string gameId, ChatMessage msg)
     {
         await Clients.Group(gameId).SendAsync("ChatMessage", msg);

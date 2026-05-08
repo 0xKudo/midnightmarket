@@ -77,6 +77,9 @@ namespace ArmsFair.UI
         private Dictionary<WeaponCategory, int> _salesOrder      = new();
         private Dictionary<SaleType, Button> _saleTypeBtns       = new();
 
+        // Ready button
+        private Button _readyBtn;
+
         // Timer state
         private long _phaseEndsAt;
         private bool _timerRunning;
@@ -124,6 +127,9 @@ namespace ArmsFair.UI
             _root.Q<Button>("LeaveGameBtn").clicked += OnLeaveGame;
             TerminalUI.StyleDangerButton(_root.Q<Button>("LeaveGameBtn"));
 
+            _readyBtn = _root.Q<Button>("ReadyBtn");
+            if (_readyBtn != null) _readyBtn.clicked += OnReadyClicked;
+
             _inventoryBar   = _root.Q("InventoryBar");
             _inventoryItems = _root.Q("InventoryItems");
 
@@ -162,6 +168,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnConsequences.AddListener(OnConsequences);
             GameClient.Instance.OnWorldUpdate.AddListener(OnWorldUpdate);
             GameClient.Instance.OnReveal.AddListener(OnReveal);
+            GameClient.Instance.OnPlayerReady.AddListener(OnPlayerReady);
         }
 
         private void OnDestroy()
@@ -172,6 +179,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnConsequences.RemoveListener(OnConsequences);
             GameClient.Instance.OnWorldUpdate.RemoveListener(OnWorldUpdate);
             GameClient.Instance.OnReveal.RemoveListener(OnReveal);
+            GameClient.Instance.OnPlayerReady.RemoveListener(OnPlayerReady);
         }
 
         public void Show()
@@ -230,6 +238,30 @@ namespace ArmsFair.UI
             _phaseStatusLabel.text = $"PHASE: {msg.Phase.ToString().ToUpper()}";
             _statusLabel.text      = $"PHASE STARTED — ROUND {round}";
             ShowPanel(msg.Phase);
+
+            if (_readyBtn != null)
+            {
+                _readyBtn.text    = "READY";
+                _readyBtn.SetEnabled(true);
+            }
+        }
+
+        private void OnPlayerReady(string playerId)
+        {
+            if (_root == null || _root.style.display == DisplayStyle.None) return;
+            var localId = AccountManager.Instance.LocalPlayer?.Id;
+            if (playerId != localId)
+                _statusLabel.text = $"PLAYER {playerId[..Math.Min(8, playerId.Length)]} READY";
+        }
+
+        private async void OnReadyClicked()
+        {
+            if (_readyBtn != null)
+            {
+                _readyBtn.SetEnabled(false);
+                _readyBtn.text = "READY ✓";
+            }
+            await GameClient.Instance.MarkReadyAsync();
         }
 
         private void OnConsequences(ConsequencesMessage msg)

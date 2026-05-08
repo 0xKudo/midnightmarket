@@ -33,6 +33,7 @@ public class PhaseOrchestrator(
     {
         if (!gameStateService.TryGet(gameId, out var state)) return;
 
+        gameStateService.ClearReady(gameId);
         var voters  = gameStateService.GetOrAddVoters(gameId);
         var pending = gameStateService.GetAndClearPendingForGame(gameId, state.Players.Select(p => p.Id));
 

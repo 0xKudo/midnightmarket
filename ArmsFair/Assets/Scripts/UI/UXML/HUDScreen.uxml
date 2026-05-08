@@ -16,9 +16,10 @@
         <ui:Label name="TimerLabel" text="--:--" style="font-size:16px; color:rgb(212,207,184); white-space:nowrap;" />
       </ui:VisualElement>
 
-      <!-- Round + Leave (right) -->
+      <!-- Round + Ready + Leave (right) -->
       <ui:VisualElement style="flex:1; flex-direction:row; justify-content:flex-end; align-items:center;">
         <ui:Label name="RoundLabel" text="ROUND --" style="font-size:15px; color:rgb(138,134,112); margin-right:16px; white-space:nowrap;" />
+        <ui:Button name="ReadyBtn" text="READY" style="color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:5px; padding-bottom:5px; padding-left:12px; padding-right:12px; font-size:13px; margin-right:8px;" />
         <ui:Button name="LeaveGameBtn" text="LEAVE" style="color:rgb(192,144,144); background-color:rgb(15,15,8); border-color:rgb(90,42,42); border-width:1px; padding-top:5px; padding-bottom:5px; padding-left:12px; padding-right:12px; font-size:13px;" />
       </ui:VisualElement>
 

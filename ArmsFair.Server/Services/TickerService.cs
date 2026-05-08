@@ -34,6 +34,9 @@ public class TickerService(
         _phaseEnds[gameId] = DateTimeOffset.UtcNow.AddMilliseconds(PhaseDuration(phase));
     }
 
+    public void CancelPhaseTimer(string gameId) =>
+        _phaseEnds.TryRemove(gameId, out _);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("TickerService: started");

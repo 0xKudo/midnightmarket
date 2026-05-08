@@ -45,6 +45,7 @@ namespace ArmsFair.Network
         public UnityEvent<StateSync>              OnStateSync       = new();
         public UnityEvent<ChatMessage>            OnChatMessage     = new();
         public UnityEvent<ErrorMessage>           OnError           = new();
+        public UnityEvent<string>                 OnPlayerReady     = new();
 
         // ── Lifecycle ────────────────────────────────────────────────────────
 
@@ -107,6 +108,9 @@ namespace ArmsFair.Network
             InvokeAsync("SendChat", GameId, new ChatMessage(
                 PlayerId, text, recipientId, isPrivate, IsSystem: false));
 
+        public Task MarkReadyAsync() =>
+            InvokeAsync("MarkReady", GameId);
+
         public Task VoteCeaseFireAsync() =>
             InvokeAsync("VoteCeaseFire", GameId);
 
@@ -155,6 +159,9 @@ namespace ArmsFair.Network
                 Debug.LogWarning($"[GameClient] Server error {msg.Code}: {msg.Message}");
                 RunOnMainThread(() => OnError.Invoke(msg));
             });
+
+            _hub.On<string>("PlayerReady", playerId =>
+                RunOnMainThread(() => OnPlayerReady.Invoke(playerId)));
 
             _hub.Reconnected += connectionId =>
             {

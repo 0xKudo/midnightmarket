@@ -10,9 +10,10 @@ namespace ArmsFair.Server.Services;
 /// </summary>
 public class GameStateService
 {
-    private readonly ConcurrentDictionary<string, GameState>       _games           = new();
+    private readonly ConcurrentDictionary<string, GameState>          _games           = new();
     private readonly ConcurrentDictionary<string, List<PlayerAction>> _pending         = new();
-    private readonly ConcurrentDictionary<string, HashSet<string>> _ceaseFireVoters = new();
+    private readonly ConcurrentDictionary<string, HashSet<string>>    _ceaseFireVoters = new();
+    private readonly ConcurrentDictionary<string, HashSet<string>>    _readyPlayers    = new();
 
     // ── Game state ────────────────────────────────────────────────────────────
 
@@ -63,4 +64,23 @@ public class GameStateService
 
     public void RemoveVoters(string gameId) =>
         _ceaseFireVoters.TryRemove(gameId, out _);
+
+    // ── Ready players ─────────────────────────────────────────────────────────
+
+    public void MarkReady(string gameId, string playerId)
+    {
+        var set = _readyPlayers.GetOrAdd(gameId, _ => new HashSet<string>());
+        lock (set) set.Add(playerId);
+    }
+
+    public bool AreAllReady(string gameId, IEnumerable<string> allPlayerIds)
+    {
+        if (!_readyPlayers.TryGetValue(gameId, out var set)) return false;
+        var ids = allPlayerIds.ToList();
+        if (ids.Count == 0) return false;
+        lock (set) return ids.All(id => set.Contains(id));
+    }
+
+    public void ClearReady(string gameId) =>
+        _readyPlayers.TryRemove(gameId, out _);
 }
