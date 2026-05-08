@@ -15,6 +15,7 @@ namespace ArmsFair.UI
     public class HUDScreen : MonoBehaviour, IScreen
     {
         private VisualElement _root;
+        private VisualElement _docRoot;
 
         // Top bar
         private Label _marketHeatLabel;
@@ -106,6 +107,7 @@ namespace ArmsFair.UI
             docRoot.style.width    = new StyleLength(Length.Percent(100));
             docRoot.style.height   = new StyleLength(Length.Percent(100));
 
+            _docRoot = docRoot;
             _root = docRoot.Q("HUDScreen");
             if (_root == null) { Debug.LogError("[HUDScreen] Root element not found"); return; }
 
@@ -307,7 +309,7 @@ namespace ArmsFair.UI
             }
 
             // Build consequences overlay (survives next PhaseStart, cleaned up there)
-            if (_consequencesOverlay != null) { _root.Remove(_consequencesOverlay); _consequencesOverlay = null; }
+            if (_consequencesOverlay != null) { RemovePersistentOverlay(_consequencesOverlay); _consequencesOverlay = null; }
             _consequencesOverlay = MakePersistentOverlay();
 
             var panel = MakeModalPanel(520);
@@ -389,12 +391,12 @@ namespace ArmsFair.UI
             closeBtn.style.borderLeftWidth = closeBtn.style.borderRightWidth  = 1;
             closeBtn.clicked += () =>
             {
-                if (_consequencesOverlay != null) { _root.Remove(_consequencesOverlay); _consequencesOverlay = null; }
+                if (_consequencesOverlay != null) { RemovePersistentOverlay(_consequencesOverlay); _consequencesOverlay = null; }
             };
             panel.Add(closeBtn);
 
             _consequencesOverlay.Add(panel);
-            _root.Add(_consequencesOverlay);
+            AddPersistentOverlay(_consequencesOverlay);
         }
 
         private void OnWorldUpdate(WorldUpdateMessage msg)
@@ -407,7 +409,7 @@ namespace ArmsFair.UI
         {
             if (_root == null || _root.style.display == DisplayStyle.None) return;
 
-            if (_revealOverlay != null) { _root.Remove(_revealOverlay); _revealOverlay = null; }
+            if (_revealOverlay != null) { RemovePersistentOverlay(_revealOverlay); _revealOverlay = null; }
 
             _revealOverlay = MakePersistentOverlay();
 
@@ -499,12 +501,12 @@ namespace ArmsFair.UI
             closeBtn.style.borderLeftWidth = closeBtn.style.borderRightWidth  = 1;
             closeBtn.clicked += () =>
             {
-                if (_revealOverlay != null) { _root.Remove(_revealOverlay); _revealOverlay = null; }
+                if (_revealOverlay != null) { RemovePersistentOverlay(_revealOverlay); _revealOverlay = null; }
             };
             panel.Add(closeBtn);
 
             _revealOverlay.Add(panel);
-            _root.Add(_revealOverlay);
+            AddPersistentOverlay(_revealOverlay);
 
             if (_statusLabel != null) _statusLabel.text = "REVEAL: ALL ORDERS DISCLOSED";
         }
@@ -514,8 +516,8 @@ namespace ArmsFair.UI
         private void ShowPanel(GamePhase phase)
         {
             CloseAllModals();
-            if (_revealOverlay != null) { _root.Remove(_revealOverlay); _revealOverlay = null; }
-            if (_consequencesOverlay != null) { _root.Remove(_consequencesOverlay); _consequencesOverlay = null; }
+            if (_revealOverlay != null) { RemovePersistentOverlay(_revealOverlay); _revealOverlay = null; }
+            if (_consequencesOverlay != null) { RemovePersistentOverlay(_consequencesOverlay); _consequencesOverlay = null; }
 
             var isProcurement = phase == GamePhase.Procurement;
             var isSales       = phase == GamePhase.Sales;
@@ -1397,7 +1399,7 @@ namespace ArmsFair.UI
             return overlay;
         }
 
-        // Like MakeModalOverlay but NOT tracked in _openModals — survives CloseAllModals() / phase transitions.
+        // Like MakeModalOverlay but NOT tracked in _openModals and attached to _docRoot (guaranteed full-screen size).
         // Caller is responsible for cleanup via its own _xxxOverlay field.
         private VisualElement MakePersistentOverlay()
         {
@@ -1408,6 +1410,13 @@ namespace ArmsFair.UI
             overlay.style.alignItems      = Align.Center;
             overlay.style.justifyContent  = Justify.Center;
             return overlay;
+        }
+
+        private void AddPersistentOverlay(VisualElement overlay) => _docRoot.Add(overlay);
+
+        private void RemovePersistentOverlay(VisualElement overlay)
+        {
+            if (_docRoot.Contains(overlay)) _docRoot.Remove(overlay);
         }
 
         private void CloseModal(VisualElement overlay)
