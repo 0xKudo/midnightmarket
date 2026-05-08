@@ -247,6 +247,15 @@ namespace ArmsFair.UI
             _worldMapArea = _root.Q("WorldMapArea");
             _worldMapArea?.RegisterCallback<GeometryChangedEvent>(_ => UpdateGlobeViewport());
 
+            // Dismiss CountryInfoCard when clicking anywhere outside the globe area.
+            // WorldMapArea has picking-mode:Ignore so its clicks don't reach UI Toolkit;
+            // this handler only fires for left-panel / footer clicks.
+            _root.RegisterCallback<PointerDownEvent>(_ =>
+            {
+                if (_countryInfoCard != null)
+                    _countryInfoCard.style.display = DisplayStyle.None;
+            });
+
             UIManager.Instance.Register("HUD", this);
         }
 

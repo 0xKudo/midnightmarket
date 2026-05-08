@@ -95,8 +95,8 @@ namespace ArmsFair.Map
         {
             if (_map == null) return;
 
-            // Detect a non-drag left-click on a country
-            if (_map.input.GetMouseButtonUp(0) && !_map.hasDragged && _map.countryLastClicked >= 0)
+            // Detect a non-drag left-click on a country — only when mouse is over the globe viewport
+            if (_map.mouseIsOver && _map.input.GetMouseButtonUp(0) && !_map.hasDragged && _map.countryLastClicked >= 0)
             {
                 var wpmName = _map.countries[_map.countryLastClicked].name;
                 var iso = _wpmToIso.TryGetValue(wpmName, out var found) ? found : wpmName;
