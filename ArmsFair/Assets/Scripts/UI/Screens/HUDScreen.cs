@@ -274,7 +274,7 @@ namespace ArmsFair.UI
 
         private void OnConsequences(ConsequencesMessage msg)
         {
-            if (_root == null || _root.style.display == DisplayStyle.None) return;
+            if (_root == null) return;
             if (_lastState == null) return;
 
             // Sum all profit entries per player — multi-weapon orders produce one entry per weapon
@@ -407,7 +407,7 @@ namespace ArmsFair.UI
 
         private void OnReveal(RevealMessage msg)
         {
-            if (_root == null || _root.style.display == DisplayStyle.None) return;
+            if (_root == null) return;
 
             if (_revealOverlay != null) { RemovePersistentOverlay(_revealOverlay); _revealOverlay = null; }
 
