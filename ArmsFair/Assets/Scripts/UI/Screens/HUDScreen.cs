@@ -54,11 +54,15 @@ namespace ArmsFair.UI
         private VisualElement _inventoryBar;
         private VisualElement _inventoryItems;
 
-        // Reveal overlay
-        private VisualElement _revealOverlay;
+        // Reveal panel
+        private VisualElement _revealPanel;
+        private ScrollView    _revealList;
 
-        // Consequences overlay
-        private VisualElement _consequencesOverlay;
+        // Consequences panel
+        private VisualElement _consequencesPanel;
+        private ScrollView    _profitList;
+        private ScrollView    _blowbackList;
+        private ScrollView    _repList;
 
         // Open modal overlays — cleared on every phase transition
         private readonly List<VisualElement> _openModals = new();
@@ -164,6 +168,24 @@ namespace ArmsFair.UI
             if (_submitSaleBtn    != null) _submitSaleBtn.clicked    += OnSubmitSale;
             var passSaleBtn = _root.Q<Button>("PassSaleBtn");
             if (passSaleBtn != null) passSaleBtn.clicked += OnPassSale;
+
+            _revealPanel = _root.Q("RevealPanel");
+            _revealList  = _root.Q<ScrollView>("RevealList");
+            var revealCloseBtn = _root.Q<Button>("RevealCloseBtn");
+            if (revealCloseBtn != null) revealCloseBtn.clicked += () =>
+            {
+                if (_revealPanel != null) _revealPanel.style.display = DisplayStyle.None;
+            };
+
+            _consequencesPanel = _root.Q("ConsequencesPanel");
+            _profitList        = _root.Q<ScrollView>("ProfitList");
+            _blowbackList      = _root.Q<ScrollView>("BlowbackList");
+            _repList           = _root.Q<ScrollView>("RepList");
+            var consequencesCloseBtn = _root.Q<Button>("ConsequencesCloseBtn");
+            if (consequencesCloseBtn != null) consequencesCloseBtn.clicked += () =>
+            {
+                if (_consequencesPanel != null) _consequencesPanel.style.display = DisplayStyle.None;
+            };
 
             UIManager.Instance.Register("HUD", this);
         }
@@ -308,95 +330,64 @@ namespace ArmsFair.UI
                 _sharePriceLabel.text = $"${s.NewPrice}";
             }
 
-            // Build consequences overlay (survives next PhaseStart, cleaned up there)
-            if (_consequencesOverlay != null) { RemovePersistentOverlay(_consequencesOverlay); _consequencesOverlay = null; }
-            _consequencesOverlay = MakePersistentOverlay();
-
-            var panel = MakeModalPanel(520);
-            panel.Add(MakeModalTitle("CONSEQUENCES"));
-
-            // Profit
-            panel.Add(MakeOverlaySectionLabel("PROFIT"));
-            if (msg.ProfitUpdates.Count == 0)
+            // Populate consequences UXML panel
+            if (_profitList != null)
             {
-                panel.Add(MakeOverlayRowLabel("NONE"));
-            }
-            else
-            {
-                var scroll = new ScrollView(); scroll.style.height = 90;
-                foreach (var u in msg.ProfitUpdates)
+                _profitList.Clear();
+                if (msg.ProfitUpdates.Count == 0)
                 {
-                    var name = _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.CompanyName
-                            ?? _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.Username
-                            ?? u.PlayerId;
-                    scroll.Add(MakeOverlayRowLabel($"{name.ToUpper()}  +${u.ProfitEarned}M  →  ${u.NewCapital}M"));
+                    _profitList.Add(MakeOverlayRowLabel("NONE"));
                 }
-                panel.Add(scroll);
-            }
-
-            // Blowback
-            panel.Add(MakeOverlaySectionLabel("BLOWBACK"));
-            if (msg.BlowbackEvents.Count == 0)
-            {
-                panel.Add(MakeOverlayRowLabel("NONE"));
-            }
-            else
-            {
-                var scroll = new ScrollView(); scroll.style.height = 70;
-                foreach (var b in msg.BlowbackEvents)
+                else
                 {
-                    var name = _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.CompanyName
-                            ?? _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.Username
-                            ?? b.PlayerId;
-                    scroll.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {b.Weapon}  →  {b.CountryIso}  TRACED"));
+                    foreach (var u in msg.ProfitUpdates)
+                    {
+                        var name = _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.CompanyName
+                                ?? _lastState.Players.FirstOrDefault(p => p.Id == u.PlayerId)?.Username
+                                ?? u.PlayerId;
+                        _profitList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  +${u.ProfitEarned}M  →  ${u.NewCapital}M"));
+                    }
                 }
-                panel.Add(scroll);
             }
 
-            // Reputation
-            panel.Add(MakeOverlaySectionLabel("REPUTATION"));
-            if (msg.ReputationUpdates.Count == 0)
+            if (_blowbackList != null)
             {
-                panel.Add(MakeOverlayRowLabel("NONE"));
-            }
-            else
-            {
-                var scroll = new ScrollView(); scroll.style.height = 70;
-                foreach (var r in msg.ReputationUpdates)
+                _blowbackList.Clear();
+                if (msg.BlowbackEvents.Count == 0)
                 {
-                    var name = _lastState.Players.FirstOrDefault(p => p.Id == r.PlayerId)?.CompanyName
-                            ?? _lastState.Players.FirstOrDefault(p => p.Id == r.PlayerId)?.Username
-                            ?? r.PlayerId;
-                    var sign = r.Delta >= 0 ? "+" : "";
-                    scroll.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  →  {r.NewReputation}  ({r.Reason})"));
+                    _blowbackList.Add(MakeOverlayRowLabel("NONE"));
                 }
-                panel.Add(scroll);
+                else
+                {
+                    foreach (var b in msg.BlowbackEvents)
+                    {
+                        var name = _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.CompanyName
+                                ?? _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.Username
+                                ?? b.PlayerId;
+                        _blowbackList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {b.Weapon}  →  {b.CountryIso}  TRACED"));
+                    }
+                }
             }
 
-            var closeDivider = new VisualElement();
-            closeDivider.style.height          = 1;
-            closeDivider.style.backgroundColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
-            closeDivider.style.marginTop       = 12;
-            closeDivider.style.marginBottom    = 12;
-            panel.Add(closeDivider);
-
-            var closeBtn = new Button { text = "CLOSE" };
-            closeBtn.style.paddingTop      = closeBtn.style.paddingBottom = 8;
-            closeBtn.style.color           = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-            closeBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
-            closeBtn.style.borderTopColor  = closeBtn.style.borderBottomColor =
-            closeBtn.style.borderLeftColor = closeBtn.style.borderRightColor  =
-                new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
-            closeBtn.style.borderTopWidth  = closeBtn.style.borderBottomWidth =
-            closeBtn.style.borderLeftWidth = closeBtn.style.borderRightWidth  = 1;
-            closeBtn.clicked += () =>
+            if (_repList != null)
             {
-                if (_consequencesOverlay != null) { RemovePersistentOverlay(_consequencesOverlay); _consequencesOverlay = null; }
-            };
-            panel.Add(closeBtn);
-
-            _consequencesOverlay.Add(panel);
-            AddPersistentOverlay(_consequencesOverlay);
+                _repList.Clear();
+                if (msg.ReputationUpdates.Count == 0)
+                {
+                    _repList.Add(MakeOverlayRowLabel("NONE"));
+                }
+                else
+                {
+                    foreach (var r in msg.ReputationUpdates)
+                    {
+                        var name = _lastState.Players.FirstOrDefault(p => p.Id == r.PlayerId)?.CompanyName
+                                ?? _lastState.Players.FirstOrDefault(p => p.Id == r.PlayerId)?.Username
+                                ?? r.PlayerId;
+                        var sign = r.Delta >= 0 ? "+" : "";
+                        _repList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  →  {r.NewReputation}  ({r.Reason})"));
+                    }
+                }
+            }
         }
 
         private void OnWorldUpdate(WorldUpdateMessage msg)
@@ -407,30 +398,24 @@ namespace ArmsFair.UI
 
         private void OnReveal(RevealMessage msg)
         {
-            if (_root == null) return;
+            if (_revealList == null) return;
 
-            if (_revealOverlay != null) { RemovePersistentOverlay(_revealOverlay); _revealOverlay = null; }
-
-            _revealOverlay = MakePersistentOverlay();
-
-            var panel = MakeModalPanel(460);
-            panel.Add(MakeModalTitle("ROUND REVEAL"));
+            _revealList.Clear();
 
             if (msg.Actions == null || msg.Actions.Count == 0)
             {
                 var empty = new Label("No orders were submitted this round.");
-                empty.style.color        = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                empty.style.fontSize     = 13;
-                empty.style.marginBottom = 14;
-                panel.Add(empty);
+                empty.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                empty.style.fontSize = 13;
+                _revealList.Add(empty);
             }
             else
             {
                 var localId = AccountManager.Instance.LocalPlayer?.Id;
-
                 foreach (var action in msg.Actions)
                 {
-                    var company = string.IsNullOrEmpty(action.CompanyName) ? "UNKNOWN" : action.CompanyName.ToUpper();
+                    var player  = _lastState?.Players.FirstOrDefault(p => p.Id == action.PlayerId);
+                    var company = (player?.CompanyName ?? player?.Username ?? action.CompanyName ?? action.PlayerId).ToUpper();
                     var isMe    = action.PlayerId == localId;
 
                     var row = new VisualElement();
@@ -442,11 +427,9 @@ namespace ArmsFair.UI
                     row.style.borderBottomWidth = 1;
 
                     var companyLabel = new Label(isMe ? $"> {company}" : $"  {company}");
-                    companyLabel.style.color    = new StyleColor(isMe
-                        ? new Color(138f/255f, 184f/255f, 112f/255f)
-                        : new Color(212f/255f, 207f/255f, 184f/255f));
-                    companyLabel.style.fontSize = 13;
-                    companyLabel.style.width    = 160;
+                    companyLabel.style.color     = new StyleColor(isMe ? new Color(138f/255f, 184f/255f, 112f/255f) : new Color(212f/255f, 207f/255f, 184f/255f));
+                    companyLabel.style.fontSize  = 13;
+                    companyLabel.style.width     = 160;
                     companyLabel.style.flexShrink = 0;
 
                     var saleTypeStr = action.SaleType switch
@@ -479,34 +462,9 @@ namespace ArmsFair.UI
 
                     row.Add(companyLabel);
                     row.Add(detail);
-                    panel.Add(row);
+                    _revealList.Add(row);
                 }
             }
-
-            var divider = new VisualElement();
-            divider.style.height          = 1;
-            divider.style.backgroundColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
-            divider.style.marginTop       = 12;
-            divider.style.marginBottom    = 12;
-            panel.Add(divider);
-
-            var closeBtn = new Button { text = "CLOSE" };
-            closeBtn.style.paddingTop      = closeBtn.style.paddingBottom = 8;
-            closeBtn.style.color           = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-            closeBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
-            closeBtn.style.borderTopColor  = closeBtn.style.borderBottomColor =
-            closeBtn.style.borderLeftColor = closeBtn.style.borderRightColor  =
-                new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
-            closeBtn.style.borderTopWidth  = closeBtn.style.borderBottomWidth =
-            closeBtn.style.borderLeftWidth = closeBtn.style.borderRightWidth  = 1;
-            closeBtn.clicked += () =>
-            {
-                if (_revealOverlay != null) { RemovePersistentOverlay(_revealOverlay); _revealOverlay = null; }
-            };
-            panel.Add(closeBtn);
-
-            _revealOverlay.Add(panel);
-            AddPersistentOverlay(_revealOverlay);
 
             if (_statusLabel != null) _statusLabel.text = "REVEAL: ALL ORDERS DISCLOSED";
         }
@@ -516,18 +474,23 @@ namespace ArmsFair.UI
         private void ShowPanel(GamePhase phase)
         {
             CloseAllModals();
-            if (_revealOverlay != null) { RemovePersistentOverlay(_revealOverlay); _revealOverlay = null; }
-            if (_consequencesOverlay != null) { RemovePersistentOverlay(_consequencesOverlay); _consequencesOverlay = null; }
 
             var isProcurement = phase == GamePhase.Procurement;
             var isSales       = phase == GamePhase.Sales;
+
+            var isReveal       = phase == GamePhase.Reveal;
+            var isConsequences = phase == GamePhase.Consequences;
 
             if (_procurementPanel != null)
                 _procurementPanel.style.display = isProcurement ? DisplayStyle.Flex : DisplayStyle.None;
             if (_salesPanel != null)
                 _salesPanel.style.display = isSales ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_revealPanel != null)
+                _revealPanel.style.display = isReveal ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_consequencesPanel != null)
+                _consequencesPanel.style.display = isConsequences ? DisplayStyle.Flex : DisplayStyle.None;
             if (_phaseStatusLabel != null)
-                _phaseStatusLabel.style.display = (isProcurement || isSales) ? DisplayStyle.None : DisplayStyle.Flex;
+                _phaseStatusLabel.style.display = (isProcurement || isSales || isReveal || isConsequences) ? DisplayStyle.None : DisplayStyle.Flex;
 
             if (isProcurement)
             {

@@ -98,6 +98,27 @@
           </ui:VisualElement>
         </ui:VisualElement>
 
+        <!-- Reveal Phase Panel -->
+        <ui:VisualElement name="RevealPanel" style="display:none; flex-direction:column; width:480px; background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px;">
+          <ui:Label text="ROUND REVEAL" style="font-size:16px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:16px;" />
+          <ui:ScrollView name="RevealList" style="height:300px;" />
+          <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-top:12px; margin-bottom:12px;" />
+          <ui:Button name="RevealCloseBtn" text="CLOSE" style="font-size:13px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:8px; padding-bottom:8px;" />
+        </ui:VisualElement>
+
+        <!-- Consequences Phase Panel -->
+        <ui:VisualElement name="ConsequencesPanel" style="display:none; flex-direction:column; width:480px; background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px;">
+          <ui:Label text="CONSEQUENCES" style="font-size:16px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:16px;" />
+          <ui:Label text="PROFIT" style="font-size:11px; color:rgb(138,184,112); margin-bottom:4px;" />
+          <ui:ScrollView name="ProfitList" style="height:80px; margin-bottom:10px;" />
+          <ui:Label text="BLOWBACK" style="font-size:11px; color:rgb(138,184,112); margin-bottom:4px;" />
+          <ui:ScrollView name="BlowbackList" style="height:60px; margin-bottom:10px;" />
+          <ui:Label text="REPUTATION" style="font-size:11px; color:rgb(138,184,112); margin-bottom:4px;" />
+          <ui:ScrollView name="RepList" style="height:60px; margin-bottom:10px;" />
+          <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-top:4px; margin-bottom:12px;" />
+          <ui:Button name="ConsequencesCloseBtn" text="CLOSE" style="font-size:13px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:8px; padding-bottom:8px;" />
+        </ui:VisualElement>
+
         <!-- Procurement Phase Panel -->
         <ui:VisualElement name="ProcurementPanel" style="display:none; flex-direction:column; width:480px; background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px;">
           <ui:Label text="Purchase Weapons" style="font-size:16px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:16px;" />
