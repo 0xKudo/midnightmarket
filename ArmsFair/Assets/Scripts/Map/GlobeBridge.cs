@@ -73,11 +73,12 @@ namespace ArmsFair.Map
                 yield break;
             }
 
-            _map.enableCountryHighlight = true;
-            _map.fillColor     = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.35f);
-            _map.frontiersColor = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.6f);
-            _map.showFrontiers   = true;
-            _map.showCountryNames = false;
+            _map.enableCountryHighlight  = true;
+            _map.fillColor               = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.35f);
+            _map.frontiersColor          = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.6f);
+            _map.showFrontiers           = true;
+            _map.showCountryNames        = false;
+            _map.earthAtmosphereVisible  = false;
         }
 
         private void OnDestroy()
