@@ -1064,8 +1064,7 @@ namespace ArmsFair.UI
 
             var overlay  = MakeModalOverlay();
             var panel    = MakeModalPanel(320);
-            panel.style.flexDirection = FlexDirection.Column;
-            panel.style.maxHeight     = new StyleLength(Length.Percent(72));
+            panel.style.overflow = Overflow.Hidden;
 
             var title    = MakeModalTitle("Select Target Country");
             panel.Add(title);
@@ -1084,9 +1083,12 @@ namespace ArmsFair.UI
             panel.Add(search);
 
             var scroll = new ScrollView();
-            scroll.style.flexGrow   = 1;
-            scroll.style.flexShrink = 1;
-            scroll.style.minHeight  = 80;
+            scroll.style.height     = 240;
+            scroll.style.flexShrink = 0;
+            scroll.style.overflow   = Overflow.Hidden;
+            // Force the scroll viewport to also clip
+            var viewport = scroll.Q<VisualElement>(className: "unity-scroll-view__content-viewport");
+            if (viewport != null) viewport.style.overflow = Overflow.Hidden;
             panel.Add(scroll);
 
             void Populate(string filter)
