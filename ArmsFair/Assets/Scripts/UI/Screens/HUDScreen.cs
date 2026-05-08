@@ -87,6 +87,7 @@ namespace ArmsFair.UI
         private ScrollView    _profitList;
         private ScrollView    _blowbackList;
         private ScrollView    _repList;
+        private ScrollView    _sharePriceList;
 
         // Open modal overlays — cleared on every phase transition
         private readonly List<VisualElement> _openModals = new();
@@ -223,6 +224,7 @@ namespace ArmsFair.UI
             _consequencesPanel = _root.Q("ConsequencesPanel");
             _profitList        = _root.Q<ScrollView>("ProfitList");
             _blowbackList      = _root.Q<ScrollView>("BlowbackList");
+            _sharePriceList    = _root.Q<ScrollView>("SharePriceList");
             _repList           = _root.Q<ScrollView>("RepList");
             var consequencesCloseBtn = _root.Q<Button>("ConsequencesCloseBtn");
             if (consequencesCloseBtn != null) consequencesCloseBtn.clicked += () =>
@@ -394,6 +396,9 @@ namespace ArmsFair.UI
             if (_root == null) return;
             if (_lastState == null) return;
 
+            // Capture old share prices before state is overwritten
+            var oldSharePrices = _lastState.Players.ToDictionary(p => p.Id, p => p.SharePrice);
+
             // Sum all profit entries per player — multi-weapon orders produce one entry per weapon
             var updatedPlayers = _lastState.Players.Select(p =>
             {
@@ -486,6 +491,28 @@ namespace ArmsFair.UI
                             _               => r.Reason
                         };
                         _repList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {sign}{r.Delta}  →  {r.NewReputation}  ({reasonText})"));
+                    }
+                }
+            }
+
+            if (_sharePriceList != null)
+            {
+                _sharePriceList.Clear();
+                if (msg.SharePriceUpdates.Count == 0)
+                {
+                    _sharePriceList.Add(MakeOverlayRowLabel("NONE"));
+                }
+                else
+                {
+                    foreach (var s in msg.SharePriceUpdates)
+                    {
+                        var name     = _lastState.Players.FirstOrDefault(p => p.Id == s.PlayerId)?.CompanyName
+                                    ?? _lastState.Players.FirstOrDefault(p => p.Id == s.PlayerId)?.Username
+                                    ?? s.PlayerId;
+                        var oldPrice = oldSharePrices.TryGetValue(s.PlayerId, out var op) ? op : s.NewPrice;
+                        var delta    = s.NewPrice - oldPrice;
+                        var sign     = delta >= 0 ? "+" : "";
+                        _sharePriceList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  ${oldPrice}  →  ${s.NewPrice}  ({sign}${delta})"));
                     }
                 }
             }
@@ -1693,7 +1720,7 @@ namespace ArmsFair.UI
         {
             var l = new Label(text);
             l.style.color        = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-            l.style.fontSize     = 11;
+            l.style.fontSize     = 14;
             l.style.marginBottom = 2;
             return l;
         }
