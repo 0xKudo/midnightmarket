@@ -141,18 +141,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &2010974459
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2010974452}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cabd1d29685e90a44951606651aa1996, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::ArmsFair.Map.GlobeBridge
 --- !u!114 &2010974453
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -163,7 +151,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3600e2f63777e9f4da8fc8ce694331ba, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArmsFair.Map.GlobeTensionBridge
 --- !u!114 &2010974454
 MonoBehaviour:
@@ -272,6 +260,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2010974459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2010974452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cabd1d29685e90a44951606651aa1996, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArmsFair.Map.GlobeBridge
 --- !u!1 &2107695660
 GameObject:
   m_ObjectHideFlags: 0
@@ -364,7 +364,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.04, g: 0.08, b: 0.18, a: 1}
+  m_BackGroundColor: {r: 0.051, g: 0.051, b: 0.031, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0

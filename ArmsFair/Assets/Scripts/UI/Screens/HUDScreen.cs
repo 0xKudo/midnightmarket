@@ -61,6 +61,10 @@ namespace ArmsFair.UI
         private Label         _cardTensionLabel;
         private string        _cardIso;
 
+        // Globe camera viewport sync
+        private VisualElement _worldMapArea;
+        private Camera        _globeCamera;
+
         // Negotiation panel
         private VisualElement _negotiationPanel;
         private VisualElement _negoIntelTab;
@@ -238,6 +242,9 @@ namespace ArmsFair.UI
             var cardSellBtn = _root.Q<Button>("CardSellBtn");
             if (cardSellBtn != null) cardSellBtn.clicked += OnCardSellClicked;
 
+            _worldMapArea = _root.Q("WorldMapArea");
+            _worldMapArea?.RegisterCallback<GeometryChangedEvent>(_ => UpdateGlobeViewport());
+
             UIManager.Instance.Register("HUD", this);
         }
 
@@ -257,8 +264,23 @@ namespace ArmsFair.UI
 
         private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
         {
-            if (scene.name == "MapGlobe" && ArmsFair.Map.GlobeBridge.Instance != null)
+            if (scene.name != "MapGlobe") return;
+            if (ArmsFair.Map.GlobeBridge.Instance != null)
                 ArmsFair.Map.GlobeBridge.Instance.OnCountryClicked += OnGlobeCountryClicked;
+            var ctrl = FindObjectOfType<ArmsFair.Map.GlobeCameraController>();
+            if (ctrl != null) _globeCamera = ctrl.GetComponent<Camera>();
+            UpdateGlobeViewport();
+        }
+
+        private void UpdateGlobeViewport()
+        {
+            if (_globeCamera == null || _worldMapArea == null || _root?.panel == null) return;
+            var rootBound = _root.panel.visualTree.worldBound;
+            if (rootBound.width <= 0f) return;
+            var wb = _worldMapArea.worldBound;
+            float nx = wb.x / rootBound.width;
+            float nw = wb.width / rootBound.width;
+            _globeCamera.rect = new Rect(nx, 0f, nw, 1f);
         }
 
         private void OnDestroy()
@@ -282,6 +304,7 @@ namespace ArmsFair.UI
             if (_root == null) return;
             _root.style.display = DisplayStyle.Flex;
             ArmsFair.Map.ViewToggleManager.Instance?.EnsureGlobeVisible();
+            UpdateGlobeViewport();
             RefreshInventoryBar();
             if (_lastState != null) BindState(_lastState);
         }
