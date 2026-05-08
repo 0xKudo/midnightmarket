@@ -322,6 +322,12 @@ namespace ArmsFair.UI
             _timerRunning          = true;
             _phaseStatusLabel.text = $"PHASE: {msg.Phase.ToString().ToUpper()}";
             _statusLabel.text      = $"PHASE STARTED — ROUND {round}";
+
+            // Keep _lastState phase in sync so phase guards (e.g. procurement) work correctly.
+            // StateSync is not sent on every phase transition, so we update it here.
+            if (_lastState != null)
+                _lastState = _lastState with { Phase = msg.Phase, Round = round };
+
             ShowPanel(msg.Phase);
 
             if (_readyBtn != null)
