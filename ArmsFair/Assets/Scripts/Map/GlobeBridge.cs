@@ -17,11 +17,14 @@ namespace ArmsFair.Map
         public event System.Action<string, Vector2> OnCountryClicked;
 
         private WorldMapGlobe _map;
+        private IEnumerable<CountryState> _pendingCountries; // cached so InitWPM can replay after WPM is ready
 
         // ISO code → WPM country name
         private readonly Dictionary<string, string> _isoToWpm = new();
         // WPM country name → ISO code
         private readonly Dictionary<string, string> _wpmToIso = new();
+        // stage colors applied via SetCountryStage, so ClearHighlights can restore them
+        private readonly Dictionary<string, Color> _stageColors = new();
 
         // WPM uses different names than the server for these countries
         private static readonly Dictionary<string, string> _wpmNameToIso =
@@ -73,18 +76,22 @@ namespace ArmsFair.Map
             var ctrl = FindObjectOfType<GlobeCameraController>(true);
             if (ctrl != null) ctrl.enabled = false;
 
-            // Give WPM one frame to finish its own Awake/Start before we configure it
             StartCoroutine(InitWPM());
         }
 
         private IEnumerator InitWPM()
         {
-            yield return null; // wait one frame
+            // Retry up to 3 frames — WPM may need more than one frame to finish its own Awake/Start
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                yield return null;
+                _map = WorldMapGlobe.instance;
+                if (_map != null) break;
+            }
 
-            _map = WorldMapGlobe.instance;
             if (_map == null)
             {
-                Debug.LogError("[GlobeBridge] WorldMapGlobe.instance still null after one frame");
+                Debug.LogError("[GlobeBridge] WorldMapGlobe.instance still null after 3 frames");
                 yield break;
             }
 
@@ -95,11 +102,27 @@ namespace ArmsFair.Map
             _map.showCountryNames        = false;
             _map.earthAtmosphereVisible  = false;
             _map.centerOnRightClick      = true;
-            _map.allowUserZoom           = true;
-            _map.mouseWheelSensitivity   = 1.5f;
+            _map.allowUserZoom           = false; // GlobeBridge.Update() owns scroll zoom directly
             _map.autoRotationSpeed       = 0f;
-            _map.SetZoomLevel(0.85f);
-            if (Camera.main != null) Camera.main.fieldOfView = 80f;
+            // FOV must be set BEFORE SetZoomLevel — WPM reads fieldOfView to compute frustumDistance.
+            // WPM's frustumDistance formula is calibrated for FOV=60°: only at 60° does zoom=1.0
+            // place the camera exactly at the no-clipping tangent distance. Higher FOV → camera
+            // too close → globe clips. Lower FOV → some clipping but less than higher values.
+            if (Camera.main != null) Camera.main.fieldOfView = 60f;
+            _map.SetZoomLevel(1.0f); // positions camera at frustumDistance (= 2R at FOV=60°, where sphere fills vertical FOV)
+            // Push camera back for a comfortable initial view — frustumDistance (zoom=1) places
+            // the globe edge-to-edge; 2.5R gives ~79% fill with breathing room on all sides.
+            // Direct position override bypasses WPM's 0-1 zoom clamp.
+            if (Camera.main != null)
+            {
+                float R = _map.transform.localScale.y * 0.5f;
+                Vector3 dir = (Camera.main.transform.position - _map.transform.position).normalized;
+                Camera.main.transform.position = _map.transform.position + dir * R * 2.5f;
+            }
+
+            // Replay RegisterCountries if it was called before WPM was ready
+            if (_pendingCountries != null)
+                RegisterCountries(_pendingCountries);
         }
 
         private void OnDestroy()
@@ -119,27 +142,58 @@ namespace ArmsFair.Map
                 OnCountryClicked?.Invoke(iso, (Vector2)_map.input.mousePosition);
             }
 
-            // Clamp zoom range after WPM applies its own scroll
-            float z = _map.GetZoomLevel();
-            if      (z < 0.35f) _map.SetZoomLevel(0.35f);
-            else if (z > 0.90f) _map.SetZoomLevel(0.90f);
+            // Direct proportional scroll zoom — bypasses WPM's wheelAccel inertia which
+            // fought our distance clamp and caused stuck/jittery behavior at zoom limits.
+            // allowUserZoom=false disables WPM's scroll handler so we have sole control.
+            if (Camera.main != null)
+            {
+                float scroll = _map.input.GetAxis("Mouse ScrollWheel");
+                if (Mathf.Abs(scroll) > 0.001f && _map.mouseIsOver)
+                {
+                    Debug.Log($"[GlobeBridge] scroll={scroll:F4}");
+                    float R    = _map.transform.localScale.y * 0.5f;
+                    float dist = Vector3.Distance(Camera.main.transform.position, _map.transform.position);
+                    float newDist = Mathf.Clamp(dist * (1f + scroll * 2.0f), R * 1.2f, R * 5.0f);
+                    Vector3 dir = (Camera.main.transform.position - _map.transform.position).normalized;
+                    Camera.main.transform.position = _map.transform.position + dir * newDist;
+                    Camera.main.transform.LookAt(_map.transform.position);
+                }
+            }
         }
 
         // Called from HUDScreen on each StateSync to build ISO ↔ WPM name lookups.
         public void RegisterCountries(IEnumerable<CountryState> countries)
         {
+            _pendingCountries = countries; // cache so InitWPM can replay if _map wasn't ready yet
             _isoToWpm.Clear();
             _wpmToIso.Clear();
             if (_map?.countries == null) return;
 
-            // Fuzzy match: server country name ↔ WPM country name
+            // Pass 1: exact match — avoids substring ambiguity (e.g. "Congo" matching the wrong Congo)
+            var unmatched = new List<CountryState>();
             foreach (var gs in countries)
+            {
+                bool matched = false;
+                for (int i = 0; i < _map.countries.Length; i++)
+                {
+                    if (string.Equals(_map.countries[i].name, gs.Name, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        _isoToWpm[gs.Iso]          = _map.countries[i].name;
+                        _wpmToIso[_map.countries[i].name] = gs.Iso;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) unmatched.Add(gs);
+            }
+
+            // Pass 2: substring match for countries that didn't exact-match
+            foreach (var gs in unmatched)
             {
                 for (int i = 0; i < _map.countries.Length; i++)
                 {
                     var wpmName = _map.countries[i].name;
-                    if (string.Equals(wpmName, gs.Name, System.StringComparison.OrdinalIgnoreCase) ||
-                        wpmName.IndexOf(gs.Name, System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    if (wpmName.IndexOf(gs.Name, System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                         gs.Name.IndexOf(wpmName, System.StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         _isoToWpm[gs.Iso] = wpmName;
@@ -149,10 +203,10 @@ namespace ArmsFair.Map
                 }
             }
 
-            // Apply overrides for countries where WPM and server names diverge entirely
+            // Pass 3: static overrides for countries where WPM and server names diverge entirely
             foreach (var (wpmName, iso) in _wpmNameToIso)
             {
-                if (_wpmToIso.ContainsKey(wpmName)) continue; // already matched
+                if (_wpmToIso.ContainsKey(wpmName)) continue; // already matched by passes 1 or 2
                 _wpmToIso[wpmName] = iso;
                 _isoToWpm[iso]     = wpmName;
             }
@@ -175,7 +229,10 @@ namespace ArmsFair.Map
             };
 
             if (color.a > 0f)
+            {
+                _stageColors[iso] = color; // track so ClearHighlights can restore
                 _map.ToggleCountrySurface(wpmName, true, color);
+            }
         }
 
         public void PlayArcs(List<ArcAnimation> arcs, IReadOnlyList<PlayerProfile> players) { }
@@ -186,6 +243,16 @@ namespace ArmsFair.Map
             _map.ToggleCountrySurface(wpmName, true, new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.5f));
         }
 
-        public void ClearHighlights() => _map?.HideCountrySurfaces();
+        public void ClearHighlights()
+        {
+            if (_map == null) return;
+            _map.HideCountrySurfaces();
+            // Restore stage colors — HideCountrySurfaces wipes everything including SetCountryStage overlays
+            foreach (var (iso, color) in _stageColors)
+            {
+                if (_isoToWpm.TryGetValue(iso, out var wpmName))
+                    _map.ToggleCountrySurface(wpmName, true, color);
+            }
+        }
     }
 }

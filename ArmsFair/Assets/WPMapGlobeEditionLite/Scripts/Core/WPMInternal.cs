@@ -234,20 +234,16 @@ namespace WPM {
 #endif
 
 #if ENABLE_INPUT_SYSTEM
-        static readonly RaycastHit[] pointer_hits = new RaycastHit[20];
-        
         void CheckMouseIsOver() {
             if (Camera.main == null) return;
-            
-            bool isOver = false;
-            Ray ray = Camera.main.ScreenPointToRay(input.mousePosition);
-            int hitCount = Physics.RaycastNonAlloc(ray, pointer_hits, Camera.main.farClipPlane);
-            for (int k = 0; k < hitCount; k++) {
-                if (pointer_hits[k].collider != null && pointer_hits[k].collider.gameObject == gameObject) {
-                    isOver = true;
-                    break;
-                }
-            }
+
+            // Physics.RaycastNonAlloc is unreliable when Camera.main renders to a restricted
+            // viewport rect (e.g. the globe occupies only the right portion of the HUD) and
+            // when the globe is on the UI layer (layer 5). Use the camera's screen rect instead:
+            // mouse is "over" if its normalised screen position is inside the camera's viewport.
+            var mp = input.mousePosition;
+            var r  = Camera.main.rect;
+            bool isOver = r.Contains(new Vector2(mp.x / Screen.width, mp.y / Screen.height));
 
             if (isOver != mouseIsOver) {
                 mouseIsOver = isOver;
