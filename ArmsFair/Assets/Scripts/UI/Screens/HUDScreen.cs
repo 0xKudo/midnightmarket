@@ -1759,9 +1759,8 @@ namespace ArmsFair.UI
             btn.style.borderTopWidth  = btn.style.borderBottomWidth =
             btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
             btn.style.marginBottom    = 4;
-            btn.style.paddingTop      = btn.style.paddingBottom = 6;
+            btn.style.paddingTop      = btn.style.paddingBottom = 8;
             btn.style.paddingLeft     = btn.style.paddingRight  = 8;
-            btn.style.whiteSpace      = WhiteSpace.NoWrap;
             btn.style.unityTextAlign  = TextAnchor.MiddleLeft;
             TerminalUI.AddHover(btn);
         }
