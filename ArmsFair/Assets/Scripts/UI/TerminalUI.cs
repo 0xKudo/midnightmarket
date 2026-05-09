@@ -33,6 +33,15 @@ namespace ArmsFair.UI
             RegisterHover(btn, TextDanger, BgButton, BorderDanger, HoverBgDanger, HoverText, HoverBgDanger);
         }
 
+        public static void AddHover(Button btn)
+        {
+            if (btn == null) return;
+            var normalBg     = btn.style.backgroundColor.value;
+            var normalText   = btn.style.color.value;
+            var normalBorder = btn.style.borderTopColor.value;
+            RegisterHover(btn, normalText, normalBg, normalBorder, HoverBgNormal, HoverText, HoverBgNormal);
+        }
+
         public static void StyleLabels(VisualElement root)
         {
             foreach (var label in root.Query<Label>().Build())

@@ -83,7 +83,7 @@ namespace ArmsFair.Map
             _map.centerOnRightClick      = true;
             _map.allowUserZoom           = false;  // we drive zoom manually in Update()
             _map.autoRotationSpeed       = 0f;
-            _map.SetZoomLevel(0.6f);
+            _map.SetZoomLevel(0.75f);
             if (Camera.main != null) Camera.main.fieldOfView = 80f;
         }
 

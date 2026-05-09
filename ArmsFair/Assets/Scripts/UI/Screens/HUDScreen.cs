@@ -167,7 +167,7 @@ namespace ArmsFair.UI
             TerminalUI.StyleDangerButton(_root.Q<Button>("LeaveGameBtn"));
 
             _readyBtn = _root.Q<Button>("ReadyBtn");
-            if (_readyBtn != null) _readyBtn.clicked += OnReadyClicked;
+            if (_readyBtn != null) { _readyBtn.clicked += OnReadyClicked; TerminalUI.AddHover(_readyBtn); }
 
             _inventoryBar   = _root.Q("InventoryBar");
             _inventoryItems = _root.Q("InventoryItems");
@@ -177,7 +177,7 @@ namespace ArmsFair.UI
             _procTotalLabel   = _root.Q<Label>("ProcTotalLabel");
             _procErrorLabel   = _root.Q<Label>("ProcErrorLabel");
             _confirmProcBtn   = _root.Q<Button>("ConfirmProcBtn");
-            if (_confirmProcBtn != null) _confirmProcBtn.clicked += OnConfirmProcurement;
+            if (_confirmProcBtn != null) { _confirmProcBtn.clicked += OnConfirmProcurement; TerminalUI.AddHover(_confirmProcBtn); }
 
             _salesPanel        = _root.Q("SalesPanel");
             _saleTypeRow       = _root.Q("SaleTypeRow");
@@ -190,11 +190,11 @@ namespace ArmsFair.UI
             _peaceBrokerNote   = _root.Q<Label>("PeaceBrokerNote");
             _saleErrorLabel    = _root.Q<Label>("SaleErrorLabel");
             _submitSaleBtn     = _root.Q<Button>("SubmitSaleBtn");
-            if (_weaponPickerBtn  != null) _weaponPickerBtn.clicked  += OpenWeaponPicker;
-            if (_countryPickerBtn != null) _countryPickerBtn.clicked += OpenCountryPicker;
-            if (_submitSaleBtn    != null) _submitSaleBtn.clicked    += OnSubmitSale;
+            if (_weaponPickerBtn  != null) { _weaponPickerBtn.clicked  += OpenWeaponPicker;  TerminalUI.AddHover(_weaponPickerBtn); }
+            if (_countryPickerBtn != null) { _countryPickerBtn.clicked += OpenCountryPicker; TerminalUI.AddHover(_countryPickerBtn); }
+            if (_submitSaleBtn    != null) { _submitSaleBtn.clicked    += OnSubmitSale;      TerminalUI.AddHover(_submitSaleBtn); }
             var passSaleBtn = _root.Q<Button>("PassSaleBtn");
-            if (passSaleBtn != null) passSaleBtn.clicked += OnPassSale;
+            if (passSaleBtn != null) { passSaleBtn.clicked += OnPassSale; TerminalUI.AddHover(passSaleBtn); }
 
             _negotiationPanel     = _root.Q("NegotiationPanel");
             _negoIntelTab         = _root.Q("NegoIntelTab");
@@ -204,22 +204,22 @@ namespace ArmsFair.UI
             _negoRevealList       = _root.Q<ScrollView>("NegoRevealList");
             _ceaseFireVotersLabel = _root.Q<Label>("CeaseFireVotersLabel");
             _voteCeaseFireBtn     = _root.Q<Button>("VoteCeaseFireBtn");
-            if (_voteCeaseFireBtn != null) _voteCeaseFireBtn.clicked += OnVoteCeaseFire;
+            if (_voteCeaseFireBtn != null) { _voteCeaseFireBtn.clicked += OnVoteCeaseFire; TerminalUI.AddHover(_voteCeaseFireBtn); }
 
             var negoIntelBtn  = _root.Q<Button>("NegoIntelBtn");
             var negoPeaceBtn  = _root.Q<Button>("NegoPeaceBtn");
             var negoTreatyBtn = _root.Q<Button>("NegoTreatyBtn");
-            if (negoIntelBtn  != null) negoIntelBtn.clicked  += () => SwitchNegoTab(0);
-            if (negoPeaceBtn  != null) negoPeaceBtn.clicked  += () => SwitchNegoTab(1);
-            if (negoTreatyBtn != null) negoTreatyBtn.clicked += () => SwitchNegoTab(2);
+            if (negoIntelBtn  != null) { negoIntelBtn.clicked  += () => SwitchNegoTab(0); TerminalUI.AddHover(negoIntelBtn); }
+            if (negoPeaceBtn  != null) { negoPeaceBtn.clicked  += () => SwitchNegoTab(1); TerminalUI.AddHover(negoPeaceBtn); }
+            if (negoTreatyBtn != null) { negoTreatyBtn.clicked += () => SwitchNegoTab(2); TerminalUI.AddHover(negoTreatyBtn); }
 
             _revealPanel = _root.Q("RevealPanel");
             _revealList  = _root.Q<ScrollView>("RevealList");
             var revealCloseBtn = _root.Q<Button>("RevealCloseBtn");
-            if (revealCloseBtn != null) revealCloseBtn.clicked += () =>
+            if (revealCloseBtn != null) { revealCloseBtn.clicked += () =>
             {
                 if (_revealPanel != null) _revealPanel.style.display = DisplayStyle.None;
-            };
+            }; TerminalUI.AddHover(revealCloseBtn); }
 
             _consequencesPanel = _root.Q("ConsequencesPanel");
             _profitList        = _root.Q<ScrollView>("ProfitList");
@@ -227,22 +227,22 @@ namespace ArmsFair.UI
             _sharePriceList    = _root.Q<ScrollView>("SharePriceList");
             _repList           = _root.Q<ScrollView>("RepList");
             var consequencesCloseBtn = _root.Q<Button>("ConsequencesCloseBtn");
-            if (consequencesCloseBtn != null) consequencesCloseBtn.clicked += () =>
+            if (consequencesCloseBtn != null) { consequencesCloseBtn.clicked += () =>
             {
                 if (_consequencesPanel != null) _consequencesPanel.style.display = DisplayStyle.None;
-            };
+            }; TerminalUI.AddHover(consequencesCloseBtn); }
 
             _countryInfoCard = _root.Q("CountryInfoCard");
             _cardCountryName = _root.Q<Label>("CardCountryName");
             _cardStageLabel  = _root.Q<Label>("CardStageLabel");
             _cardTensionLabel= _root.Q<Label>("CardTensionLabel");
             var cardCloseBtn = _root.Q<Button>("CardCloseBtn");
-            if (cardCloseBtn != null) cardCloseBtn.clicked += () =>
+            if (cardCloseBtn != null) { cardCloseBtn.clicked += () =>
             {
                 if (_countryInfoCard != null) _countryInfoCard.style.display = DisplayStyle.None;
-            };
+            }; TerminalUI.AddHover(cardCloseBtn); }
             var cardSellBtn = _root.Q<Button>("CardSellBtn");
-            if (cardSellBtn != null) cardSellBtn.clicked += OnCardSellClicked;
+            if (cardSellBtn != null) { cardSellBtn.clicked += OnCardSellClicked; TerminalUI.AddHover(cardSellBtn); }
 
             _worldMapArea = _root.Q("WorldMapArea");
             _worldMapArea?.RegisterCallback<GeometryChangedEvent>(_ => UpdateGlobeViewport());
@@ -291,7 +291,10 @@ namespace ArmsFair.UI
             if (wb.width <= 0f) return;
             float nx = wb.x / rootBound.width;
             float nw = wb.width / rootBound.width;
-            _globeCamera.rect = new Rect(nx, 0f, nw, 1f);
+            // Unity camera rect is bottom-left origin; UI Toolkit is top-left — convert Y
+            float ny = (rootBound.height - (wb.y + wb.height)) / rootBound.height;
+            float nh = wb.height / rootBound.height;
+            _globeCamera.rect = new Rect(nx, ny, nw, nh);
         }
 
         private void OnDestroy()
@@ -1353,6 +1356,7 @@ namespace ArmsFair.UI
                 new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
             selectBtn.style.borderTopWidth  = selectBtn.style.borderBottomWidth =
             selectBtn.style.borderLeftWidth = selectBtn.style.borderRightWidth  = 1;
+            TerminalUI.AddHover(selectBtn);
 
             selectBtn.clicked += () =>
             {
@@ -1756,7 +1760,10 @@ namespace ArmsFair.UI
             btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
             btn.style.marginBottom    = 4;
             btn.style.paddingTop      = btn.style.paddingBottom = 6;
+            btn.style.paddingLeft     = btn.style.paddingRight  = 8;
+            btn.style.whiteSpace      = WhiteSpace.NoWrap;
             btn.style.unityTextAlign  = TextAnchor.MiddleLeft;
+            TerminalUI.AddHover(btn);
         }
 
         private static void AddModalRow(VisualElement parent, string label, string value)
