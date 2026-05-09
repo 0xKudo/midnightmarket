@@ -33,13 +33,39 @@ namespace ArmsFair.UI
             RegisterHover(btn, TextDanger, BgButton, BorderDanger, HoverBgDanger, HoverText, HoverBgDanger);
         }
 
+        // Lazily captures resolvedStyle on first hover so colors are always correct
+        // regardless of when the button was added to the visual tree.
         public static void AddHover(Button btn)
         {
             if (btn == null) return;
-            var normalBg     = btn.style.backgroundColor.value;
-            var normalText   = btn.style.color.value;
-            var normalBorder = btn.style.borderTopColor.value;
-            RegisterHover(btn, normalText, normalBg, normalBorder, HoverBgNormal, HoverText, HoverBgNormal);
+            var normal = (bg: Color.clear, text: Color.clear, border: Color.clear);
+            bool captured = false;
+
+            btn.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                if (!captured)
+                {
+                    normal = (btn.resolvedStyle.backgroundColor,
+                              btn.resolvedStyle.color,
+                              btn.resolvedStyle.borderTopColor);
+                    captured = true;
+                }
+                btn.style.backgroundColor   = new StyleColor(HoverBgNormal);
+                btn.style.borderTopColor    = btn.style.borderRightColor  =
+                btn.style.borderBottomColor = btn.style.borderLeftColor   = new StyleColor(HoverBgNormal);
+                btn.style.color             = new StyleColor(HoverText);
+                foreach (var child in btn.Children()) child.style.color = new StyleColor(HoverText);
+            });
+
+            btn.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                if (!captured) return;
+                btn.style.backgroundColor   = new StyleColor(normal.bg);
+                btn.style.borderTopColor    = btn.style.borderRightColor  =
+                btn.style.borderBottomColor = btn.style.borderLeftColor   = new StyleColor(normal.border);
+                btn.style.color             = new StyleColor(normal.text);
+                foreach (var child in btn.Children()) child.style.color = new StyleColor(normal.text);
+            });
         }
 
         public static void StyleLabels(VisualElement root)

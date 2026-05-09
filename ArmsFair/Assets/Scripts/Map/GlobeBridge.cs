@@ -23,6 +23,21 @@ namespace ArmsFair.Map
         // WPM country name → ISO code
         private readonly Dictionary<string, string> _wpmToIso = new();
 
+        // WPM uses different names than the server for these countries
+        private static readonly Dictionary<string, string> _wpmNameToIso =
+            new(System.StringComparer.OrdinalIgnoreCase)
+        {
+            { "Democratic Republic of the Congo", "COD" },
+            { "Republic of Congo",                "COG" },
+            { "Ivory Coast",                      "CIV" },
+            { "Swaziland",                        "SWZ" },
+            { "East Timor",                       "TLS" },
+            { "Czech Republic",                   "CZE" },
+            { "Guinea Bissau",                    "GNB" },
+            { "Korea, North",                     "PRK" },
+            { "Korea, South",                     "KOR" },
+        };
+
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -83,7 +98,7 @@ namespace ArmsFair.Map
             _map.allowUserZoom           = true;
             _map.mouseWheelSensitivity   = 1.5f;
             _map.autoRotationSpeed       = 0f;
-            _map.SetZoomLevel(0.75f);
+            _map.SetZoomLevel(0.85f);
             if (Camera.main != null) Camera.main.fieldOfView = 80f;
         }
 
@@ -117,6 +132,7 @@ namespace ArmsFair.Map
             _wpmToIso.Clear();
             if (_map?.countries == null) return;
 
+            // Fuzzy match: server country name ↔ WPM country name
             foreach (var gs in countries)
             {
                 for (int i = 0; i < _map.countries.Length; i++)
@@ -131,6 +147,14 @@ namespace ArmsFair.Map
                         break;
                     }
                 }
+            }
+
+            // Apply overrides for countries where WPM and server names diverge entirely
+            foreach (var (wpmName, iso) in _wpmNameToIso)
+            {
+                if (_wpmToIso.ContainsKey(wpmName)) continue; // already matched
+                _wpmToIso[wpmName] = iso;
+                _isoToWpm[iso]     = wpmName;
             }
         }
 
