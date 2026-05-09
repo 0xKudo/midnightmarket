@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using WPM;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using ArmsFair.Shared.Enums;
 using ArmsFair.Shared.Models;
 using ArmsFair.Shared.Models.Messages;
@@ -80,7 +81,7 @@ namespace ArmsFair.Map
             _map.showCountryNames        = false;
             _map.earthAtmosphereVisible  = false;
             _map.centerOnRightClick      = true;
-            _map.mouseWheelSensitivity   = 1.5f;
+            _map.allowUserZoom           = false;  // we drive zoom manually in Update()
             _map.autoRotationSpeed       = 0f;
             _map.SetZoomLevel(0.6f);
             if (Camera.main != null) Camera.main.fieldOfView = 80f;
@@ -103,10 +104,18 @@ namespace ArmsFair.Map
                 OnCountryClicked?.Invoke(iso, (Vector2)_map.input.mousePosition);
             }
 
-            // Clamp zoom: 0=closest, 1=furthest; keep between 35% and 90%
-            float z = _map.GetZoomLevel();
-            if      (z < 0.35f) _map.SetZoomLevel(0.35f);
-            else if (z > 0.90f) _map.SetZoomLevel(0.90f);
+            // Manual scroll-wheel zoom (WPM built-in zoom disabled so we can control it)
+            if (_map.mouseIsOver)
+            {
+                float scroll = Mouse.current != null ? Mouse.current.scroll.y.ReadValue() : 0f;
+                if (Mathf.Abs(scroll) > 0.01f)
+                {
+                    float z = _map.GetZoomLevel();
+                    z -= scroll * 0.0003f;
+                    z = Mathf.Clamp(z, 0.35f, 0.90f);
+                    _map.SetZoomLevel(z);
+                }
+            }
         }
 
         // Called from HUDScreen on each StateSync to build ISO ↔ WPM name lookups.
