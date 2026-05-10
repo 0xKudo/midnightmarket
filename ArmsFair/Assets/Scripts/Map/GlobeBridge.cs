@@ -30,20 +30,8 @@ namespace ArmsFair.Map
         private readonly Dictionary<string, string> _wpmToIso = new();
         // stage colors applied via SetCountryStage, so ClearHighlights can restore them
         private readonly Dictionary<string, Color> _stageColors = new();
-        // stage enum per ISO, so hover can look up the correct tint color
-        private readonly Dictionary<string, CountryStage> _stageByIso = new();
 
         private static readonly Color _defaultHoverColor = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.55f);
-
-        private static readonly Dictionary<CountryStage, Color> _stageHoverColors = new()
-        {
-            { CountryStage.Dormant,            new Color(0.54f, 0.72f, 0.44f, 0.55f) },
-            { CountryStage.Simmering,          new Color(0.72f, 0.72f, 0.25f, 0.60f) },
-            { CountryStage.Active,             new Color(0.82f, 0.47f, 0.13f, 0.65f) },
-            { CountryStage.HotWar,             new Color(0.82f, 0.19f, 0.13f, 0.70f) },
-            { CountryStage.HumanitarianCrisis, new Color(0.63f, 0.13f, 0.50f, 0.70f) },
-            { CountryStage.FailedState,        new Color(0.31f, 0.00f, 0.31f, 0.80f) },
-        };
 
         // WPM uses different names than the server for these countries
         private static readonly Dictionary<string, string> _wpmNameToIso =
@@ -56,8 +44,8 @@ namespace ArmsFair.Map
             { "East Timor",                       "TLS" },
             { "Czech Republic",                   "CZE" },
             { "Guinea Bissau",                    "GNB" },
-            { "Korea, North",                     "PRK" },
-            { "Korea, South",                     "KOR" },
+            { "North Korea",                       "PRK" },
+            { "South Korea",                      "KOR" },
         };
 
         private void Awake()
@@ -139,9 +127,12 @@ namespace ArmsFair.Map
                 Camera.main.transform.position = _map.transform.position + dir * R * 2.5f;
             }
 
-            // Replay RegisterCountries if it was called before WPM was ready
+            // Replay RegisterCountries + ApplyAllStages if they were called before WPM was ready
             if (_pendingCountries != null)
+            {
                 RegisterCountries(_pendingCountries);
+                ApplyAllStages(_pendingCountries);
+            }
 
             IsReady = true;
             OnReady?.Invoke();
@@ -170,20 +161,35 @@ namespace ArmsFair.Map
                 _lastFiredClickIndex = -1; // reset when mouse leaves globe so next entry is fresh
             }
 
-            // Stage-tinted hover: update fillColor when hovered country changes
+            // Stage-tinted hover: boost alpha of existing stage surface color on hover
             int hovered = _map.countryHighlightedIndex;
             if (hovered != _lastHoveredIndex)
             {
+                // Re-apply stage surface color for the country we just stopped hovering —
+                // WPM's HideCountryRegionHighlight wipes the ToggleCountrySurface custom material on exit
+                if (_lastHoveredIndex >= 0)
+                {
+                    var prevName = _map.countries[_lastHoveredIndex].name;
+                    if (_wpmToIso.TryGetValue(prevName, out var prevIso) &&
+                        _stageColors.TryGetValue(prevIso, out var prevColor))
+                        _map.ToggleCountrySurface(prevName, true, prevColor);
+                }
+
                 _lastHoveredIndex = hovered;
                 if (hovered >= 0)
                 {
                     var wpmName = _map.countries[hovered].name;
                     if (_wpmToIso.TryGetValue(wpmName, out var hovIso) &&
-                        _stageByIso.TryGetValue(hovIso, out var hovStage) &&
-                        _stageHoverColors.TryGetValue(hovStage, out var hoverColor))
+                        _stageColors.TryGetValue(hovIso, out var baseColor))
+                    {
+                        var hoverColor = baseColor;
+                        hoverColor.a = Mathf.Min(baseColor.a + 0.25f, 1f);
                         _map.fillColor = hoverColor;
+                    }
                     else
+                    {
                         _map.fillColor = _defaultHoverColor;
+                    }
                 }
                 else
                 {
@@ -215,7 +221,6 @@ namespace ArmsFair.Map
             _pendingCountries = countries; // cache so InitWPM can replay if _map wasn't ready yet
             _isoToWpm.Clear();
             _wpmToIso.Clear();
-            _stageByIso.Clear();
             if (_map?.countries == null) return;
 
             // Pass 1: exact match — avoids substring ambiguity (e.g. "Congo" matching the wrong Congo)
@@ -266,23 +271,37 @@ namespace ArmsFair.Map
             if (_map == null) return;
             if (!_isoToWpm.TryGetValue(iso, out var wpmName)) return;
 
+            if (stage == CountryStage.Dormant)
+            {
+                _stageColors.Remove(iso);
+                _map.ToggleCountrySurface(wpmName, false, Color.clear);
+                return;
+            }
+
             var color = stage switch
             {
-                CountryStage.Dormant            => new Color(0.20f, 0.35f, 0.20f, 0.25f),
                 CountryStage.Simmering          => new Color(0.55f, 0.45f, 0.10f, 0.35f),
                 CountryStage.Active             => new Color(0.75f, 0.30f, 0.10f, 0.45f),
                 CountryStage.HotWar             => new Color(0.85f, 0.10f, 0.10f, 0.55f),
                 CountryStage.HumanitarianCrisis => new Color(0.60f, 0.10f, 0.50f, 0.55f),
-                CountryStage.FailedState        => new Color(0.35f, 0.00f, 0.00f, 0.70f),
+                CountryStage.FailedState        => new Color(0.35f, 0.00f, 0.35f, 0.70f),
                 _                               => Color.clear
             };
 
             if (color.a > 0f)
             {
                 _stageColors[iso] = color;
-                _stageByIso[iso] = stage;
                 _map.ToggleCountrySurface(wpmName, true, color);
             }
+        }
+
+        public void ApplyAllStages(IEnumerable<CountryState> countries)
+        {
+            if (_map == null) return;
+            _stageColors.Clear();
+            _map.HideCountrySurfaces();
+            foreach (var c in countries)
+                SetCountryStage(c.Iso, c.Stage);
         }
 
         public void PlayArcs(List<ArcAnimation> arcs, IReadOnlyList<PlayerProfile> players) { }

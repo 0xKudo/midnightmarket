@@ -300,6 +300,12 @@ namespace ArmsFair.UI
             // Unsubscribe first to prevent double-subscription on scene reload
             globe.OnCountryClicked -= OnGlobeCountryClicked;
             globe.OnCountryClicked += OnGlobeCountryClicked;
+            // Paint stage colors with the cached state — StateSync likely arrived before GlobeBridge existed
+            if (_lastState?.Countries != null)
+            {
+                globe.RegisterCountries(_lastState.Countries);
+                globe.ApplyAllStages(_lastState.Countries);
+            }
             _globeReadyCoroutine = null;
         }
 
@@ -371,6 +377,7 @@ namespace ArmsFair.UI
         {
             _lastState = msg.FullState;
             ArmsFair.Map.GlobeBridge.Instance?.RegisterCountries(msg.FullState.Countries);
+            ArmsFair.Map.GlobeBridge.Instance?.ApplyAllStages(msg.FullState.Countries);
             if (_root == null || _root.style.display == DisplayStyle.None) return;
             BindState(msg.FullState);
 
