@@ -601,14 +601,14 @@ namespace ArmsFair.UI
             _countryInfoCard.style.top     = localY;
             _countryInfoCard.style.display = DisplayStyle.Flex;
             if (ArmsFair.Map.GlobeBridge.Instance != null)
-                ArmsFair.Map.GlobeBridge.Instance.BlockClicks = true;
+                ArmsFair.Map.GlobeBridge.Instance.BlockInput = true;
         }
 
         private void HideCountryInfoCard()
         {
             if (_countryInfoCard != null) _countryInfoCard.style.display = DisplayStyle.None;
             if (ArmsFair.Map.GlobeBridge.Instance != null)
-                ArmsFair.Map.GlobeBridge.Instance.BlockClicks = false;
+                ArmsFair.Map.GlobeBridge.Instance.BlockInput = false;
         }
 
         private void OnCardSellClicked()
@@ -1694,6 +1694,8 @@ namespace ArmsFair.UI
             overlay.style.alignItems      = Align.Center;
             overlay.style.justifyContent  = Justify.Center;
             _openModals.Add(overlay);
+            if (ArmsFair.Map.GlobeBridge.Instance != null)
+                ArmsFair.Map.GlobeBridge.Instance.BlockInput = true;
             return overlay;
         }
 
@@ -1721,6 +1723,8 @@ namespace ArmsFair.UI
         {
             _openModals.Remove(overlay);
             if (_root.Contains(overlay)) _root.Remove(overlay);
+            if (_openModals.Count == 0 && ArmsFair.Map.GlobeBridge.Instance != null)
+                ArmsFair.Map.GlobeBridge.Instance.BlockInput = false;
         }
 
         private void CloseAllModals()
@@ -1728,6 +1732,8 @@ namespace ArmsFair.UI
             foreach (var m in _openModals.ToList())
                 if (_root.Contains(m)) _root.Remove(m);
             _openModals.Clear();
+            if (ArmsFair.Map.GlobeBridge.Instance != null)
+                ArmsFair.Map.GlobeBridge.Instance.BlockInput = false;
         }
 
         private VisualElement MakeModalPanel(int width)

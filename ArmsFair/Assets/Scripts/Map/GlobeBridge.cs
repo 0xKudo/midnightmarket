@@ -17,7 +17,7 @@ namespace ArmsFair.Map
         public event System.Action<string, Vector2> OnCountryClicked;
         public event System.Action OnReady;
         public bool IsReady { get; private set; }
-        public bool BlockClicks { get; set; }
+        public bool BlockInput { get; set; }
 
         private WorldMapGlobe _map;
         private IEnumerable<CountryState> _pendingCountries; // cached so InitWPM can replay after WPM is ready
@@ -143,7 +143,7 @@ namespace ArmsFair.Map
 
             // Detect a non-drag left-click on a country — only when mouse is over the globe viewport
             int clicked = _map.countryLastClicked;
-            if (!BlockClicks && _map.mouseIsOver && _map.input.GetMouseButtonUp(0) && !_map.hasDragged && clicked >= 0 && clicked != _lastFiredClickIndex)
+            if (!BlockInput && _map.mouseIsOver && _map.input.GetMouseButtonUp(0) && !_map.hasDragged && clicked >= 0 && clicked != _lastFiredClickIndex)
             {
                 _lastFiredClickIndex = clicked;
                 var wpmName = _map.countries[clicked].name;
@@ -161,7 +161,7 @@ namespace ArmsFair.Map
             if (Camera.main != null)
             {
                 float scroll = _map.input.GetAxis("Mouse ScrollWheel");
-                if (Mathf.Abs(scroll) > 0.001f && _map.mouseIsOver)
+                if (!BlockInput && Mathf.Abs(scroll) > 0.001f && _map.mouseIsOver)
                 {
                     float R    = _map.transform.localScale.y * 0.5f;
                     float dist = Vector3.Distance(Camera.main.transform.position, _map.transform.position);
