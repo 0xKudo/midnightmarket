@@ -22,6 +22,7 @@ namespace ArmsFair.Map
         private WorldMapGlobe _map;
         private IEnumerable<CountryState> _pendingCountries; // cached so InitWPM can replay after WPM is ready
         private int _lastFiredClickIndex = -1; // tracks last consumed click to suppress stale re-fires
+        private int _lastHoveredIndex = -1;   // tracks last hovered country for stage-tinted hover color
 
         // ISO code → WPM country name
         private readonly Dictionary<string, string> _isoToWpm = new();
@@ -29,6 +30,20 @@ namespace ArmsFair.Map
         private readonly Dictionary<string, string> _wpmToIso = new();
         // stage colors applied via SetCountryStage, so ClearHighlights can restore them
         private readonly Dictionary<string, Color> _stageColors = new();
+        // stage enum per ISO, so hover can look up the correct tint color
+        private readonly Dictionary<string, CountryStage> _stageByIso = new();
+
+        private static readonly Color _defaultHoverColor = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.55f);
+
+        private static readonly Dictionary<CountryStage, Color> _stageHoverColors = new()
+        {
+            { CountryStage.Dormant,            new Color(0.54f, 0.72f, 0.44f, 0.55f) },
+            { CountryStage.Simmering,          new Color(0.72f, 0.72f, 0.25f, 0.60f) },
+            { CountryStage.Active,             new Color(0.82f, 0.47f, 0.13f, 0.65f) },
+            { CountryStage.HotWar,             new Color(0.82f, 0.19f, 0.13f, 0.70f) },
+            { CountryStage.HumanitarianCrisis, new Color(0.63f, 0.13f, 0.50f, 0.70f) },
+            { CountryStage.FailedState,        new Color(0.31f, 0.00f, 0.31f, 0.80f) },
+        };
 
         // WPM uses different names than the server for these countries
         private static readonly Dictionary<string, string> _wpmNameToIso =
@@ -155,6 +170,27 @@ namespace ArmsFair.Map
                 _lastFiredClickIndex = -1; // reset when mouse leaves globe so next entry is fresh
             }
 
+            // Stage-tinted hover: update fillColor when hovered country changes
+            int hovered = _map.countryHighlightedIndex;
+            if (hovered != _lastHoveredIndex)
+            {
+                _lastHoveredIndex = hovered;
+                if (hovered >= 0)
+                {
+                    var wpmName = _map.countries[hovered].name;
+                    if (_wpmToIso.TryGetValue(wpmName, out var hovIso) &&
+                        _stageByIso.TryGetValue(hovIso, out var hovStage) &&
+                        _stageHoverColors.TryGetValue(hovStage, out var hoverColor))
+                        _map.fillColor = hoverColor;
+                    else
+                        _map.fillColor = _defaultHoverColor;
+                }
+                else
+                {
+                    _map.fillColor = _defaultHoverColor;
+                }
+            }
+
             // Direct proportional scroll zoom — bypasses WPM's wheelAccel inertia which
             // fought our distance clamp and caused stuck/jittery behavior at zoom limits.
             // allowUserZoom=false disables WPM's scroll handler so we have sole control.
@@ -179,6 +215,7 @@ namespace ArmsFair.Map
             _pendingCountries = countries; // cache so InitWPM can replay if _map wasn't ready yet
             _isoToWpm.Clear();
             _wpmToIso.Clear();
+            _stageByIso.Clear();
             if (_map?.countries == null) return;
 
             // Pass 1: exact match — avoids substring ambiguity (e.g. "Congo" matching the wrong Congo)
@@ -242,7 +279,8 @@ namespace ArmsFair.Map
 
             if (color.a > 0f)
             {
-                _stageColors[iso] = color; // track so ClearHighlights can restore
+                _stageColors[iso] = color;
+                _stageByIso[iso] = stage;
                 _map.ToggleCountrySurface(wpmName, true, color);
             }
         }
