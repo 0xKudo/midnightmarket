@@ -137,6 +137,7 @@ namespace ArmsFair.UI
             docRoot.style.height   = new StyleLength(Length.Percent(100));
 
             _docRoot = docRoot;
+            Debug.Log($"[HUDScreen] docRoot childCount={docRoot.childCount}, first={docRoot.Children().FirstOrDefault()?.name}");
             _root = docRoot.Q("HUDScreen");
             if (_root == null) { Debug.LogError("[HUDScreen] Root element not found"); return; }
 
@@ -234,6 +235,7 @@ namespace ArmsFair.UI
 
             _countryInfoCard = _root.Q("CountryInfoCard");
             _cardCountryName = _root.Q<Label>("CardCountryName");
+            if (_cardCountryName != null) _cardCountryName.style.whiteSpace = WhiteSpace.Normal;
             _cardStageLabel  = _root.Q<Label>("CardStageLabel");
             _cardTensionLabel= _root.Q<Label>("CardTensionLabel");
             var cardCloseBtn = _root.Q<Button>("CardCloseBtn");
@@ -813,18 +815,15 @@ namespace ArmsFair.UI
             if (_inventoryBar == null || _inventoryItems == null) return;
             _inventoryItems.Clear();
 
-            var hasItems = _inventory.Any(kv => kv.Value > 0);
-            _inventoryBar.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!hasItems) return;
+            _inventoryBar.style.display = DisplayStyle.Flex;
 
-            foreach (var kv in _inventory)
+            foreach (var entry in WeaponCatalog.Items)
             {
-                if (kv.Value == 0) continue;
-                var entry = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
-                if (entry == null) continue;
-
-                var chip = new Label($"{entry.DisplayName} x{kv.Value}");
-                chip.style.color            = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+                _inventory.TryGetValue(entry.Category, out var count);
+                var chip = new Label($"{entry.DisplayName} x{count}");
+                chip.style.color            = count > 0
+                    ? new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f))
+                    : new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
                 chip.style.fontSize = 15;
                 chip.style.backgroundColor  = new StyleColor(new Color(20f/255f, 30f/255f, 12f/255f));
                 chip.style.borderTopColor   = chip.style.borderBottomColor =
