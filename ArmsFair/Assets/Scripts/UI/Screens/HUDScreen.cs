@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using ArmsFair.Auth;
@@ -234,15 +235,13 @@ namespace ArmsFair.UI
             }; TerminalUI.AddHover(consequencesCloseBtn); }
 
             _countryInfoCard = _root.Q("CountryInfoCard");
+            if (_countryInfoCard != null) _countryInfoCard.pickingMode = PickingMode.Position;
             _cardCountryName = _root.Q<Label>("CardCountryName");
             if (_cardCountryName != null) _cardCountryName.style.whiteSpace = WhiteSpace.Normal;
             _cardStageLabel  = _root.Q<Label>("CardStageLabel");
             _cardTensionLabel= _root.Q<Label>("CardTensionLabel");
             var cardCloseBtn = _root.Q<Button>("CardCloseBtn");
-            if (cardCloseBtn != null) { cardCloseBtn.clicked += () =>
-            {
-                if (_countryInfoCard != null) _countryInfoCard.style.display = DisplayStyle.None;
-            }; TerminalUI.AddHover(cardCloseBtn); }
+            if (cardCloseBtn != null) { cardCloseBtn.clicked += HideCountryInfoCard; TerminalUI.AddHover(cardCloseBtn); }
             var cardSellBtn = _root.Q<Button>("CardSellBtn");
             if (cardSellBtn != null) { cardSellBtn.clicked += OnCardSellClicked; TerminalUI.AddHover(cardSellBtn); }
 
@@ -252,11 +251,7 @@ namespace ArmsFair.UI
             // Dismiss CountryInfoCard when clicking anywhere outside the globe area.
             // WorldMapArea has picking-mode:Ignore so its clicks don't reach UI Toolkit;
             // this handler only fires for left-panel / footer clicks.
-            _root.RegisterCallback<PointerDownEvent>(_ =>
-            {
-                if (_countryInfoCard != null)
-                    _countryInfoCard.style.display = DisplayStyle.None;
-            });
+            _root.RegisterCallback<PointerDownEvent>(_ => HideCountryInfoCard());
 
             UIManager.Instance.Register("HUD", this);
         }
@@ -275,13 +270,37 @@ namespace ArmsFair.UI
             UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
+        private Coroutine _globeReadyCoroutine;
+
         private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
         {
             if (scene.name != "MapGlobe") return;
-            if (ArmsFair.Map.GlobeBridge.Instance != null)
-                ArmsFair.Map.GlobeBridge.Instance.OnCountryClicked += OnGlobeCountryClicked;
             if (_globeCamera == null) _globeCamera = Camera.main;
             UpdateGlobeViewport();
+            if (_globeReadyCoroutine != null) StopCoroutine(_globeReadyCoroutine);
+            _globeReadyCoroutine = StartCoroutine(WaitForGlobeReady());
+        }
+
+        private IEnumerator WaitForGlobeReady()
+        {
+            var globe = ArmsFair.Map.GlobeBridge.Instance;
+            if (globe == null || !globe.IsReady)
+            {
+                // Wait until GlobeBridge exists and fires OnReady
+                while (ArmsFair.Map.GlobeBridge.Instance == null)
+                    yield return null;
+                globe = ArmsFair.Map.GlobeBridge.Instance;
+                if (!globe.IsReady)
+                {
+                    bool ready = false;
+                    globe.OnReady += () => ready = true;
+                    yield return new WaitUntil(() => ready);
+                }
+            }
+            // Unsubscribe first to prevent double-subscription on scene reload
+            globe.OnCountryClicked -= OnGlobeCountryClicked;
+            globe.OnCountryClicked += OnGlobeCountryClicked;
+            _globeReadyCoroutine = null;
         }
 
         private void UpdateGlobeViewport()
@@ -311,6 +330,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnCeaseFireVote.RemoveListener(OnCeaseFireVoteReceived);
 
             UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+            if (_globeReadyCoroutine != null) StopCoroutine(_globeReadyCoroutine);
             if (ArmsFair.Map.GlobeBridge.Instance != null)
                 ArmsFair.Map.GlobeBridge.Instance.OnCountryClicked -= OnGlobeCountryClicked;
         }
@@ -580,6 +600,15 @@ namespace ArmsFair.UI
             _countryInfoCard.style.left    = localX;
             _countryInfoCard.style.top     = localY;
             _countryInfoCard.style.display = DisplayStyle.Flex;
+            if (ArmsFair.Map.GlobeBridge.Instance != null)
+                ArmsFair.Map.GlobeBridge.Instance.BlockClicks = true;
+        }
+
+        private void HideCountryInfoCard()
+        {
+            if (_countryInfoCard != null) _countryInfoCard.style.display = DisplayStyle.None;
+            if (ArmsFair.Map.GlobeBridge.Instance != null)
+                ArmsFair.Map.GlobeBridge.Instance.BlockClicks = false;
         }
 
         private void OnCardSellClicked()
@@ -593,7 +622,7 @@ namespace ArmsFair.UI
             if (_countryPickerBtn != null) _countryPickerBtn.text = country.Name ?? _cardIso;
 
             // Hide the info card and make sure sales panel is visible
-            if (_countryInfoCard != null) _countryInfoCard.style.display = DisplayStyle.None;
+            HideCountryInfoCard();
             UpdateSaleEstimate();
         }
 
@@ -1460,6 +1489,19 @@ namespace ArmsFair.UI
                         if (_saleErrorLabel   != null) _saleErrorLabel.style.display = DisplayStyle.None;
                         CloseModal(overlay);
                         UpdateSaleEstimate();
+
+                        // Fly globe to country and show info card
+                        var globe = ArmsFair.Map.GlobeBridge.Instance;
+                        if (globe != null)
+                        {
+                            globe.FlyToCountry(iso);
+                            // Use centre of WorldMapArea as card position
+                            var wb = _worldMapArea?.worldBound ?? Rect.zero;
+                            var panelBound = _root.panel.visualTree.worldBound;
+                            float sx = (wb.x + wb.width  * 0.5f) / panelBound.width  * Screen.width;
+                            float sy = (1f - (wb.y + wb.height * 0.5f) / panelBound.height) * Screen.height;
+                            OnGlobeCountryClicked(iso, new Vector2(sx, sy));
+                        }
                     };
                     scroll.Add(btn);
                 }

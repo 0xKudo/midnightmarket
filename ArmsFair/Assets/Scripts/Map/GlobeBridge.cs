@@ -15,9 +15,13 @@ namespace ArmsFair.Map
         public static GlobeBridge Instance { get; private set; }
 
         public event System.Action<string, Vector2> OnCountryClicked;
+        public event System.Action OnReady;
+        public bool IsReady { get; private set; }
+        public bool BlockClicks { get; set; }
 
         private WorldMapGlobe _map;
         private IEnumerable<CountryState> _pendingCountries; // cached so InitWPM can replay after WPM is ready
+        private int _lastFiredClickIndex = -1; // tracks last consumed click to suppress stale re-fires
 
         // ISO code → WPM country name
         private readonly Dictionary<string, string> _isoToWpm = new();
@@ -123,6 +127,9 @@ namespace ArmsFair.Map
             // Replay RegisterCountries if it was called before WPM was ready
             if (_pendingCountries != null)
                 RegisterCountries(_pendingCountries);
+
+            IsReady = true;
+            OnReady?.Invoke();
         }
 
         private void OnDestroy()
@@ -135,11 +142,17 @@ namespace ArmsFair.Map
             if (_map == null) return;
 
             // Detect a non-drag left-click on a country — only when mouse is over the globe viewport
-            if (_map.mouseIsOver && _map.input.GetMouseButtonUp(0) && !_map.hasDragged && _map.countryLastClicked >= 0)
+            int clicked = _map.countryLastClicked;
+            if (!BlockClicks && _map.mouseIsOver && _map.input.GetMouseButtonUp(0) && !_map.hasDragged && clicked >= 0 && clicked != _lastFiredClickIndex)
             {
-                var wpmName = _map.countries[_map.countryLastClicked].name;
+                _lastFiredClickIndex = clicked;
+                var wpmName = _map.countries[clicked].name;
                 var iso = _wpmToIso.TryGetValue(wpmName, out var found) ? found : wpmName;
                 OnCountryClicked?.Invoke(iso, (Vector2)_map.input.mousePosition);
+            }
+            else if (!_map.mouseIsOver)
+            {
+                _lastFiredClickIndex = -1; // reset when mouse leaves globe so next entry is fresh
             }
 
             // Direct proportional scroll zoom — bypasses WPM's wheelAccel inertia which
@@ -150,7 +163,6 @@ namespace ArmsFair.Map
                 float scroll = _map.input.GetAxis("Mouse ScrollWheel");
                 if (Mathf.Abs(scroll) > 0.001f && _map.mouseIsOver)
                 {
-                    Debug.Log($"[GlobeBridge] scroll={scroll:F4}");
                     float R    = _map.transform.localScale.y * 0.5f;
                     float dist = Vector3.Distance(Camera.main.transform.position, _map.transform.position);
                     float newDist = Mathf.Clamp(dist * (1f + scroll * 2.0f), R * 1.2f, R * 5.0f);
@@ -236,6 +248,12 @@ namespace ArmsFair.Map
         }
 
         public void PlayArcs(List<ArcAnimation> arcs, IReadOnlyList<PlayerProfile> players) { }
+
+        public void FlyToCountry(string iso)
+        {
+            if (_map == null || !_isoToWpm.TryGetValue(iso, out var wpmName)) return;
+            _map.FlyToCountry(wpmName);
+        }
 
         public void HighlightCountry(string iso)
         {
