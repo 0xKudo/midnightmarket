@@ -1852,6 +1852,13 @@ namespace ArmsFair.UI
                 if (_salesOrder.Count == 0 || !_salesOrder.Any(kv => kv.Value > 0))
                 { ShowSaleError("Select at least one weapon."); return; }
                 if (_selectedCountryIso == null) { ShowSaleError("Select a target country."); return; }
+
+                var targetCountry = _lastState?.Countries.FirstOrDefault(c => c.Iso == _selectedCountryIso);
+                if (targetCountry?.Stage == CountryStage.FailedState)
+                {
+                    ShowFailedStateBlockModal(targetCountry.Name);
+                    return;
+                }
             }
 
             ShowSaleConfirmModal();
@@ -1867,6 +1874,30 @@ namespace ArmsFair.UI
             if (_saleErrorLabel == null) return;
             _saleErrorLabel.text = msg;
             _saleErrorLabel.style.display = DisplayStyle.Flex;
+        }
+
+        private void ShowFailedStateBlockModal(string countryName)
+        {
+            var overlay = MakeModalOverlay();
+            var panel   = MakeModalPanel(360);
+
+            panel.Add(MakeModalTitle("SALE BLOCKED"));
+
+            var body = new Label(
+                $"{countryName} is a Failed State. No functioning government or market exists — weapons sales here generate no profit and cannot be processed.");
+            body.style.color        = new StyleColor(new Color(0.85f, 0.85f, 0.85f));
+            body.style.fontSize     = 14;
+            body.style.whiteSpace   = WhiteSpace.Normal;
+            body.style.marginBottom = 18;
+            panel.Add(body);
+
+            var okBtn = MakeModalCancelBtn(() => CloseModal(overlay));
+            okBtn.text = "UNDERSTOOD";
+            okBtn.style.width = Length.Percent(100);
+            panel.Add(okBtn);
+
+            overlay.Add(panel);
+            _root.Add(overlay);
         }
 
         private void ShowSaleConfirmModal()

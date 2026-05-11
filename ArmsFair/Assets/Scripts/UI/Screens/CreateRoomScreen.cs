@@ -32,7 +32,7 @@ namespace ArmsFair.UI
         private bool   _isPrivate;
         private bool   _isAiFill;
 
-        private LobbyApiClient _lobby;
+        private LobbyApiClient Lobby => new LobbyApiClient(Network.NetworkConfig.ServerBaseUrl);
 
         private static readonly List<string> Slots = new()
             { "2", "3", "4", "5", "6" };
@@ -101,7 +101,6 @@ namespace ArmsFair.UI
             _root.Q<Button>("CreateBtn").clicked += OnCreate;
             _root.Q<Button>("BackBtn").clicked   += () => UIManager.Instance.Pop();
 
-            _lobby = new LobbyApiClient("https://armsfair.laynekudo.com");
 
             UIManager.Instance.Register("CreateRoom", this);
         }
@@ -250,7 +249,7 @@ namespace ArmsFair.UI
 
             try
             {
-                var room = await _lobby.CreateRoomAsync(payload);
+                var room = await Lobby.CreateRoomAsync(payload);
                 LobbyState.PendingRoomId = room.roomId;
                 UIManager.Instance.GoTo("PreGameLobby");
             }

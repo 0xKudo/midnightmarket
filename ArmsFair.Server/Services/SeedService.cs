@@ -1,20 +1,19 @@
 using ArmsFair.Shared.Enums;
 using ArmsFair.Shared.Models;
 using ArmsFair.Shared.Models.Messages;
-using StackExchange.Redis;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace ArmsFair.Server.Services;
 
 public class SeedService(
-    IHttpClientFactory     httpFactory,
-    IConnectionMultiplexer redis,
-    IConfiguration         config,
-    ILogger<SeedService>   logger)
+    IHttpClientFactory   httpFactory,
+    IConfiguration       config,
+    ILogger<SeedService> logger)
 {
-    private const string RealisticCacheKey = "seed:countries:realistic";
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(24);
+
+    // Simple in-memory cache: key → (value, expiry)
+    private readonly Dictionary<string, (string Value, DateTime Expiry)> _cache = new();
 
     /// <summary>
     /// Returns the seeded country list for the given game mode.
@@ -42,17 +41,15 @@ public class SeedService(
     {
         try
         {
-            var db  = redis.GetDatabase();
-            var raw = await db.StringGetAsync(RealisticCacheKey);
-            if (raw.HasValue)
+            if (_cache.TryGetValue("realistic", out var entry) && DateTime.UtcNow < entry.Expiry)
             {
                 logger.LogInformation("SeedService: returning cached Realistic country list");
-                return JsonSerializer.Deserialize<List<CountryState>>(raw!) ?? new();
+                return System.Text.Json.JsonSerializer.Deserialize<List<CountryState>>(entry.Value) ?? new();
             }
 
             logger.LogInformation("SeedService: fetching fresh Realistic seed data from ACLED + GPI");
             var countries = await BuildRealisticListAsync(ct);
-            await db.StringSetAsync(RealisticCacheKey, JsonSerializer.Serialize(countries), CacheTtl);
+            _cache["realistic"] = (System.Text.Json.JsonSerializer.Serialize(countries), DateTime.UtcNow.Add(CacheTtl));
             return countries;
         }
         catch (Exception ex)
@@ -185,15 +182,10 @@ public class SeedService(
 
     // ── ACLED ────────────────────────────────────────────────────────────────
 
-    private const string AcledTokenCacheKey = "seed:acled:token";
-
     private async Task<string?> GetAcledTokenAsync(CancellationToken ct)
     {
-        var db = redis.GetDatabase();
-
-        // Return cached token if still valid
-        var cached = await db.StringGetAsync(AcledTokenCacheKey);
-        if (cached.HasValue) return cached!;
+        if (_cache.TryGetValue("acled_token", out var entry) && DateTime.UtcNow < entry.Expiry)
+            return entry.Value;
 
         var email    = config["Acled:Email"];
         var password = config["Acled:Password"];
@@ -218,8 +210,7 @@ public class SeedService(
             var token = body?.AccessToken;
             if (token is null) return null;
 
-            // Cache for 23 hours (token valid 24h — leave 1h buffer)
-            await db.StringSetAsync(AcledTokenCacheKey, token, TimeSpan.FromHours(23));
+            _cache["acled_token"] = (token, DateTime.UtcNow.AddHours(23));
             return token;
         }
         catch (Exception ex)

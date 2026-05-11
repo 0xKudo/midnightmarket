@@ -20,7 +20,7 @@ namespace ArmsFair.UI
         private Button        _startGameBtn;
         private Label         _waitingLabel;
 
-        private LobbyApiClient _lobby;
+        private LobbyApiClient Lobby => new LobbyApiClient(Network.NetworkConfig.ServerBaseUrl);
         private string         _roomId;
         private bool           _isHost;
         private RoomInfo       _currentRoom;
@@ -59,7 +59,6 @@ namespace ArmsFair.UI
             TerminalUI.StyleDangerButton(_root.Q<Button>("LeaveBtn"));
             TerminalUI.StyleLabels(_root);
 
-            _lobby = new LobbyApiClient("https://armsfair.laynekudo.com");
 
             UIManager.Instance.Register("PreGameLobby", this);
         }
@@ -106,7 +105,7 @@ namespace ArmsFair.UI
         {
             try
             {
-                var room = await _lobby.GetRoomAsync(_roomId);
+                var room = await Lobby.GetRoomAsync(_roomId);
                 _currentRoom = room;
                 BindRoom(room);
             }
@@ -119,7 +118,12 @@ namespace ArmsFair.UI
         private void BindRoom(RoomInfo room)
         {
             _roomNameLabel.text   = room.roomName.ToUpper();
-            _inviteCodeLabel.text = room.inviteCode;
+            // Show the relay code (what friends type to join) when hosting;
+            // joiners see the server's room code for reference.
+            var displayCode = Network.NetworkConfig.IsHost && !string.IsNullOrEmpty(Network.NetworkConfig.RelayCode)
+                ? $"SHARE: {Network.NetworkConfig.RelayCode}"
+                : room.inviteCode;
+            _inviteCodeLabel.text = displayCode;
             _slotLabel.text       = $"{room.playerIds?.Length ?? 1} / {room.playerSlots}";
 
             _isHost = room.hostPlayerId == AccountManager.Instance.LocalPlayer?.Id;

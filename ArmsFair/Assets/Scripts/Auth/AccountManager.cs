@@ -11,9 +11,6 @@ namespace ArmsFair.Auth
     {
         public static AccountManager Instance { get; private set; }
 
-        [Header("Server")]
-        [SerializeField] private string serverUrl = "http://localhost:5059";
-
         public bool          IsLoggedIn  { get; private set; }
         public PlayerProfile LocalPlayer { get; private set; }
         public string        Token       { get; private set; }
@@ -21,16 +18,17 @@ namespace ArmsFair.Auth
         public UnityEvent OnLoggedIn  = new();
         public UnityEvent OnLoggedOut = new();
 
-        private AuthApiClient _api;
-
         private const string TokenKey = "auth_token";
+
+        // Always constructs against the current NetworkConfig URL so it stays in sync
+        // after host/join selection changes the server target.
+        private AuthApiClient Api => new AuthApiClient(Network.NetworkConfig.ServerBaseUrl);
 
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            _api = new AuthApiClient(serverUrl);
         }
 
         public async Task<bool> TryAutoLoginAsync()
@@ -40,7 +38,7 @@ namespace ArmsFair.Auth
 
             try
             {
-                LocalPlayer = await _api.GetMeAsync(stored);
+                LocalPlayer = await Api.GetMeAsync(stored);
                 Token       = stored;
                 IsLoggedIn  = true;
                 await GameClient.Instance.ConnectAsync(Token);
@@ -56,7 +54,7 @@ namespace ArmsFair.Auth
 
         public async Task LoginAsync(string usernameOrEmail, string password)
         {
-            var result  = await _api.LoginAsync(usernameOrEmail, password);
+            var result  = await Api.LoginAsync(usernameOrEmail, password);
             Token       = result.Token;
             LocalPlayer = new PlayerProfile
             {
@@ -74,7 +72,7 @@ namespace ArmsFair.Auth
 
         public async Task RegisterAsync(string username, string email, string password)
         {
-            var result  = await _api.RegisterAsync(username, email, password);
+            var result  = await Api.RegisterAsync(username, email, password);
             Token       = result.Token;
             LocalPlayer = new PlayerProfile
             {
@@ -92,7 +90,7 @@ namespace ArmsFair.Auth
 
         public async Task SaveProfileAsync(string homeNationIso, string companyName)
         {
-            LocalPlayer = await _api.PatchProfileAsync(Token, homeNationIso, companyName);
+            LocalPlayer = await Api.PatchProfileAsync(Token, homeNationIso, companyName);
         }
 
         public async Task LogOutAsync()

@@ -14,17 +14,23 @@ public class AuthService(ArmsFairDb db, IConfiguration config, ILogger<AuthServi
     private static readonly Regex UsernameRegex = new(@"^[a-zA-Z0-9_\-]{3,20}$", RegexOptions.Compiled);
 
     public async Task<(PlayerEntity Player, string Token)> RegisterAsync(
-        string username, string email, string password)
+        string username, string? email, string password)
     {
         if (!UsernameRegex.IsMatch(username))
             throw new ArgumentException("Username must be 3–20 characters: letters, digits, underscore, hyphen.");
 
-        var emailNorm = email.Trim().ToLowerInvariant();
+        var emailNorm = string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
 
-        var exists = await db.Players.AnyAsync(p =>
-            p.Username == username || p.Email == emailNorm);
-        if (exists)
-            throw new InvalidOperationException("Username or email already registered.");
+        var usernameExists = await db.Players.AnyAsync(p => p.Username == username);
+        if (usernameExists)
+            throw new InvalidOperationException("Username already registered.");
+
+        if (emailNorm is not null)
+        {
+            var emailExists = await db.Players.AnyAsync(p => p.Email == emailNorm);
+            if (emailExists)
+                throw new InvalidOperationException("Email already registered.");
+        }
 
         var player = new PlayerEntity
         {

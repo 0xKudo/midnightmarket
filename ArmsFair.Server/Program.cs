@@ -4,23 +4,18 @@ using ArmsFair.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using StackExchange.Redis;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Database ────────────────────────────────────────────────────────────────
-builder.Services.AddDbContext<ArmsFairDb>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+// ── Database (SQLite — runs embedded, no external process needed) ────────────
+var dbDir  = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ArmsFair");
+Directory.CreateDirectory(dbDir);
+var dbPath = Path.Combine(dbDir, "armsfair.db");
 
-// ── Redis ───────────────────────────────────────────────────────────────────
-builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
-{
-    var connStr = builder.Configuration.GetConnectionString("Redis") ?? "redis:6379";
-    var options = ConfigurationOptions.Parse(connStr);
-    options.AbortOnConnectFail = false;
-    return ConnectionMultiplexer.Connect(options);
-});
+builder.Services.AddDbContext<ArmsFairDb>(opt =>
+    opt.UseSqlite($"Data Source={dbPath}"));
 
 // ── HTTP clients ────────────────────────────────────────────────────────────
 builder.Services.AddHttpClient("acled");
@@ -34,6 +29,8 @@ builder.Services.AddSingleton<LobbyService>();
 builder.Services.AddSingleton<SeedService>();
 builder.Services.AddSingleton<TickerService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<TickerService>());
+builder.Services.AddSingleton<RelayTunnelService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<RelayTunnelService>());
 
 // ── SignalR ─────────────────────────────────────────────────────────────────
 builder.Services.AddSignalR();
@@ -72,14 +69,21 @@ builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
+// ── CORS — allow any origin (Unity clients are not browser-constrained) ─────
 builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>
-    p.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? ["http://localhost:3000"])
+    p.SetIsOriginAllowed(_ => true)
      .AllowAnyHeader()
      .AllowAnyMethod()
      .AllowCredentials()));
 
 var app = builder.Build();
+
+// ── Ensure SQLite schema exists on every startup ────────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ArmsFairDb>();
+    db.Database.EnsureCreated();
+}
 
 // ── Middleware ───────────────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
@@ -227,10 +231,14 @@ app.MapPost("/api/rooms/{id}/join", (string id, HttpContext ctx, LobbyService lo
 // ── Health check ─────────────────────────────────────────────────────────────
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
+// ── Relay code (polled by host Unity client after server starts) ─────────────
+app.MapGet("/relay-code", (RelayTunnelService relay) =>
+    Results.Ok(new { code = relay.RelayCode }));
+
 app.Run();
 
 // ── Request types ─────────────────────────────────────────────────────────────
-record RegisterRequest(string Username, string Email, string Password);
+record RegisterRequest(string Username, string? Email, string Password);
 record LoginRequest(string UsernameOrEmail, string Password);
 record UpdateProfileRequest(string? HomeNationIso, string? CompanyName);
 record CreateRoomRequest(

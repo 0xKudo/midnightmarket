@@ -18,8 +18,8 @@ public class ArmsFairDb(DbContextOptions<ArmsFairDb> options) : DbContext(option
             e.Property(x => x.Username).HasMaxLength(20).IsRequired();
             e.Property(x => x.Email).HasMaxLength(255);
             e.HasIndex(x => x.Username).IsUnique();
-            e.HasIndex(x => x.Email).IsUnique().HasFilter("\"Email\" IS NOT NULL");
-            e.HasIndex(x => x.SteamId).IsUnique().HasFilter("\"SteamId\" IS NOT NULL");
+            e.HasIndex(x => x.Email).IsUnique().HasFilter("Email IS NOT NULL");
+            e.HasIndex(x => x.SteamId).IsUnique().HasFilter("SteamId IS NOT NULL");
         });
 
         b.Entity<GameSessionEntity>(e =>

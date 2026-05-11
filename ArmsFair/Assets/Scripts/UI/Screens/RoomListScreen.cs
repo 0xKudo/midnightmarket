@@ -14,7 +14,7 @@ namespace ArmsFair.UI
         private ScrollView    _roomList;
         private Label         _errorLabel;
 
-        private LobbyApiClient _lobby;
+        private LobbyApiClient Lobby => new LobbyApiClient(Network.NetworkConfig.ServerBaseUrl);
 
         private void Awake()
         {
@@ -50,7 +50,6 @@ namespace ArmsFair.UI
             TerminalUI.StyleButton(_root.Q<Button>("BackBtn"));
             TerminalUI.StyleLabels(_root);
 
-            _lobby = new LobbyApiClient("https://armsfair.laynekudo.com");
 
             UIManager.Instance.Register("RoomList", this);
         }
@@ -66,7 +65,7 @@ namespace ArmsFair.UI
 
             try
             {
-                var rooms = await _lobby.ListRoomsAsync();
+                var rooms = await Lobby.ListRoomsAsync();
                 PopulateRoomList(rooms);
             }
             catch (Exception ex)
@@ -169,7 +168,7 @@ namespace ArmsFair.UI
 
             try
             {
-                var room = await _lobby.JoinRoomAsync(roomIdOrCode);
+                var room = await Lobby.JoinRoomAsync(roomIdOrCode);
                 LobbyState.PendingRoomId = room.roomId;
                 UIManager.Instance.GoTo("PreGameLobby");
             }

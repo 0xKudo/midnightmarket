@@ -19,14 +19,7 @@ namespace ArmsFair.Network
     {
         public static GameClient Instance { get; private set; }
 
-        [Header("Server")]
-        [SerializeField] private string serverUrl = "http://localhost:5000/gamehub";
-
-        public string ServerUrl
-        {
-            get => serverUrl;
-            set => serverUrl = value.TrimEnd('/') + "/gamehub";
-        }
+        // URL is resolved from NetworkConfig at connect time — no hardcoded value needed.
 
         // ── Connection state ─────────────────────────────────────────────────
         public bool IsConnected => _hub?.State == HubConnectionState.Connected;
@@ -72,14 +65,14 @@ namespace ArmsFair.Network
             _cts = new CancellationTokenSource();
 
             _hub = new HubConnectionBuilder()
-                .WithUrl($"{serverUrl}?access_token={jwtToken}")
+                .WithUrl($"{NetworkConfig.GameHubUrl}?access_token={jwtToken}")
                 .WithAutomaticReconnect()
                 .Build();
 
             RegisterHandlers();
 
             await _hub.StartAsync(_cts.Token);
-            Debug.Log($"[GameClient] Connected to {serverUrl}");
+            Debug.Log($"[GameClient] Connected to {NetworkConfig.GameHubUrl}");
         }
 
         public async Task DisconnectAsync()
