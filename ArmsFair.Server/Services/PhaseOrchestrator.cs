@@ -199,14 +199,22 @@ public class PhaseOrchestrator(
             var country = state.Countries.FirstOrDefault(c => c.Iso == action.TargetCountry);
             if (country is null) continue;
 
-            tracks = action.SaleType switch
+            try
             {
-                SaleType.Open        => TrackEngine.ApplyOpenSale(tracks, weapon, country.Stage, action.IsDualSupply),
-                SaleType.Covert      => TrackEngine.ApplyCovertSale(tracks, weapon, country.Stage, action.IsDualSupply),
-                SaleType.AidCover    => TrackEngine.ApplyAidCoverSale(tracks, weapon, country.Stage),
-                SaleType.PeaceBroker => TrackEngine.ApplyPeaceBroker(tracks),
-                _                    => tracks
-            };
+                tracks = action.SaleType switch
+                {
+                    SaleType.Open        => TrackEngine.ApplyOpenSale(tracks, weapon, country.Stage, action.IsDualSupply),
+                    SaleType.Covert      => TrackEngine.ApplyCovertSale(tracks, weapon, country.Stage, action.IsDualSupply),
+                    SaleType.AidCover    => TrackEngine.ApplyAidCoverSale(tracks, weapon, country.Stage),
+                    SaleType.PeaceBroker => TrackEngine.ApplyPeaceBroker(tracks),
+                    _                    => tracks
+                };
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                logger.LogError(ex, "[Reveal] Unknown weapon category {Weapon} for player {Player} — skipping action", weapon, action.PlayerId);
+                continue;
+            }
 
             var player = state.Players.FirstOrDefault(p => p.Id == action.PlayerId);
             if (player is null) continue;
