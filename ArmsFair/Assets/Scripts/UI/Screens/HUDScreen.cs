@@ -50,6 +50,9 @@ namespace ArmsFair.UI
         private Dictionary<WeaponCategory, int>  _quantities  = new();
         private Dictionary<WeaponCategory, int>  _inventory   = new();
         private int                              _procCapitalM;
+        private WeaponTab                        _procActiveTab  = WeaponTab.Light;
+        private WeaponTab                        _salesActiveTab = WeaponTab.Light;
+        private VisualElement                    _procTabBar;
 
         // Persistent inventory bar
         private VisualElement _inventoryBar;
@@ -750,6 +753,13 @@ namespace ArmsFair.UI
             if (_consequencesPanel != null) _consequencesPanel.style.display = isConsequences ? DisplayStyle.Flex : DisplayStyle.None;
             if (_phaseStatusLabel  != null) _phaseStatusLabel.style.display  = hasPanel ? DisplayStyle.None : DisplayStyle.Flex;
 
+            if (!isProcurement && _procTabBar != null)
+            {
+                _procTabBar.RemoveFromHierarchy();
+                _procTabBar = null;
+                _procActiveTab = WeaponTab.Light;
+            }
+
             if (isProcurement)
             {
                 var localId = AccountManager.Instance.LocalPlayer?.Id;
@@ -765,17 +775,94 @@ namespace ArmsFair.UI
         private void BuildProcurementPanel()
         {
             if (_weaponList == null) return;
-            _weaponList.Clear();
+
+            // Build tab bar once; rebuild only the weapon rows on tab switch
+            if (_procTabBar == null && _weaponList.parent != null)
+            {
+                _procTabBar = new VisualElement();
+                _procTabBar.style.flexDirection = FlexDirection.Row;
+                _procTabBar.style.marginBottom  = 6;
+
+                var tabs = new (string label, WeaponTab tab)[]
+                {
+                    ("LIGHT",     WeaponTab.Light),
+                    ("AIRCRAFT",  WeaponTab.Aircraft),
+                    ("MISSILES",  WeaponTab.Missiles),
+                    ("WMD",       WeaponTab.Wmd),
+                };
+
+                foreach (var (label, tab) in tabs)
+                {
+                    var btn = new Button(() =>
+                    {
+                        _procActiveTab = tab;
+                        StyleProcTabs();
+                        RebuildProcWeaponRows();
+                    });
+                    btn.text = label;
+                    btn.name = $"ProcTab_{tab}";
+                    btn.style.flexGrow      = 1;
+                    btn.style.marginRight   = 3;
+                    btn.style.paddingTop    = 5;
+                    btn.style.paddingBottom = 5;
+                    btn.style.fontSize      = 13;
+                    TerminalUI.AddHover(btn);
+                    _procTabBar.Add(btn);
+                }
+
+                int listIdx = _weaponList.parent.IndexOf(_weaponList);
+                _weaponList.parent.Insert(listIdx, _procTabBar);
+            }
+
+            StyleProcTabs();
+
             _quantities.Clear();
+            foreach (var e in WeaponCatalog.Items) _quantities[e.Category] = 0;
             UpdateProcTotal();
 
             if (_procErrorLabel != null) _procErrorLabel.style.display = DisplayStyle.None;
             if (_confirmProcBtn  != null) _confirmProcBtn.SetEnabled(true);
 
-            foreach (var entry in WeaponCatalog.Items)
+            RebuildProcWeaponRows();
+        }
+
+        private void StyleProcTabs()
+        {
+            if (_procTabBar == null) return;
+            var active   = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            var inactive = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
+            var activeBg   = new StyleColor(new Color(38f/255f, 58f/255f, 32f/255f));
+            var inactiveBg = new StyleColor(new Color(18f/255f, 22f/255f, 14f/255f));
+            var activeBorder   = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            var inactiveBorder = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+
+            foreach (WeaponTab tab in System.Enum.GetValues(typeof(WeaponTab)))
+            {
+                var btn = _procTabBar.Q<Button>($"ProcTab_{tab}");
+                if (btn == null) continue;
+                bool isActive = tab == _procActiveTab;
+                btn.style.color              = isActive ? active   : inactive;
+                btn.style.backgroundColor    = isActive ? activeBg : inactiveBg;
+                btn.style.borderTopColor     = isActive ? activeBorder : inactiveBorder;
+                btn.style.borderBottomColor  = isActive ? activeBorder : inactiveBorder;
+                btn.style.borderLeftColor    = isActive ? activeBorder : inactiveBorder;
+                btn.style.borderRightColor   = isActive ? activeBorder : inactiveBorder;
+                btn.style.borderTopWidth     = 1;
+                btn.style.borderBottomWidth  = 1;
+                btn.style.borderLeftWidth    = 1;
+                btn.style.borderRightWidth   = 1;
+            }
+        }
+
+        private void RebuildProcWeaponRows()
+        {
+            if (_weaponList == null) return;
+            _weaponList.Clear();
+
+            foreach (var entry in WeaponCatalog.Items.Where(e => e.Tab == _procActiveTab))
             {
                 var cat = entry.Category;
-                _quantities[cat] = 0;
+                if (!_quantities.ContainsKey(cat)) _quantities[cat] = 0;
 
                 var row = new VisualElement();
                 row.style.flexDirection     = FlexDirection.Row;
@@ -792,9 +879,11 @@ namespace ArmsFair.UI
                 nameLabel.style.flexGrow = 1;
 
                 var costLabel = new Label($"${entry.BaseCostMillions}M ea");
-                costLabel.style.color          = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                costLabel.style.fontSize = 15;
-                costLabel.style.width          = 60;
+                costLabel.style.color          = new StyleColor(entry.IsWmd
+                    ? new Color(0.85f, 0.30f, 0.25f)
+                    : new Color(138f/255f, 134f/255f, 112f/255f));
+                costLabel.style.fontSize       = 15;
+                costLabel.style.width          = 72;
                 costLabel.style.unityTextAlign = TextAnchor.MiddleRight;
                 costLabel.style.marginRight    = 10;
 
@@ -843,7 +932,6 @@ namespace ArmsFair.UI
                 row.Add(plusBtn);
                 _weaponList.Add(row);
             }
-
         }
 
         private void RefreshInventoryBar()
@@ -1146,6 +1234,8 @@ namespace ArmsFair.UI
             _isProxyRouted      = false;
             _salesOrder.Clear();
             _saleTypeBtns.Clear();
+            _salesActiveTab = WeaponTab.Light;
+            ClearWmdRestriction();
 
             if (_saleTypeRow != null)
             {
@@ -1287,7 +1377,11 @@ namespace ArmsFair.UI
 
         private void OpenWeaponPicker()
         {
-            var available = _inventory.Where(kv => kv.Value > 0).ToList();
+            var available = _inventory.Where(kv => kv.Value > 0)
+                .Select(kv => (Cat: kv.Key, Max: kv.Value, Entry: WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key)))
+                .Where(t => t.Entry != null)
+                .ToList();
+
             if (available.Count == 0)
             {
                 if (_saleErrorLabel != null)
@@ -1299,73 +1393,148 @@ namespace ArmsFair.UI
             }
 
             var overlay = MakeModalOverlay();
-            var panel   = MakeModalPanel(320);
+            var panel   = MakeModalPanel(380);
             panel.Add(MakeModalTitle("Select Weapon + Quantity"));
 
+            // Persist quantities across tab switches
             var pending = new Dictionary<WeaponCategory, int>();
+            foreach (var t in available)
+                pending[t.Cat] = _salesOrder.TryGetValue(t.Cat, out var prev) ? Math.Min(prev, t.Max) : 0;
 
-            foreach (var kv in available)
+            var availableTabs = available.Select(t => t.Entry.Tab).Distinct().ToHashSet();
+
+            // Ensure _salesActiveTab has inventory; fall back to first available
+            if (!availableTabs.Contains(_salesActiveTab))
+                _salesActiveTab = availableTabs.FirstOrDefault();
+
+            // Tab bar
+            var tabBar = new VisualElement();
+            tabBar.style.flexDirection = FlexDirection.Row;
+            tabBar.style.marginBottom  = 6;
+
+            // Weapon rows area
+            var weaponRows = new ScrollView();
+            weaponRows.style.maxHeight = 280;
+
+            void StylePickerTabs(WeaponTab active)
             {
-                var entry = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
-                if (entry == null) continue;
-                var cat    = kv.Key;
-                var maxQty = kv.Value;
-                pending[cat] = _salesOrder.TryGetValue(cat, out var prev) ? Math.Min(prev, maxQty) : 0;
-
-                var row = new VisualElement();
-                row.style.flexDirection     = FlexDirection.Row;
-                row.style.alignItems        = Align.Center;
-                row.style.justifyContent    = Justify.SpaceBetween;
-                row.style.paddingTop        = 5;
-                row.style.paddingBottom     = 5;
-                row.style.borderBottomColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
-                row.style.borderBottomWidth = 1;
-                row.style.marginBottom      = 4;
-
-                var nameLabel = new Label($"{entry.DisplayName}  (max {maxQty})");
-                nameLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                nameLabel.style.fontSize = 16;
-                nameLabel.style.flexGrow = 1;
-
-                var qtyField = MakeQtyField(pending[cat]);
-                var maxBtn   = MakeMaxButton();
-                var minusBtn = MakeQtyButton("-");
-                var plusBtn  = MakeQtyButton("+");
-
-                maxBtn.clicked += () =>
+                foreach (WeaponTab tab in System.Enum.GetValues(typeof(WeaponTab)))
                 {
-                    pending[cat] = maxQty;
-                    qtyField.SetValueWithoutNotify(maxQty);
-                };
-
-                minusBtn.clicked += () =>
-                {
-                    if (pending[cat] <= 0) return;
-                    pending[cat]--;
-                    qtyField.SetValueWithoutNotify(pending[cat]);
-                };
-
-                plusBtn.clicked += () =>
-                {
-                    if (pending[cat] >= maxQty) return;
-                    pending[cat]++;
-                    qtyField.SetValueWithoutNotify(pending[cat]);
-                };
-
-                qtyField.RegisterValueChangedCallback(evt =>
-                {
-                    var clamped = Math.Clamp(evt.newValue, 0, maxQty);
-                    pending[cat] = clamped;
-                    if (clamped != evt.newValue) qtyField.SetValueWithoutNotify(clamped);
-                });
-
-                row.Add(nameLabel);
-                row.Add(maxBtn);
-                row.Add(minusBtn);
-                row.Add(qtyField);
-                row.Add(plusBtn);
-                panel.Add(row);
+                    var b = tabBar.Q<Button>($"SalesTab_{tab}");
+                    if (b == null) continue;
+                    bool isActive = tab == active;
+                    bool hasInv   = availableTabs.Contains(tab);
+                    b.style.color             = isActive ? new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f))
+                                                         : new StyleColor(new Color(0.831f, 0.812f, 0.722f));
+                    b.style.backgroundColor   = isActive ? new StyleColor(new Color(38f/255f, 58f/255f, 32f/255f))
+                                                         : new StyleColor(new Color(18f/255f, 22f/255f, 14f/255f));
+                    b.style.borderTopColor    = b.style.borderBottomColor =
+                    b.style.borderLeftColor   = b.style.borderRightColor  =
+                        isActive ? new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f))
+                                 : new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+                    b.style.borderTopWidth    = b.style.borderBottomWidth =
+                    b.style.borderLeftWidth   = b.style.borderRightWidth  = 1;
+                    b.style.opacity           = hasInv ? 1f : 0.4f;
+                    b.SetEnabled(hasInv);
+                }
             }
+
+            void BuildPickerRows(WeaponTab tab)
+            {
+                _salesActiveTab = tab;
+                StylePickerTabs(tab);
+                weaponRows.Clear();
+
+                var tabItems = available.Where(t => t.Entry.Tab == tab).ToList();
+                if (tabItems.Count == 0)
+                {
+                    var empty = new Label("No inventory in this category.");
+                    empty.style.color          = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                    empty.style.paddingTop     = 12;
+                    empty.style.unityTextAlign = TextAnchor.MiddleCenter;
+                    weaponRows.Add(empty);
+                    return;
+                }
+
+                foreach (var (cat, maxQty, entry) in tabItems)
+                {
+                    var row = new VisualElement();
+                    row.style.flexDirection     = FlexDirection.Row;
+                    row.style.alignItems        = Align.Center;
+                    row.style.justifyContent    = Justify.SpaceBetween;
+                    row.style.paddingTop        = 5;
+                    row.style.paddingBottom     = 5;
+                    row.style.borderBottomColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
+                    row.style.borderBottomWidth = 1;
+                    row.style.marginBottom      = 4;
+
+                    var nameLabel = new Label($"{entry.DisplayName}  (max {maxQty})");
+                    nameLabel.style.color    = new StyleColor(entry.IsWmd
+                        ? new Color(0.85f, 0.30f, 0.25f)
+                        : new Color(212f/255f, 207f/255f, 184f/255f));
+                    nameLabel.style.fontSize = 16;
+                    nameLabel.style.flexGrow = 1;
+
+                    var qtyField = MakeQtyField(pending[cat]);
+                    var maxBtn   = MakeMaxButton();
+                    var minusBtn = MakeQtyButton("-");
+                    var plusBtn  = MakeQtyButton("+");
+
+                    maxBtn.clicked += () => { pending[cat] = maxQty; qtyField.SetValueWithoutNotify(maxQty); };
+                    minusBtn.clicked += () =>
+                    {
+                        if (pending[cat] <= 0) return;
+                        pending[cat]--;
+                        qtyField.SetValueWithoutNotify(pending[cat]);
+                    };
+                    plusBtn.clicked += () =>
+                    {
+                        if (pending[cat] >= maxQty) return;
+                        pending[cat]++;
+                        qtyField.SetValueWithoutNotify(pending[cat]);
+                    };
+                    qtyField.RegisterValueChangedCallback(evt =>
+                    {
+                        var clamped = Math.Clamp(evt.newValue, 0, maxQty);
+                        pending[cat] = clamped;
+                        if (clamped != evt.newValue) qtyField.SetValueWithoutNotify(clamped);
+                    });
+
+                    row.Add(nameLabel);
+                    row.Add(maxBtn);
+                    row.Add(minusBtn);
+                    row.Add(qtyField);
+                    row.Add(plusBtn);
+                    weaponRows.Add(row);
+                }
+            }
+
+            // Build tab buttons
+            var tabLabels = new Dictionary<WeaponTab, string>
+            {
+                { WeaponTab.Light,    "LIGHT"    },
+                { WeaponTab.Aircraft, "AIRCRAFT" },
+                { WeaponTab.Missiles, "MISSILES" },
+                { WeaponTab.Wmd,      "WMD"      },
+            };
+            foreach (var (tab, label) in tabLabels)
+            {
+                var capturedTab = tab;
+                var btn = new Button(() => BuildPickerRows(capturedTab));
+                btn.text          = label;
+                btn.name          = $"SalesTab_{tab}";
+                btn.style.flexGrow      = 1;
+                btn.style.marginRight   = 3;
+                btn.style.paddingTop    = 5;
+                btn.style.paddingBottom = 5;
+                btn.style.fontSize      = 13;
+                TerminalUI.AddHover(btn);
+                tabBar.Add(btn);
+            }
+            panel.Add(tabBar);
+            panel.Add(weaponRows);
+
+            BuildPickerRows(_salesActiveTab);
 
             var divider = new VisualElement();
             divider.style.height          = 1;
@@ -1378,7 +1547,7 @@ namespace ArmsFair.UI
             btnRow.style.flexDirection = FlexDirection.Row;
 
             var cancelBtn = MakeModalCancelBtn(() => CloseModal(overlay));
-            cancelBtn.style.flexGrow   = 1;
+            cancelBtn.style.flexGrow    = 1;
             cancelBtn.style.marginRight = 8;
 
             var selectBtn = new Button { text = "SELECT" };
@@ -1419,6 +1588,11 @@ namespace ArmsFair.UI
                 }
                 if (_saleErrorLabel != null) _saleErrorLabel.style.display = DisplayStyle.None;
                 CloseModal(overlay);
+
+                bool hasWmd = _salesOrder.Keys.Any(c => WeaponCatalog.Items.FirstOrDefault(i => i.Category == c)?.IsWmd == true);
+                if (hasWmd) ApplyWmdRestriction();
+                else        ClearWmdRestriction();
+
                 UpdateSaleEstimate();
             };
 
@@ -1427,6 +1601,51 @@ namespace ArmsFair.UI
             panel.Add(btnRow);
             overlay.Add(panel);
             _root.Add(overlay);
+        }
+
+        private void ApplyWmdRestriction()
+        {
+            // Force Covert — WMD cannot be sold openly or as aid cover
+            if (_selectedSaleType != SaleType.Covert)
+            {
+                _selectedSaleType = SaleType.Covert;
+                foreach (var kv in _saleTypeBtns)
+                    StyleSaleTypeBtn(kv.Value, kv.Key == SaleType.Covert);
+            }
+            foreach (var kv in _saleTypeBtns)
+                kv.Value.SetEnabled(kv.Key == SaleType.Covert);
+
+            // Show or create warning label above the sale-type row
+            if (_salesPanel == null) return;
+            var warn = _salesPanel.Q<Label>("WmdWarningLabel");
+            if (warn == null)
+            {
+                warn = new Label("WARNING: WMD SELECTED — COVERT ONLY — EXTREME BLOWBACK RISK");
+                warn.name = "WmdWarningLabel";
+                warn.style.color          = new StyleColor(new Color(0.85f, 0.25f, 0.20f));
+                warn.style.fontSize       = 12;
+                warn.style.unityTextAlign = TextAnchor.MiddleCenter;
+                warn.style.marginBottom   = 5;
+                warn.style.whiteSpace     = WhiteSpace.Normal;
+                if (_saleTypeRow != null)
+                {
+                    int idx = _saleTypeRow.parent.IndexOf(_saleTypeRow);
+                    _saleTypeRow.parent.Insert(idx, warn);
+                }
+                else
+                {
+                    _salesPanel.Add(warn);
+                }
+            }
+            warn.style.display = DisplayStyle.Flex;
+        }
+
+        private void ClearWmdRestriction()
+        {
+            foreach (var kv in _saleTypeBtns)
+                kv.Value.SetEnabled(true);
+            var warn = _salesPanel?.Q<Label>("WmdWarningLabel");
+            if (warn != null) warn.style.display = DisplayStyle.None;
         }
 
         private void OpenCountryPicker()

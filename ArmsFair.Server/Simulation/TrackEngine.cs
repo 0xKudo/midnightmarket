@@ -45,28 +45,46 @@ public static class TrackEngine
 
     private static int[] GetOpenDeltas(WeaponCategory w) => w switch
     {
-        WeaponCategory.SmallArms  => Balance.OpenSmallArms,
-        WeaponCategory.Vehicles   => Balance.OpenVehicles,
-        WeaponCategory.AirDefense => Balance.OpenAirDefense,
-        WeaponCategory.Drones     => Balance.OpenDrones,
+        WeaponCategory.SmallArms          => Balance.OpenSmallArms,
+        WeaponCategory.Vehicles           => Balance.OpenVehicles,
+        WeaponCategory.CombatHelicopters  => Balance.OpenCombatHelicopters,
+        WeaponCategory.FighterJets        => Balance.OpenFighterJets,
+        WeaponCategory.Drones             => Balance.OpenDrones,
+        WeaponCategory.AirDefense         => Balance.OpenAirDefense,
+        WeaponCategory.CruiseMissiles     => Balance.OpenCruiseMissiles,
+        WeaponCategory.IcbmComponents     => Balance.OpenIcbmComponents,
+        WeaponCategory.NuclearWarhead     => Balance.OpenNuclearWarhead,
+        WeaponCategory.FissileMaterials   => Balance.OpenFissileMaterials,
         _ => throw new ArgumentOutOfRangeException(nameof(w))
     };
 
     private static int[] GetCovertDeltas(WeaponCategory w) => w switch
     {
-        WeaponCategory.SmallArms  => Balance.CovertSmallArms,
-        WeaponCategory.Vehicles   => Balance.CovertVehicles,
-        WeaponCategory.AirDefense => Balance.CovertAirDefense,
-        WeaponCategory.Drones     => Balance.CovertDrones,
+        WeaponCategory.SmallArms          => Balance.CovertSmallArms,
+        WeaponCategory.Vehicles           => Balance.CovertVehicles,
+        WeaponCategory.CombatHelicopters  => Balance.CovertCombatHelicopters,
+        WeaponCategory.FighterJets        => Balance.CovertFighterJets,
+        WeaponCategory.Drones             => Balance.CovertDrones,
+        WeaponCategory.AirDefense         => Balance.CovertAirDefense,
+        WeaponCategory.CruiseMissiles     => Balance.CovertCruiseMissiles,
+        WeaponCategory.IcbmComponents     => Balance.CovertIcbmComponents,
+        WeaponCategory.NuclearWarhead     => Balance.CovertNuclearWarhead,
+        WeaponCategory.FissileMaterials   => Balance.CovertFissileMaterials,
         _ => throw new ArgumentOutOfRangeException(nameof(w))
     };
 
     private static int[] GetAidDeltas(WeaponCategory w) => w switch
     {
-        WeaponCategory.SmallArms  => Balance.AidSmallArms,
-        WeaponCategory.Vehicles   => Balance.AidVehicles,
-        WeaponCategory.AirDefense => Balance.AidAirDefense,
-        WeaponCategory.Drones     => Balance.AidDrones,
+        WeaponCategory.SmallArms          => Balance.AidSmallArms,
+        WeaponCategory.Vehicles           => Balance.AidVehicles,
+        WeaponCategory.CombatHelicopters  => Balance.AidCombatHelicopters,
+        WeaponCategory.FighterJets        => Balance.AidFighterJets,
+        WeaponCategory.Drones             => Balance.AidDrones,
+        WeaponCategory.AirDefense         => Balance.AidAirDefense,
+        WeaponCategory.CruiseMissiles     => Balance.AidCruiseMissiles,
+        WeaponCategory.IcbmComponents     => Balance.AidIcbmComponents,
+        WeaponCategory.NuclearWarhead     => Balance.AidNuclearWarhead,
+        WeaponCategory.FissileMaterials   => Balance.AidFissileMaterials,
         _ => throw new ArgumentOutOfRangeException(nameof(w))
     };
 }

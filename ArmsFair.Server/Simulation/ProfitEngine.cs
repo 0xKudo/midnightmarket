@@ -38,10 +38,16 @@ public static class ProfitEngine
 
     private static int BaseProfit(WeaponCategory w) => w switch
     {
-        WeaponCategory.SmallArms  => Balance.ProfitSmallArms,
-        WeaponCategory.Vehicles   => Balance.ProfitVehicles,
-        WeaponCategory.AirDefense => Balance.ProfitAirDefense,
-        WeaponCategory.Drones     => Balance.ProfitDrones,
+        WeaponCategory.SmallArms          => Balance.ProfitSmallArms,
+        WeaponCategory.Vehicles           => Balance.ProfitVehicles,
+        WeaponCategory.CombatHelicopters  => Balance.ProfitCombatHelicopters,
+        WeaponCategory.FighterJets        => Balance.ProfitFighterJets,
+        WeaponCategory.Drones             => Balance.ProfitDrones,
+        WeaponCategory.AirDefense         => Balance.ProfitAirDefense,
+        WeaponCategory.CruiseMissiles     => Balance.ProfitCruiseMissiles,
+        WeaponCategory.IcbmComponents     => Balance.ProfitIcbmComponents,
+        WeaponCategory.NuclearWarhead     => Balance.ProfitNuclearWarhead,
+        WeaponCategory.FissileMaterials   => Balance.ProfitFissileMaterials,
         _ => throw new ArgumentOutOfRangeException(nameof(w))
     };
 }

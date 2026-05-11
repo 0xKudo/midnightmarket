@@ -36,16 +36,28 @@ public static class Balance
     public const int HotWorldGeoTension      = 55;
 
     // ── Procurement costs ($M) ────────────────────────────────────────────
-    public const int CostSmallArms   = 2;
-    public const int CostVehicles    = 6;
-    public const int CostAirDefense  = 12;
-    public const int CostDrones      = 18;
+    public const int CostSmallArms          = 3;
+    public const int CostVehicles           = 8;
+    public const int CostCombatHelicopters  = 35;
+    public const int CostFighterJets        = 75;
+    public const int CostDrones             = 25;
+    public const int CostAirDefense         = 20;
+    public const int CostCruiseMissiles     = 50;
+    public const int CostIcbmComponents     = 200;
+    public const int CostNuclearWarhead     = 500;
+    public const int CostFissileMaterials   = 150;
 
     // ── Base profits ($M) ────────────────────────────────────────────────
-    public const int ProfitSmallArms   = 4;
-    public const int ProfitVehicles    = 11;
-    public const int ProfitAirDefense  = 22;
-    public const int ProfitDrones      = 34;
+    public const int ProfitSmallArms          = 6;
+    public const int ProfitVehicles           = 14;
+    public const int ProfitCombatHelicopters  = 60;
+    public const int ProfitFighterJets        = 120;
+    public const int ProfitDrones             = 42;
+    public const int ProfitAirDefense         = 35;
+    public const int ProfitCruiseMissiles     = 82;
+    public const int ProfitIcbmComponents     = 320;
+    public const int ProfitNuclearWarhead     = 800;
+    public const int ProfitFissileMaterials   = 260;
 
     // ── Stage multipliers [0..5] ─────────────────────────────────────────
     public static readonly float[] StageMultiplier = { 0f, 0.5f, 1.0f, 1.8f, 2.2f, 0f };
@@ -75,24 +87,43 @@ public static class Balance
     public const float DualSupplyProfitMul   = 1.80f;
 
     // ── Track deltas: [marketHeat, civilianCost, stability, sanctionsRisk, geoTension]
-    // Open sale base deltas by weapon
-    public static readonly int[] OpenSmallArms  = {  1,  3,  1,  0,  0 };
-    public static readonly int[] OpenVehicles   = {  2,  2,  1,  1,  0 };
-    public static readonly int[] OpenAirDefense = {  3,  1,  2,  1,  1 };
-    public static readonly int[] OpenDrones     = {  4,  4,  2,  2,  1 };
+    // Open sale base deltas by weapon: [marketHeat, civilianCost, instability, sanctionsRisk, geoTension]
+    public static readonly int[] OpenSmallArms          = {  1,  3,  1,  0,  0 };
+    public static readonly int[] OpenVehicles           = {  2,  2,  1,  1,  0 };
+    public static readonly int[] OpenAirDefense         = {  3,  1,  2,  1,  1 };
+    public static readonly int[] OpenDrones             = {  4,  4,  2,  2,  1 };
+    public static readonly int[] OpenCombatHelicopters  = {  4,  3,  3,  2,  2 };
+    public static readonly int[] OpenFighterJets        = {  5,  2,  3,  3,  3 };
+    public static readonly int[] OpenCruiseMissiles     = {  5,  4,  4,  3,  3 };
+    public static readonly int[] OpenIcbmComponents     = {  6,  5,  5,  8, 10 };
+    public static readonly int[] OpenNuclearWarhead     = {  8,  8,  8, 15, 20 };
+    public static readonly int[] OpenFissileMaterials   = {  5,  4,  6, 12, 15 };
 
     // Covert: same base, sanctions=0 until traced
-    public static readonly int[] CovertSmallArms  = {  1,  3,  1,  0,  0 };
-    public static readonly int[] CovertVehicles   = {  2,  2,  1,  0,  0 };
-    public static readonly int[] CovertAirDefense = {  3,  1,  2,  0,  1 };
-    public static readonly int[] CovertDrones     = {  4,  4,  2,  0,  1 };
+    public static readonly int[] CovertSmallArms          = {  1,  3,  1,  0,  0 };
+    public static readonly int[] CovertVehicles           = {  2,  2,  1,  0,  0 };
+    public static readonly int[] CovertAirDefense         = {  3,  1,  2,  0,  1 };
+    public static readonly int[] CovertDrones             = {  4,  4,  2,  0,  1 };
+    public static readonly int[] CovertCombatHelicopters  = {  4,  3,  3,  0,  2 };
+    public static readonly int[] CovertFighterJets        = {  5,  2,  3,  0,  3 };
+    public static readonly int[] CovertCruiseMissiles     = {  5,  4,  4,  0,  3 };
+    public static readonly int[] CovertIcbmComponents     = {  6,  5,  5,  0, 10 };
+    public static readonly int[] CovertNuclearWarhead     = {  8,  8,  8,  0, 20 };
+    public static readonly int[] CovertFissileMaterials   = {  5,  4,  6,  0, 15 };
     public const int CovertTraceSanctionsHit = 3;
 
     // Aid cover: civilian cost suppressed to -1, stability/heat same as open
-    public static readonly int[] AidSmallArms  = {  1, -1,  1,  0,  0 };
-    public static readonly int[] AidVehicles   = {  2, -1,  1,  0,  0 };
-    public static readonly int[] AidAirDefense = {  3, -1,  2,  0,  1 };
-    public static readonly int[] AidDrones     = {  4, -1,  2,  0,  1 };
+    public static readonly int[] AidSmallArms          = {  1, -1,  1,  0,  0 };
+    public static readonly int[] AidVehicles           = {  2, -1,  1,  0,  0 };
+    public static readonly int[] AidAirDefense         = {  3, -1,  2,  0,  1 };
+    public static readonly int[] AidDrones             = {  4, -1,  2,  0,  1 };
+    public static readonly int[] AidCombatHelicopters  = {  4, -1,  3,  0,  2 };
+    public static readonly int[] AidFighterJets        = {  5, -1,  3,  0,  3 };
+    public static readonly int[] AidCruiseMissiles     = {  5, -1,  4,  0,  3 };
+    // WMD cannot be Aid Cover (UI blocks it); fallback to covert deltas for safety
+    public static readonly int[] AidIcbmComponents     = {  6,  5,  5,  0, 10 };
+    public static readonly int[] AidNuclearWarhead     = {  8,  8,  8,  0, 20 };
+    public static readonly int[] AidFissileMaterials   = {  5,  4,  6,  0, 15 };
     public const int AidFraudExposurePenalty = 5;
 
     // Peace broker flat deltas
@@ -103,10 +134,16 @@ public static class Balance
     public const int PeaceCreditEarned = 1;
 
     // ── Blowback trace chances ────────────────────────────────────────────
-    public const float TraceSmallArms   = 0.15f;
-    public const float TraceVehicles    = 0.35f;
-    public const float TraceAirDefense  = 0.50f;
-    public const float TraceDrones      = 0.70f;
+    public const float TraceSmallArms          = 0.15f;
+    public const float TraceVehicles           = 0.35f;
+    public const float TraceCombatHelicopters  = 0.45f;
+    public const float TraceFighterJets        = 0.55f;
+    public const float TraceDrones             = 0.70f;
+    public const float TraceAirDefense         = 0.50f;
+    public const float TraceCruiseMissiles     = 0.60f;
+    public const float TraceIcbmComponents     = 0.75f;
+    public const float TraceNuclearWarhead     = 0.90f;
+    public const float TraceFissileMaterials   = 0.85f;
 
     public const float TraceModCovert         = +0.10f;
     public const float TraceModAidExposed     = +0.25f;
@@ -129,10 +166,16 @@ public static class Balance
     public const int RepLossTreatyBroken             = -8;
     public const int RepLossCoupExposed              = -15;
     public const int RepLossManufactureDemandExposed = -20;
-    public const int RepLossBlowbackSmallArms        = -8;
-    public const int RepLossBlowbackVehicles         = -12;
-    public const int RepLossBlowbackAirDefense       = -10;
-    public const int RepLossBlowbackDrones           = -20;
+    public const int RepLossBlowbackSmallArms          = -8;
+    public const int RepLossBlowbackVehicles           = -12;
+    public const int RepLossBlowbackCombatHelicopters  = -18;
+    public const int RepLossBlowbackFighterJets        = -22;
+    public const int RepLossBlowbackDrones             = -20;
+    public const int RepLossBlowbackAirDefense         = -10;
+    public const int RepLossBlowbackCruiseMissiles     = -25;
+    public const int RepLossBlowbackIcbmComponents     = -35;
+    public const int RepLossBlowbackNuclearWarhead     = -60;
+    public const int RepLossBlowbackFissileMaterials   = -45;
     public const int RepLossBlowbackCovertBonus      = -5;
     public const int RepLossBlowbackDualSupply       = -8;
     public const int CollapseThreshold               = 0;

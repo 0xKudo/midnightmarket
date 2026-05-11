@@ -16,10 +16,16 @@ public static class BlowbackEngine
     {
         float chance = weapon switch
         {
-            WeaponCategory.SmallArms  => Balance.TraceSmallArms,
-            WeaponCategory.Vehicles   => Balance.TraceVehicles,
-            WeaponCategory.AirDefense => Balance.TraceAirDefense,
-            WeaponCategory.Drones     => Balance.TraceDrones,
+            WeaponCategory.SmallArms          => Balance.TraceSmallArms,
+            WeaponCategory.Vehicles           => Balance.TraceVehicles,
+            WeaponCategory.CombatHelicopters  => Balance.TraceCombatHelicopters,
+            WeaponCategory.FighterJets        => Balance.TraceFighterJets,
+            WeaponCategory.Drones             => Balance.TraceDrones,
+            WeaponCategory.AirDefense         => Balance.TraceAirDefense,
+            WeaponCategory.CruiseMissiles     => Balance.TraceCruiseMissiles,
+            WeaponCategory.IcbmComponents     => Balance.TraceIcbmComponents,
+            WeaponCategory.NuclearWarhead     => Balance.TraceNuclearWarhead,
+            WeaponCategory.FissileMaterials   => Balance.TraceFissileMaterials,
             _ => throw new ArgumentOutOfRangeException(nameof(weapon))
         };
 
@@ -39,10 +45,16 @@ public static class BlowbackEngine
     {
         int loss = weapon switch
         {
-            WeaponCategory.SmallArms  => Balance.RepLossBlowbackSmallArms,
-            WeaponCategory.Vehicles   => Balance.RepLossBlowbackVehicles,
-            WeaponCategory.AirDefense => Balance.RepLossBlowbackAirDefense,
-            WeaponCategory.Drones     => Balance.RepLossBlowbackDrones,
+            WeaponCategory.SmallArms          => Balance.RepLossBlowbackSmallArms,
+            WeaponCategory.Vehicles           => Balance.RepLossBlowbackVehicles,
+            WeaponCategory.CombatHelicopters  => Balance.RepLossBlowbackCombatHelicopters,
+            WeaponCategory.FighterJets        => Balance.RepLossBlowbackFighterJets,
+            WeaponCategory.Drones             => Balance.RepLossBlowbackDrones,
+            WeaponCategory.AirDefense         => Balance.RepLossBlowbackAirDefense,
+            WeaponCategory.CruiseMissiles     => Balance.RepLossBlowbackCruiseMissiles,
+            WeaponCategory.IcbmComponents     => Balance.RepLossBlowbackIcbmComponents,
+            WeaponCategory.NuclearWarhead     => Balance.RepLossBlowbackNuclearWarhead,
+            WeaponCategory.FissileMaterials   => Balance.RepLossBlowbackFissileMaterials,
             _ => throw new ArgumentOutOfRangeException(nameof(weapon))
         };
 
