@@ -269,6 +269,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnReveal.AddListener(OnReveal);
             GameClient.Instance.OnPlayerReady.AddListener(OnPlayerReady);
             GameClient.Instance.OnCeaseFireVote.AddListener(OnCeaseFireVoteReceived);
+            GameClient.Instance.OnGameEnding.AddListener(OnGameEnding);
 
             UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -337,6 +338,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnReveal.RemoveListener(OnReveal);
             GameClient.Instance.OnPlayerReady.RemoveListener(OnPlayerReady);
             GameClient.Instance.OnCeaseFireVote.RemoveListener(OnCeaseFireVoteReceived);
+            GameClient.Instance.OnGameEnding.RemoveListener(OnGameEnding);
 
             UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
             if (_globeReadyCoroutine != null) StopCoroutine(_globeReadyCoroutine);
@@ -416,6 +418,58 @@ namespace ArmsFair.UI
                 _readyBtn.SetEnabled(true);
             }
         }
+
+        private void OnGameEnding(GameEndingMessage msg)
+        {
+            _timerRunning = false;
+
+            var overlay = new VisualElement();
+            overlay.style.position        = Position.Absolute;
+            overlay.style.top             = 0;
+            overlay.style.left            = 0;
+            overlay.style.right           = 0;
+            overlay.style.bottom          = 0;
+            overlay.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.88f));
+            overlay.style.alignItems      = Align.Center;
+            overlay.style.justifyContent  = Justify.Center;
+
+            var title = new Label(EndingTitle(msg.EndingType));
+            title.style.fontSize     = 28;
+            title.style.color        = new StyleColor(new Color(0.9f, 0.8f, 0.2f));
+            title.style.marginBottom = 20;
+            title.style.unityFontStyleAndWeight = FontStyle.Bold;
+            overlay.Add(title);
+
+            if (msg.FinalScores != null)
+            {
+                foreach (var s in msg.FinalScores.OrderByDescending(s => s.Composite))
+                {
+                    var row = new Label($"{s.CompanyName}   ${s.Profit}M   REP {s.Reputation}   SCORE {s.Composite}");
+                    row.style.fontSize     = 14;
+                    row.style.color        = new StyleColor(Color.white);
+                    row.style.marginBottom = 4;
+                    overlay.Add(row);
+                }
+            }
+
+            var btn = new Button(() => UIManager.Instance.GoTo("MainMenu")) { text = "RETURN TO MENU" };
+            btn.style.marginTop      = 24;
+            btn.style.paddingLeft    = btn.style.paddingRight  = 20;
+            btn.style.paddingTop     = btn.style.paddingBottom = 8;
+            overlay.Add(btn);
+
+            _root.Add(overlay);
+        }
+
+        private static string EndingTitle(string type) => type switch
+        {
+            "great_power_confrontation" => "GREAT POWER CONFRONTATION",
+            "total_war"                 => "TOTAL WAR",
+            "global_sanctions"          => "GLOBAL SANCTIONS",
+            "market_saturation"         => "MARKET SATURATION",
+            "negotiated_peace"          => "NEGOTIATED PEACE",
+            _                           => "GAME OVER"
+        };
 
         private void OnPlayerReady(string playerId)
         {
