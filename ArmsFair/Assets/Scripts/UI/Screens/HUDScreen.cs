@@ -801,11 +801,12 @@ namespace ArmsFair.UI
                     });
                     btn.text = label;
                     btn.name = $"ProcTab_{tab}";
-                    btn.style.flexGrow      = 1;
-                    btn.style.marginRight   = 3;
-                    btn.style.paddingTop    = 5;
-                    btn.style.paddingBottom = 5;
-                    btn.style.fontSize      = 13;
+                    btn.style.flexGrow        = 1;
+                    btn.style.marginRight     = 3;
+                    btn.style.paddingTop      = 5;
+                    btn.style.paddingBottom   = 5;
+                    btn.style.fontSize        = 13;
+                    btn.style.unityTextAlign  = TextAnchor.MiddleCenter;
                     TerminalUI.AddHover(btn);
                     _procTabBar.Add(btn);
                 }
@@ -879,13 +880,14 @@ namespace ArmsFair.UI
                 nameLabel.style.flexGrow = 1;
 
                 var costLabel = new Label($"${entry.BaseCostMillions}M ea");
-                costLabel.style.color          = new StyleColor(entry.IsWmd
+                costLabel.style.color          = new StyleColor(entry.BaseCostMillions > _procCapitalM
                     ? new Color(0.85f, 0.30f, 0.25f)
                     : new Color(138f/255f, 134f/255f, 112f/255f));
                 costLabel.style.fontSize       = 15;
-                costLabel.style.width          = 72;
+                costLabel.style.whiteSpace     = WhiteSpace.NoWrap;
                 costLabel.style.unityTextAlign = TextAnchor.MiddleRight;
                 costLabel.style.marginRight    = 10;
+                costLabel.style.marginLeft     = 8;
 
                 var qtyField = MakeQtyField(0);
                 var maxBtn   = MakeMaxButton();
@@ -958,6 +960,7 @@ namespace ArmsFair.UI
                 chip.style.paddingTop       = chip.style.paddingBottom = 2;
                 chip.style.paddingLeft      = chip.style.paddingRight  = 8;
                 chip.style.marginRight      = 8;
+                chip.style.marginBottom     = 5;
                 chip.style.whiteSpace       = WhiteSpace.NoWrap;
                 _inventoryItems.Add(chip);
             }
@@ -1469,9 +1472,7 @@ namespace ArmsFair.UI
                     row.style.marginBottom      = 4;
 
                     var nameLabel = new Label($"{entry.DisplayName}  (max {maxQty})");
-                    nameLabel.style.color    = new StyleColor(entry.IsWmd
-                        ? new Color(0.85f, 0.30f, 0.25f)
-                        : new Color(212f/255f, 207f/255f, 184f/255f));
+                    nameLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
                     nameLabel.style.fontSize = 16;
                     nameLabel.style.flexGrow = 1;
 
@@ -2126,39 +2127,44 @@ namespace ArmsFair.UI
             if (_playerList == null) return;
             var localId = AccountManager.Instance.LocalPlayer?.Id;
 
-            // Players footer -- horizontal cards showing name + capital
+            // Players footer -- horizontal cards showing name + capital on one line
             _playerList.Clear();
-            foreach (var player in players)
+            for (int i = 0; i < players.Count; i++)
             {
+                var player   = players[i];
                 bool isMe    = player.Id == localId;
                 var  name    = (player.CompanyName ?? player.Username ?? "?").ToUpper();
                 var  capital = $"${player.Capital}M";
 
+                var arcColor = ArmsFair.Map.GlobeBridge.PlayerArcColors[
+                    i % ArmsFair.Map.GlobeBridge.PlayerArcColors.Length];
+
                 var card = new VisualElement();
-                card.style.flexDirection   = FlexDirection.Column;
-                card.style.borderTopWidth  = card.style.borderRightWidth =
-                    card.style.borderBottomWidth = card.style.borderLeftWidth = 1;
-                card.style.borderTopColor  = card.style.borderRightColor =
+                card.style.flexDirection = FlexDirection.Row;
+                card.style.alignItems    = Align.Center;
+                card.style.borderTopWidth    = card.style.borderRightWidth =
+                    card.style.borderBottomWidth = card.style.borderLeftWidth = isMe ? 2 : 1;
+                card.style.borderTopColor    = card.style.borderRightColor =
                     card.style.borderBottomColor = card.style.borderLeftColor =
-                    new StyleColor(isMe ? new Color(58f/255f, 90f/255f, 42f/255f)
-                                        : new Color(58f/255f, 58f/255f, 42f/255f));
+                    new StyleColor(arcColor);
                 card.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
-                card.style.paddingTop = card.style.paddingBottom = 4;
-                card.style.paddingLeft = card.style.paddingRight = 10;
-                card.style.marginRight = 8;
+                card.style.paddingTop    = card.style.paddingBottom = 4;
+                card.style.paddingLeft   = card.style.paddingRight  = 10;
+                card.style.marginRight   = 8;
 
                 var nameText  = isMe ? $"> {name}" : name;
                 var nameLabel = new Label(nameText);
-                nameLabel.style.color     = new StyleColor(isMe
+                nameLabel.style.color      = new StyleColor(isMe
                     ? new Color(138f/255f, 184f/255f, 112f/255f)
                     : new Color(0.831f, 0.812f, 0.722f));
-                nameLabel.style.fontSize = 15;
+                nameLabel.style.fontSize   = 15;
                 nameLabel.style.whiteSpace = WhiteSpace.NoWrap;
 
                 var capLabel = new Label(capital);
-                capLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                capLabel.style.fontSize = 14;
-                capLabel.style.whiteSpace = WhiteSpace.NoWrap;
+                capLabel.style.color       = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+                capLabel.style.fontSize    = 14;
+                capLabel.style.whiteSpace  = WhiteSpace.NoWrap;
+                capLabel.style.marginLeft  = 8;
 
                 card.Add(nameLabel);
                 card.Add(capLabel);

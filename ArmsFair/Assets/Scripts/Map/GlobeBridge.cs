@@ -35,7 +35,7 @@ namespace ArmsFair.Map
 
         private static readonly Color _defaultHoverColor = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.55f);
 
-        private static readonly Color[] _playerArcColors =
+        public static readonly Color[] PlayerArcColors =
         {
             new Color(0.25f, 0.75f, 1.00f, 0.90f), // cyan
             new Color(1.00f, 0.40f, 0.25f, 0.90f), // orange-red
@@ -355,7 +355,7 @@ namespace ArmsFair.Map
                 var start      = _map.countries[srcIdx].center;
                 var end        = _map.countries[dstIdx].center;
                 int colorIndex = playerColorIndex.TryGetValue(arc.PlayerId, out var ci) ? ci : 0;
-                var color      = _playerArcColors[colorIndex % _playerArcColors.Length];
+                var color      = PlayerArcColors[colorIndex % PlayerArcColors.Length];
 
                 _map.AddLine(start, end, color, 0.3f, 1.5f, 0.002f, 4f);
             }

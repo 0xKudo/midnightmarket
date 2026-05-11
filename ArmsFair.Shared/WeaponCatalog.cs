@@ -18,8 +18,8 @@ public static class WeaponCatalog
         new(AirDefense,        "AIR DEFENSE SYSTEMS",  Balance.CostAirDefense,         Balance.ProfitAirDefense,         Missiles),
         new(CruiseMissiles,    "CRUISE MISSILES",      Balance.CostCruiseMissiles,     Balance.ProfitCruiseMissiles,     Missiles),
         new(IcbmComponents,    "ICBM COMPONENTS",      Balance.CostIcbmComponents,     Balance.ProfitIcbmComponents,     Wmd, IsWmd: true),
-        new(NuclearWarhead,    "NUCLEAR WARHEAD",      Balance.CostNuclearWarhead,     Balance.ProfitNuclearWarhead,     Wmd, IsWmd: true),
         new(FissileMaterials,  "FISSILE MATERIALS",    Balance.CostFissileMaterials,   Balance.ProfitFissileMaterials,   Wmd, IsWmd: true),
+        new(NuclearWarhead,    "NUCLEAR WARHEAD",      Balance.CostNuclearWarhead,     Balance.ProfitNuclearWarhead,     Wmd, IsWmd: true),
     }.AsReadOnly();
 }
 
