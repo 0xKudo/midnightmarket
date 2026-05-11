@@ -90,8 +90,10 @@ namespace ArmsFair.UI
                 _inviteCodeDisplay.text        = code;
                 _inviteCodeDisplay.style.display = DisplayStyle.Flex;
 
-                // Give the host a moment to see the code, then proceed to login
-                await System.Threading.Tasks.Task.Delay(1500);
+                Debug.Log($"[HostOrJoinScreen] Relay code: {code}");
+
+                // Show the code for 5 seconds — it's also visible in the pre-game lobby
+                await System.Threading.Tasks.Task.Delay(5000);
                 UIManager.Instance.GoTo("Login");
             }
             catch (Exception ex)
@@ -124,7 +126,7 @@ namespace ArmsFair.UI
             _hostStatusLabel.style.display = DisplayStyle.Flex;
 
             // Route all traffic through VPS relay — no IP lookup, no port forwarding needed
-            var relayBase = $"https://armsfair.laynekudo.com/relay/{code}";
+            var relayBase = $"https://armsfair.laynekudo.com/arms-relay/{code}";
 
             try
             {

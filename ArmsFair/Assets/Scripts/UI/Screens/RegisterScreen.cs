@@ -71,6 +71,7 @@ namespace ArmsFair.UI
             }
             catch (System.Exception ex)
             {
+                Debug.LogError($"[RegisterScreen] Register failed: {ex.Message}");
                 _errorLabel.text = ex.Message.Contains("409") ? "USERNAME OR EMAIL TAKEN"
                                  : ex.Message.Contains("400") ? "INVALID INPUT"
                                  : "CONNECTION ERROR";

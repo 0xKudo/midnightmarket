@@ -36,8 +36,15 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<RelayTunnelService
 builder.Services.AddSignalR();
 
 // ── JWT Auth ────────────────────────────────────────────────────────────────
+var jwtKeyFile = Path.Combine(dbDir, "jwt-key.txt");
 var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key is not configured");
+    ?? (File.Exists(jwtKeyFile)
+        ? File.ReadAllText(jwtKeyFile).Trim()
+        : GenerateAndSaveJwtKey(jwtKeyFile));
+
+// Ensure AuthService (and any other service reading config) sees the resolved key
+builder.Configuration.AddInMemoryCollection(
+    new Dictionary<string, string?> { ["Jwt:Key"] = jwtKey });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -238,6 +245,13 @@ app.MapGet("/relay-code", (RelayTunnelService relay) =>
 app.Run();
 
 // ── Request types ─────────────────────────────────────────────────────────────
+static string GenerateAndSaveJwtKey(string path)
+{
+    var key = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+    File.WriteAllText(path, key);
+    return key;
+}
+
 record RegisterRequest(string Username, string? Email, string Password);
 record LoginRequest(string UsernameOrEmail, string Password);
 record UpdateProfileRequest(string? HomeNationIso, string? CompanyName);

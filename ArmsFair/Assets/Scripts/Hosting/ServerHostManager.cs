@@ -46,11 +46,15 @@ namespace ArmsFair.Hosting
                     Arguments              = $"--urls http://0.0.0.0:{_serverPort}",
                     UseShellExecute        = false,
                     CreateNoWindow         = true,
-                    RedirectStandardOutput = false,
-                    RedirectStandardError  = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError  = true,
                 }
             };
+            _serverProcess.OutputDataReceived += (_, e) => { if (e.Data != null) UnityEngine.Debug.Log($"[Server] {e.Data}"); };
+            _serverProcess.ErrorDataReceived  += (_, e) => { if (e.Data != null) UnityEngine.Debug.LogError($"[Server] {e.Data}"); };
             _serverProcess.Start();
+            _serverProcess.BeginOutputReadLine();
+            _serverProcess.BeginErrorReadLine();
 
             UnityEngine.Debug.Log($"[ServerHostManager] Server started on port {_serverPort} (pid {_serverProcess.Id})");
 

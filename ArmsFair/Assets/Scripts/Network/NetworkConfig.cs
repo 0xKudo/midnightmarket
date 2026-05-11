@@ -13,9 +13,6 @@ namespace ArmsFair.Network
         // Full SignalR hub URL, derived from ServerBaseUrl
         public static string GameHubUrl => ServerBaseUrl.TrimEnd('/') + "/gamehub";
 
-        // Relay API on the Hostinger VPS — maps invite codes to host IP:port
-        public const string RelayBaseUrl = "https://armsfair.laynekudo.com/arms-invite";
-
         // Relay invite code for this session (set when host registers with relay)
         public static string RelayCode { get; set; } = "";
 
