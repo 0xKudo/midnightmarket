@@ -423,6 +423,10 @@ namespace ArmsFair.UI
         {
             _timerRunning = false;
 
+            // Disable globe interaction permanently for the rest of this session
+            if (ArmsFair.Map.GlobeBridge.Instance != null)
+                ArmsFair.Map.GlobeBridge.Instance.BlockInput = true;
+
             var overlay = new VisualElement();
             overlay.style.position        = Position.Absolute;
             overlay.style.top             = 0;
@@ -432,6 +436,13 @@ namespace ArmsFair.UI
             overlay.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.88f));
             overlay.style.alignItems      = Align.Center;
             overlay.style.justifyContent  = Justify.Center;
+
+            var worldDestroyed = new Label("WORLD DESTROYED!");
+            worldDestroyed.style.fontSize     = 20;
+            worldDestroyed.style.color        = new StyleColor(new Color(0.75f, 0.2f, 0.2f));
+            worldDestroyed.style.marginBottom = 8;
+            worldDestroyed.style.unityFontStyleAndWeight = FontStyle.Bold;
+            overlay.Add(worldDestroyed);
 
             var title = new Label(EndingTitle(msg.EndingType));
             title.style.fontSize     = 28;
@@ -444,7 +455,15 @@ namespace ArmsFair.UI
             {
                 foreach (var s in msg.FinalScores.OrderByDescending(s => s.Composite))
                 {
-                    var row = new Label($"{s.CompanyName}   ${s.Profit}M   REP {s.Reputation}   SCORE {s.Composite}");
+                    var name = s.CompanyName;
+                    // Try to enrich with username from last known state
+                    var profile = _lastState?.Players.FirstOrDefault(p => p.Id == s.PlayerId);
+                    if (profile != null && !string.IsNullOrEmpty(profile.CompanyName))
+                        name = $"{profile.CompanyName} ({profile.Username})";
+                    else if (profile != null)
+                        name = profile.Username;
+
+                    var row = new Label($"{name}   ${s.Profit}M   REP {s.Reputation}   SCORE {s.Composite}");
                     row.style.fontSize     = 14;
                     row.style.color        = new StyleColor(Color.white);
                     row.style.marginBottom = 4;
@@ -452,11 +471,25 @@ namespace ArmsFair.UI
                 }
             }
 
-            var btn = new Button(() => UIManager.Instance.GoTo("MainMenu")) { text = "RETURN TO MENU" };
-            btn.style.marginTop      = 24;
-            btn.style.paddingLeft    = btn.style.paddingRight  = 20;
-            btn.style.paddingTop     = btn.style.paddingBottom = 8;
-            overlay.Add(btn);
+            var btnRow = new VisualElement();
+            btnRow.style.flexDirection = FlexDirection.Row;
+            btnRow.style.marginTop     = 24;
+            btnRow.style.justifyContent = Justify.Center;
+
+            var menuBtn = new Button(() => UIManager.Instance.GoTo("MainMenu")) { text = "MAIN MENU" };
+            menuBtn.style.paddingLeft    = menuBtn.style.paddingRight  = 20;
+            menuBtn.style.paddingTop     = menuBtn.style.paddingBottom = 8;
+            menuBtn.style.marginRight    = 12;
+            TerminalUI.StyleButton(menuBtn);
+
+            var lobbyBtn = new Button(() => UIManager.Instance.GoTo("RoomList")) { text = "LOBBY" };
+            lobbyBtn.style.paddingLeft    = lobbyBtn.style.paddingRight  = 20;
+            lobbyBtn.style.paddingTop     = lobbyBtn.style.paddingBottom = 8;
+            TerminalUI.StyleButton(lobbyBtn);
+
+            btnRow.Add(menuBtn);
+            btnRow.Add(lobbyBtn);
+            overlay.Add(btnRow);
 
             _root.Add(overlay);
         }
@@ -639,7 +672,7 @@ namespace ArmsFair.UI
 
             _cardIso = iso;
             if (_cardCountryName  != null) _cardCountryName.text  = country.Name?.ToUpper() ?? iso;
-            if (_cardStageLabel   != null) _cardStageLabel.text   = $"STAGE: {country.Stage}";
+            if (_cardStageLabel   != null) _cardStageLabel.text   = $"STAGE: {StageDisplay(country.Stage).ToUpper()}";
             if (_cardTensionLabel != null) _cardTensionLabel.text = $"TENSION: {country.Tension}";
 
             // Show SELL TO only during sales phase
@@ -748,7 +781,7 @@ namespace ArmsFair.UI
                     else
                     {
                         var weaponStr  = action.WeaponCategory.HasValue
-                            ? WeaponCatalog.Items.FirstOrDefault(i => i.Category == action.WeaponCategory.Value)?.DisplayName ?? action.WeaponCategory.Value.ToString()
+                            ? WeaponCatalog.Items.FirstOrDefault(i => i.Category == action.WeaponCategory.Value)?.DisplayName ?? WeaponDisplay(action.WeaponCategory.Value)
                             : "?";
                         var countryStr = action.TargetIso != null
                             ? (_lastState?.Countries.FirstOrDefault(c => c.Iso == action.TargetIso)?.Name ?? action.TargetIso)
@@ -1398,7 +1431,7 @@ namespace ArmsFair.UI
                         var company = (player?.CompanyName ?? player?.Username ?? action.PlayerId).ToUpper();
                         var detail  = action.SaleType == SaleType.PeaceBroker
                             ? "PEACE BROKER"
-                            : $"{action.SaleType.ToString().ToUpper()}  {action.WeaponCategory?.ToString() ?? "?"}  ->  {action.TargetIso ?? "?"}";
+                            : $"{action.SaleType.ToString().ToUpper()}  {(action.WeaponCategory.HasValue ? WeaponDisplay(action.WeaponCategory.Value) : "?")}  ->  {action.TargetIso ?? "?"}";
                         _negoRevealList.Add(MakeOverlayRowLabel($"{company}  {detail}"));
                     }
                 }
@@ -1637,7 +1670,7 @@ namespace ArmsFair.UI
                     var parts = chosen.Select(kv =>
                     {
                         var e = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
-                        return kv.Value > 1 ? $"{e?.DisplayName} x{kv.Value}" : e?.DisplayName ?? kv.Key.ToString();
+                        return kv.Value > 1 ? $"{e?.DisplayName} x{kv.Value}" : e?.DisplayName ?? WeaponDisplay(kv.Key);
                     });
                     _weaponPickerBtn.text = string.Join(", ", parts);
                 }
@@ -1907,7 +1940,7 @@ namespace ArmsFair.UI
 
             panel.Add(MakeModalTitle("Confirm Sales Order"));
 
-            AddModalRow(panel, "SALE TYPE", _selectedSaleType.ToString().ToUpper());
+            AddModalRow(panel, "SALE TYPE", SaleTypeDisplay(_selectedSaleType).ToUpper());
             foreach (var kv in _salesOrder.Where(kv => kv.Value > 0))
             {
                 var e = WeaponCatalog.Items.FirstOrDefault(i => i.Category == kv.Key);
@@ -2289,6 +2322,36 @@ namespace ArmsFair.UI
             _lastState    = null;
             UIManager.Instance.GoTo("MainMenu");
         }
+
+        private static string WeaponDisplay(WeaponCategory cat) => cat switch
+        {
+            WeaponCategory.SmallArms        => "Small Arms",
+            WeaponCategory.CombatHelicopters => "Combat Helicopters",
+            WeaponCategory.FighterJets      => "Fighter Jets",
+            WeaponCategory.AirDefense       => "Air Defense",
+            WeaponCategory.CruiseMissiles   => "Cruise Missiles",
+            WeaponCategory.IcbmComponents   => "ICBM Components",
+            WeaponCategory.NuclearWarhead   => "Nuclear Warhead",
+            WeaponCategory.FissileMaterials => "Fissile Materials",
+            _                               => cat.ToString()
+        };
+
+        private static string StageDisplay(CountryStage stage) => stage switch
+        {
+            CountryStage.HotWar             => "Hot War",
+            CountryStage.HumanitarianCrisis => "Humanitarian Crisis",
+            CountryStage.FailedState        => "Failed State",
+            _                               => stage.ToString()
+        };
+
+        private static string SaleTypeDisplay(SaleType t) => t switch
+        {
+            SaleType.Open        => "Open",
+            SaleType.Covert      => "Covert",
+            SaleType.AidCover    => "Aid Cover",
+            SaleType.PeaceBroker => "Peace Broker",
+            _                    => t.ToString()
+        };
     }
 }
 

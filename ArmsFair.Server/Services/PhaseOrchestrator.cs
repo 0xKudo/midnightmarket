@@ -297,7 +297,7 @@ public class PhaseOrchestrator(
     private async Task TriggerEndingAsync(string gameId, GameState state, EndingCondition ending)
     {
         var scores = state.Players.Select(p => new FinalScore(
-            p.Id, p.CompanyName ?? p.Id,
+            p.Id, p.CompanyName ?? p.Username ?? p.Id,
             Profit    : p.Capital,
             Reputation: p.Reputation,
             Composite : p.Capital * p.Reputation / 100L,
