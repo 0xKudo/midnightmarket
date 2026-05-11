@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using WPM;
 using UnityEngine;
 using ArmsFair.Shared.Enums;
@@ -21,8 +22,9 @@ namespace ArmsFair.Map
 
         private WorldMapGlobe _map;
         private IEnumerable<CountryState> _pendingCountries; // cached so InitWPM can replay after WPM is ready
-        private int _lastFiredClickIndex = -1; // tracks last consumed click to suppress stale re-fires
-        private int _lastHoveredIndex = -1;   // tracks last hovered country for stage-tinted hover color
+        private int _lastFiredClickIndex = -1;
+        private int _lastHoveredIndex   = -1;
+        private Coroutine _arcCoroutine;
 
         // ISO code → WPM country name
         private readonly Dictionary<string, string> _isoToWpm = new();
@@ -32,6 +34,16 @@ namespace ArmsFair.Map
         private readonly Dictionary<string, Color> _stageColors = new();
 
         private static readonly Color _defaultHoverColor = new Color(138f / 255f, 184f / 255f, 112f / 255f, 0.55f);
+
+        private static readonly Color[] _playerArcColors =
+        {
+            new Color(0.25f, 0.75f, 1.00f, 0.90f), // cyan
+            new Color(1.00f, 0.40f, 0.25f, 0.90f), // orange-red
+            new Color(0.90f, 0.85f, 0.20f, 0.90f), // yellow
+            new Color(0.75f, 0.30f, 0.90f, 0.90f), // purple
+            new Color(0.25f, 0.90f, 0.55f, 0.90f), // green
+            new Color(0.95f, 0.35f, 0.70f, 0.90f), // pink
+        };
 
         // WPM uses different names than the server for these countries
         private static readonly Dictionary<string, string> _wpmNameToIso =
@@ -304,7 +316,51 @@ namespace ArmsFair.Map
                 SetCountryStage(c.Iso, c.Stage);
         }
 
-        public void PlayArcs(List<ArcAnimation> arcs, IReadOnlyList<PlayerProfile> players) { }
+        public void PlayArcs(List<ArcAnimation> arcs, IReadOnlyList<PlayerProfile> players)
+        {
+            if (_map == null) return;
+            if (_arcCoroutine != null) StopCoroutine(_arcCoroutine);
+            _map.ClearLineMarkers();
+            if (arcs == null || arcs.Count == 0) return;
+            _arcCoroutine = StartCoroutine(RunArcs(arcs, players));
+        }
+
+        private IEnumerator RunArcs(List<ArcAnimation> arcs, IReadOnlyList<PlayerProfile> players)
+        {
+            // Build player index map so each player gets a consistent color
+            var playerColorIndex = new Dictionary<string, int>();
+            if (players != null)
+                for (int i = 0; i < players.Count; i++)
+                    playerColorIndex[players[i].Id] = i;
+
+            int prevDelay = 0;
+            foreach (var arc in arcs.OrderBy(a => a.DelayMs))
+            {
+                int waitMs = arc.DelayMs - prevDelay;
+                if (waitMs > 0) yield return new WaitForSeconds(waitMs / 1000f);
+                prevDelay = arc.DelayMs;
+
+                PlayerProfile profile = null;
+                if (players != null)
+                    foreach (var p in players) { if (p.Id == arc.PlayerId) { profile = p; break; } }
+                if (profile == null) continue;
+
+                if (!_isoToWpm.TryGetValue(profile.HomeNation, out var srcWpm)) continue;
+                if (!_isoToWpm.TryGetValue(arc.TargetIso,     out var dstWpm)) continue;
+
+                int srcIdx = _map.GetCountryIndex(srcWpm);
+                int dstIdx = _map.GetCountryIndex(dstWpm);
+                if (srcIdx < 0 || dstIdx < 0) continue;
+
+                var start      = _map.countries[srcIdx].center;
+                var end        = _map.countries[dstIdx].center;
+                int colorIndex = playerColorIndex.TryGetValue(arc.PlayerId, out var ci) ? ci : 0;
+                var color      = _playerArcColors[colorIndex % _playerArcColors.Length];
+
+                _map.AddLine(start, end, color, 0.3f, 1.5f, 0.002f, 4f);
+            }
+            _arcCoroutine = null;
+        }
 
         public void FlyToCountry(string iso)
         {
