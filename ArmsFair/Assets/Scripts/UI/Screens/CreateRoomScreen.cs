@@ -180,13 +180,13 @@ namespace ArmsFair.UI
                 btn.style.borderBottomWidth = 1;
                 btn.style.borderLeftWidth   = 1;
                 btn.style.borderRightWidth  = 1;
-                btn.style.paddingTop        = 7;
-                btn.style.paddingBottom     = 7;
-                btn.style.paddingLeft       = 10;
-                btn.style.paddingRight      = 10;
+                btn.style.paddingTop        = 10;
+                btn.style.paddingBottom     = 10;
+                btn.style.paddingLeft       = 12;
+                btn.style.paddingRight      = 12;
                 btn.style.marginBottom      = 4;
-                btn.style.fontSize          = 12;
-                btn.style.unityTextAlign    = TextAnchor.MiddleLeft;
+                btn.style.fontSize          = 15;
+                btn.style.unityTextAlign    = TextAnchor.MiddleCenter;
                 btn.style.whiteSpace        = WhiteSpace.NoWrap;
 
                 btn.RegisterCallback<PointerEnterEvent>(_ =>

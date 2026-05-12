@@ -8,9 +8,9 @@ namespace ArmsFair.Network
     {
         private void Start()
         {
-            // Always start at HostOrJoin — each session targets a specific peer server,
-            // so stored JWTs from previous sessions are never valid here.
-            UIManager.Instance.GoTo("HostOrJoin");
+            // Always start at Login — stored JWTs from previous sessions are never valid
+            // across peer-hosted sessions (different server key each run).
+            UIManager.Instance.GoTo("Login");
         }
     }
 }

@@ -57,7 +57,7 @@
 
         <!-- Sales Phase Panel -->
         <ui:VisualElement name="SalesPanel" style="display:none; flex-direction:column; padding:16px;">
-          <ui:Label text="Submit Sales Order" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
+          <ui:Label text="SUBMIT SALES ORDER" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
           <ui:Label text="SALE TYPE" style="font-size:14px; color:rgb(138,134,112); margin-bottom:5px;" />
           <ui:VisualElement name="SaleTypeRow" style="flex-direction:row; margin-bottom:12px;" />
           <ui:VisualElement name="WeaponRow" style="flex-direction:row; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -111,7 +111,7 @@
         </ui:VisualElement>
 
         <!-- Consequences Phase Panel -->
-        <ui:VisualElement name="ConsequencesPanel" style="display:none; flex-direction:column; padding:16px;">
+        <ui:VisualElement name="ConsequencesPanel" style="display:none; flex-direction:column; padding:16px; flex-grow:1; overflow:hidden;">
           <ui:Label text="CONSEQUENCES" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
           <ui:Label text="PROFIT" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
           <ui:ScrollView name="ProfitList" style="height:88px; margin-bottom:8px;" />
@@ -127,7 +127,7 @@
 
         <!-- Procurement Phase Panel -->
         <ui:VisualElement name="ProcurementPanel" style="display:none; flex-direction:column; padding:16px;">
-          <ui:Label text="Purchase Weapons" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
+          <ui:Label text="PURCHASE WEAPONS" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
           <ui:ScrollView name="WeaponList" style="height:240px;" />
           <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-top:10px; margin-bottom:10px;" />
           <ui:VisualElement style="flex-direction:row; justify-content:space-between; margin-bottom:10px;">

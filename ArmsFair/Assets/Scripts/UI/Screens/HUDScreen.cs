@@ -172,8 +172,14 @@ namespace ArmsFair.UI
             _phaseStatusLabel   = _root.Q<Label>("PhaseStatusLabel");
             _statusLabel        = _root.Q<Label>("StatusLabel");
 
-            _root.Q<Button>("LeaveGameBtn").clicked += OnLeaveGame;
-            TerminalUI.StyleDangerButton(_root.Q<Button>("LeaveGameBtn"));
+            var leaveBtn = _root.Q<Button>("LeaveGameBtn");
+            leaveBtn.clicked += OnLeaveGame;
+            TerminalUI.StyleDangerButton(leaveBtn);
+            leaveBtn.style.paddingTop    = 4;
+            leaveBtn.style.paddingBottom = 4;
+            leaveBtn.style.paddingLeft   = 12;
+            leaveBtn.style.paddingRight  = 12;
+            leaveBtn.style.fontSize      = 15;
 
             _readyBtn = _root.Q<Button>("ReadyBtn");
             if (_readyBtn != null) { _readyBtn.clicked += OnReadyClicked; TerminalUI.AddHover(_readyBtn); }
@@ -946,7 +952,7 @@ namespace ArmsFair.UI
                     btn.style.marginRight     = 3;
                     btn.style.paddingTop      = 5;
                     btn.style.paddingBottom   = 5;
-                    btn.style.fontSize        = 13;
+                    btn.style.fontSize        = 15;
                     btn.style.unityTextAlign  = TextAnchor.MiddleCenter;
                     TerminalUI.AddHover(btn);
                     _procTabBar.Add(btn);
@@ -1133,7 +1139,7 @@ namespace ArmsFair.UI
             var btn = new Button { text = "MAX" };
             btn.style.width           = 40;
             btn.style.height          = 26;
-            btn.style.fontSize = 14;
+            btn.style.fontSize        = 14;
             btn.style.paddingTop      = 0;
             btn.style.paddingBottom   = 0;
             btn.style.paddingLeft     = 2;
@@ -1148,6 +1154,16 @@ namespace ArmsFair.UI
                 new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
             btn.style.borderTopWidth  = btn.style.borderBottomWidth =
             btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
+            btn.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                btn.style.backgroundColor = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+                btn.style.color           = new StyleColor(new Color(0.051f, 0.051f, 0.031f));
+            });
+            btn.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                btn.style.backgroundColor = new StyleColor(new Color(15f/255f, 25f/255f, 8f/255f));
+                btn.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            });
             return btn;
         }
 
@@ -1390,11 +1406,20 @@ namespace ArmsFair.UI
                 {
                     var t   = types[i];
                     var btn = new Button { text = labels[i] };
-                    btn.style.fontSize = 15;
-                    btn.style.paddingTop    = 5; btn.style.paddingBottom = 5;
-                    btn.style.paddingLeft   = 8; btn.style.paddingRight  = 8;
-                    btn.style.marginRight   = 6;
+                    btn.style.fontSize       = 15;
+                    btn.style.paddingTop     = 5; btn.style.paddingBottom = 5;
+                    btn.style.paddingLeft    = 8; btn.style.paddingRight  = 8;
+                    btn.style.marginRight    = 6;
+                    btn.style.unityTextAlign = TextAnchor.MiddleCenter;
                     StyleSaleTypeBtn(btn, selected: t == SaleType.Open);
+                    btn.RegisterCallback<PointerEnterEvent>(_ =>
+                    {
+                        if (!btn.enabledSelf) return;
+                        btn.style.backgroundColor = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
+                        btn.style.color           = new StyleColor(new Color(0.051f, 0.051f, 0.031f));
+                    });
+                    btn.RegisterCallback<PointerLeaveEvent>(_ =>
+                        StyleSaleTypeBtn(btn, btn == _saleTypeBtns.GetValueOrDefault(_selectedSaleType)));
                     btn.clicked += () => OnSaleTypeChanged(t);
                     _saleTypeBtns[t] = btn;
                     _saleTypeRow.Add(btn);
