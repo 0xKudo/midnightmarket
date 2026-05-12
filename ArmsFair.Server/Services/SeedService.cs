@@ -289,8 +289,9 @@ public class SeedService(
 
     private static List<CountryState> BaseCountryList() =>
     [
-        Make("AFG", "Afghanistan"), Make("DZA", "Algeria"),  Make("AGO", "Angola"),
-        Make("ARG", "Argentina"),   Make("ARM", "Armenia"),   Make("AUS", "Australia"),
+        Make("AFG", "Afghanistan"), Make("ALB", "Albania"),   Make("DZA", "Algeria"),
+        Make("AGO", "Angola"),      Make("AND", "Andorra"),   Make("ARG", "Argentina"),
+        Make("ARM", "Armenia"),     Make("AUS", "Australia"),
         Make("AUT", "Austria"),     Make("AZE", "Azerbaijan"),Make("BHS", "Bahamas"),
         Make("BHR", "Bahrain"),     Make("BGD", "Bangladesh"),Make("BLR", "Belarus"),
         Make("BEL", "Belgium"),     Make("BLZ", "Belize"),    Make("BEN", "Benin"),
@@ -330,6 +331,7 @@ public class SeedService(
         Make("NIC", "Nicaragua"),   Make("NER", "Niger"),     Make("NGA", "Nigeria"),
         Make("MKD", "North Macedonia"),Make("NOR", "Norway"),Make("OMN", "Oman"),
         Make("PAK", "Pakistan"),    Make("PAN", "Panama"),    Make("PNG", "Papua New Guinea"),
+        Make("PSE", "Palestine"),
         Make("PRY", "Paraguay"),    Make("PER", "Peru"),      Make("PHL", "Philippines"),
         Make("POL", "Poland"),      Make("PRT", "Portugal"),  Make("QAT", "Qatar"),
         Make("ROU", "Romania"),     Make("RUS", "Russia"),    Make("RWA", "Rwanda"),
@@ -337,7 +339,7 @@ public class SeedService(
         Make("SLE", "Sierra Leone"),Make("SGP", "Singapore"),  Make("SVK", "Slovakia"),
         Make("SVN", "Slovenia"),    Make("SOM", "Somalia"),   Make("ZAF", "South Africa"),
         Make("SSD", "South Sudan"), Make("ESP", "Spain"),     Make("LKA", "Sri Lanka"),
-        Make("SDN", "Sudan"),       Make("SUR", "Suriname"),  Make("SWE", "Sweden"),
+        Make("SDN", "Sudan"),       Make("SUR", "Suriname"),  Make("SWE", "Sweden"),    Make("ESH", "Western Sahara"),
         Make("CHE", "Switzerland"),  Make("SYR", "Syria"),    Make("TWN", "Taiwan"),
         Make("TJK", "Tajikistan"),   Make("TZA", "Tanzania"), Make("THA", "Thailand"),
         Make("TLS", "Timor-Leste"),  Make("TGO", "Togo"),     Make("TTO", "Trinidad and Tobago"),
