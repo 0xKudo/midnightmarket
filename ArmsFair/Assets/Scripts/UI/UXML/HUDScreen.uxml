@@ -17,7 +17,6 @@
       <ui:Label name="PhaseLabel" text="â€”" style="font-size:21px; color:rgb(138,184,112); -unity-font-style:bold; white-space:nowrap; flex-grow:1;" />
       <ui:Label name="TimerLabel" text="--:--" style="font-size:16px; color:rgb(212,207,184); white-space:nowrap; margin-right:16px;" />
       <ui:Label name="RoundLabel" text="ROUND --" style="font-size:15px; color:rgb(138,134,112); margin-right:14px; white-space:nowrap;" />
-      <ui:Button name="ReadyBtn" text="READY" style="color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:12px; padding-right:12px; font-size:15px; margin-right:8px;" />
       <ui:Button name="LeaveGameBtn" text="LEAVE" style="color:rgb(192,144,144); background-color:rgb(15,15,8); border-color:rgb(90,42,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:12px; padding-right:12px; font-size:15px;" />
     </ui:VisualElement>
 
@@ -31,7 +30,7 @@
     </ui:VisualElement>
 
     <!-- Player stats bar -->
-    <ui:VisualElement name="PlayerStatsBar" style="flex-direction:row; align-items:center; background-color:rgba(17,17,8,210); border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-left:16px; padding-right:16px; padding-top:4px; padding-bottom:4px;">
+    <ui:VisualElement name="PlayerStatsBar" style="flex-direction:row; align-items:center; justify-content:center; background-color:rgba(17,17,8,210); border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-left:16px; padding-right:16px; padding-top:4px; padding-bottom:4px;">
       <ui:Label text="BROKERAGE" style="font-size:13px; color:rgb(138,134,112); margin-right:5px; white-space:nowrap;" />
       <ui:Label name="CompanyLabel" text="â€”" style="font-size:15px; color:rgb(138,184,112); -unity-font-style:bold; margin-right:18px; white-space:nowrap;" />
       <ui:VisualElement style="width:1px; background-color:rgb(58,58,42); align-self:stretch; margin-right:18px;" />
@@ -72,19 +71,20 @@
           <ui:Label name="SaleEstimateLabel" text="" style="font-size:14px; color:rgb(138,134,112); margin-bottom:6px;" />
           <ui:Label name="PeaceBrokerNote" text="Costs $2M. Earns 1 peace credit. No weapon or target required." style="font-size:14px; color:rgb(138,184,112); display:none; margin-bottom:10px; white-space:normal;" />
           <ui:Label name="SaleErrorLabel" text="" style="font-size:15px; color:rgb(192,100,100); display:none; margin-bottom:6px;" />
-          <ui:VisualElement style="flex-direction:row;">
-            <ui:Button name="PassSaleBtn"   text="PASS"         style="flex-grow:1; margin-right:8px; font-size:15px; color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:7px; padding-bottom:7px;" />
-            <ui:Button name="SubmitSaleBtn" text="SUBMIT ORDER" style="flex-grow:1; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px;" />
+          <ui:VisualElement style="flex-direction:row; margin-bottom:8px;">
+            <ui:Button name="PassSaleBtn"   text="SKIP"         style="flex-grow:1; margin-right:8px; font-size:15px; color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
+            <ui:Button name="SubmitSaleBtn" text="SUBMIT ORDER" style="flex-grow:1; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
           </ui:VisualElement>
+          <ui:Button name="SalesReadyBtn" class="phase-ready-btn" text="READY" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
         </ui:VisualElement>
 
         <!-- Negotiation Phase Panel -->
         <ui:VisualElement name="NegotiationPanel" style="display:none; flex-direction:column; padding:16px;">
           <ui:Label text="NEGOTIATION" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:10px;" />
           <ui:VisualElement name="NegoTabRow" style="flex-direction:row; margin-bottom:12px; border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-bottom:8px;">
-            <ui:Button name="NegoIntelBtn"  text="INTEL"  style="margin-right:6px; font-size:14px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px;" />
-            <ui:Button name="NegoPeaceBtn"  text="PEACE"  style="margin-right:6px; font-size:14px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px;" />
-            <ui:Button name="NegoTreatyBtn" text="TREATY" style="font-size:14px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px;" />
+            <ui:Button name="NegoIntelBtn"  text="INTEL"  style="margin-right:6px; font-size:14px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px; -unity-text-align:middle-center;" />
+            <ui:Button name="NegoPeaceBtn"  text="PEACE"  style="margin-right:6px; font-size:14px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px; -unity-text-align:middle-center;" />
+            <ui:Button name="NegoTreatyBtn" text="TREATY" style="font-size:14px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px; -unity-text-align:middle-center;" />
           </ui:VisualElement>
           <ui:VisualElement name="NegoIntelTab" style="flex-direction:column;">
             <ui:Label text="WORLD TRACKS" style="font-size:13px; color:rgb(138,184,112); margin-bottom:3px;" />
@@ -95,10 +95,15 @@
           <ui:VisualElement name="NegoPeaceTab" style="display:none; flex-direction:column;">
             <ui:Label name="CeaseFireVotersLabel" text="CEASE-FIRE VOTES: 0" style="font-size:15px; color:rgb(212,207,184); margin-bottom:8px;" />
             <ui:Label text="Requires all active players. Instability must be below 20." style="font-size:13px; color:rgb(138,134,112); margin-bottom:14px; white-space:normal;" />
-            <ui:Button name="VoteCeaseFireBtn" text="VOTE CEASE-FIRE" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px;" />
+            <ui:Button name="VoteCeaseFireBtn" text="VOTE CEASE-FIRE" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
           </ui:VisualElement>
-          <ui:VisualElement name="NegoTreatyTab" style="display:none; flex-direction:column;">
-            <ui:Label text="TREATY PROPOSALS â€” COMING SOON" style="font-size:15px; color:rgb(138,134,112);" />
+          <ui:VisualElement name=”NegoTreatyTab” style=”display:none; flex-direction:column;”>
+            <ui:Label text=”TREATY PROPOSALS -> COMING SOON” style=”font-size:15px; color:rgb(138,134,112);” />
+          </ui:VisualElement>
+          <ui:VisualElement style=”height:1px; background-color:rgb(58,58,42); margin-top:10px; margin-bottom:10px;” />
+          <ui:VisualElement style=”flex-direction:row;”>
+            <ui:Button name=”SkipNegoBtn” text=”SKIP”  style=”flex-grow:1; margin-right:8px; font-size:15px; color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;” />
+            <ui:Button name=”NegoReadyBtn” class=”phase-ready-btn” text=”READY” style=”flex-grow:1; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;” />
           </ui:VisualElement>
         </ui:VisualElement>
 
@@ -107,11 +112,11 @@
           <ui:Label text="ROUND REVEAL" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
           <ui:ScrollView name="RevealList" style="height:260px;" />
           <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-top:10px; margin-bottom:10px;" />
-          <ui:Button name="RevealCloseBtn" text="CLOSE" style="font-size:15px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:7px; padding-bottom:7px;" />
+          <ui:Button name="RevealReadyBtn" class="phase-ready-btn" text="READY" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
         </ui:VisualElement>
 
         <!-- Consequences Phase Panel -->
-        <ui:VisualElement name="ConsequencesPanel" style="display:none; flex-direction:column; padding:16px; flex-grow:1; overflow:hidden;">
+        <ui:VisualElement name="ConsequencesPanel" style="display:none; flex-direction:column; padding:16px; overflow:hidden;">
           <ui:Label text="CONSEQUENCES" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
           <ui:Label text="PROFIT" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
           <ui:ScrollView name="ProfitList" style="height:88px; margin-bottom:8px;" />
@@ -122,7 +127,7 @@
           <ui:Label text="SHARE PRICE" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
           <ui:ScrollView name="SharePriceList" style="height:68px; margin-bottom:8px;" />
           <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-top:3px; margin-bottom:10px;" />
-          <ui:Button name="ConsequencesCloseBtn" text="CLOSE" style="font-size:15px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:7px; padding-bottom:7px;" />
+          <ui:Button name="ConsequencesReadyBtn" class="phase-ready-btn" text="READY" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
         </ui:VisualElement>
 
         <!-- Procurement Phase Panel -->
@@ -135,7 +140,11 @@
             <ui:Label name="ProcTotalLabel" text="$0M" style="font-size:16px; color:rgb(212,207,184);" />
           </ui:VisualElement>
           <ui:Label name="ProcErrorLabel" text="" style="font-size:15px; color:rgb(192,100,100); display:none; margin-bottom:6px;" />
-          <ui:Button name="ConfirmProcBtn" text="CONFIRM ORDERS" style="font-size:16px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:9px; padding-bottom:9px;" />
+          <ui:Button name="ConfirmProcBtn" text="CONFIRM ORDERS" style="font-size:16px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:9px; padding-bottom:9px; -unity-text-align:middle-center; margin-bottom:8px;" />
+          <ui:VisualElement style="flex-direction:row;">
+            <ui:Button name="SkipProcBtn" text="SKIP"  style="flex-grow:1; margin-right:8px; font-size:15px; color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
+            <ui:Button name="ProcReadyBtn" class="phase-ready-btn" text="READY" style="flex-grow:1; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
+          </ui:VisualElement>
         </ui:VisualElement>
 
       </ui:VisualElement><!-- end LeftColumn -->
