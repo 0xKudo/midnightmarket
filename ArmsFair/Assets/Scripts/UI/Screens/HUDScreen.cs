@@ -180,6 +180,7 @@ namespace ArmsFair.UI
             leaveBtn.style.paddingLeft   = 12;
             leaveBtn.style.paddingRight  = 12;
             leaveBtn.style.fontSize      = 15;
+            leaveBtn.style.marginBottom  = 0;
 
             _readyBtn = _root.Q<Button>("ReadyBtn");
             if (_readyBtn != null) { _readyBtn.clicked += OnReadyClicked; TerminalUI.AddHover(_readyBtn); }
