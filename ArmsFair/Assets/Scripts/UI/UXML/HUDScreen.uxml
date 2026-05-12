@@ -75,7 +75,7 @@
             <ui:Button name="PassSaleBtn"   text="SKIP"         style="flex-grow:1; margin-right:8px; font-size:15px; color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
             <ui:Button name="SubmitSaleBtn" text="SUBMIT ORDER" style="flex-grow:1; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
           </ui:VisualElement>
-          <ui:Button name="ReadyBtn" text="READY" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
+          <ui:Button name="SalesReadyBtn" class="phase-ready-btn" text="READY" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
         </ui:VisualElement>
 
         <!-- Negotiation Phase Panel -->
@@ -103,7 +103,7 @@
           <ui:VisualElement style=”height:1px; background-color:rgb(58,58,42); margin-top:10px; margin-bottom:10px;” />
           <ui:VisualElement style=”flex-direction:row;”>
             <ui:Button name=”SkipNegoBtn” text=”SKIP”  style=”flex-grow:1; margin-right:8px; font-size:15px; color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;” />
-            <ui:Button name=”ReadyBtn”    text=”READY” style=”flex-grow:1; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;” />
+            <ui:Button name=”NegoReadyBtn” class=”phase-ready-btn” text=”READY” style=”flex-grow:1; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;” />
           </ui:VisualElement>
         </ui:VisualElement>
 
@@ -112,7 +112,7 @@
           <ui:Label text="ROUND REVEAL" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
           <ui:ScrollView name="RevealList" style="height:260px;" />
           <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-top:10px; margin-bottom:10px;" />
-          <ui:Button name="ReadyBtn" text="READY" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
+          <ui:Button name="RevealReadyBtn" class="phase-ready-btn" text="READY" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
         </ui:VisualElement>
 
         <!-- Consequences Phase Panel -->
@@ -127,7 +127,7 @@
           <ui:Label text="SHARE PRICE" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
           <ui:ScrollView name="SharePriceList" style="height:68px; margin-bottom:8px;" />
           <ui:VisualElement style="height:1px; background-color:rgb(58,58,42); margin-top:3px; margin-bottom:10px;" />
-          <ui:Button name="ReadyBtn" text="READY" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
+          <ui:Button name="ConsequencesReadyBtn" class="phase-ready-btn" text="READY" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
         </ui:VisualElement>
 
         <!-- Procurement Phase Panel -->
@@ -143,7 +143,7 @@
           <ui:Button name="ConfirmProcBtn" text="CONFIRM ORDERS" style="font-size:16px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:9px; padding-bottom:9px; -unity-text-align:middle-center; margin-bottom:8px;" />
           <ui:VisualElement style="flex-direction:row;">
             <ui:Button name="SkipProcBtn" text="SKIP"  style="flex-grow:1; margin-right:8px; font-size:15px; color:rgb(138,134,112); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
-            <ui:Button name="ReadyBtn"    text="READY" style="flex-grow:1; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
+            <ui:Button name="ProcReadyBtn" class="phase-ready-btn" text="READY" style="flex-grow:1; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
           </ui:VisualElement>
         </ui:VisualElement>
 

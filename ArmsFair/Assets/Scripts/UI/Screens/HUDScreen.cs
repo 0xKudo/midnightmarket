@@ -181,7 +181,7 @@ namespace ArmsFair.UI
             leaveBtn.style.paddingRight  = 12;
             leaveBtn.style.fontSize      = 15;
 
-            _root.Query<Button>("ReadyBtn").ForEach(btn =>
+            _root.Query<Button>(className: "phase-ready-btn").ForEach(btn =>
             {
                 btn.clicked += OnReadyClicked;
                 TerminalUI.AddHover(btn);
