@@ -242,11 +242,6 @@ namespace ArmsFair.UI
             _blowbackList      = _root.Q<ScrollView>("BlowbackList");
             _sharePriceList    = _root.Q<ScrollView>("SharePriceList");
             _repList           = _root.Q<ScrollView>("RepList");
-            var consequencesCloseBtn = _root.Q<Button>("ConsequencesCloseBtn");
-            if (consequencesCloseBtn != null) { consequencesCloseBtn.clicked += () =>
-            {
-                if (_consequencesPanel != null) _consequencesPanel.style.display = DisplayStyle.None;
-            }; TerminalUI.AddHover(consequencesCloseBtn); }
 
             BuildWorldUpdatePanel();
 
@@ -257,7 +252,7 @@ namespace ArmsFair.UI
             _cardStageLabel  = _root.Q<Label>("CardStageLabel");
             _cardTensionLabel= _root.Q<Label>("CardTensionLabel");
             var cardCloseBtn = _root.Q<Button>("CardCloseBtn");
-            if (cardCloseBtn != null) { cardCloseBtn.clicked += HideCountryInfoCard; TerminalUI.AddHover(cardCloseBtn); }
+            if (cardCloseBtn != null) { cardCloseBtn.clicked += HideCountryInfoCard; TerminalUI.AddHover(cardCloseBtn); cardCloseBtn.style.unityTextAlign = TextAnchor.MiddleCenter; }
             var cardSellBtn = _root.Q<Button>("CardSellBtn");
             if (cardSellBtn != null) { cardSellBtn.clicked += OnCardSellClicked; TerminalUI.AddHover(cardSellBtn); }
 
@@ -1349,6 +1344,8 @@ namespace ArmsFair.UI
             confirmBtn.style.borderLeftWidth = confirmBtn.style.borderRightWidth  = 1;
             confirmBtn.style.unityTextAlign  = TextAnchor.MiddleCenter;
 
+            TerminalUI.AddHover(cancelBtn);
+            TerminalUI.AddHover(confirmBtn);
             cancelBtn.clicked  += () => CloseModal(overlay);
             confirmBtn.clicked += () =>
             {
@@ -2214,6 +2211,8 @@ namespace ArmsFair.UI
                 new StyleColor(new Color(90f/255f, 42f/255f, 42f/255f));
             btn.style.borderTopWidth  = btn.style.borderBottomWidth =
             btn.style.borderLeftWidth = btn.style.borderRightWidth  = 1;
+            btn.style.unityTextAlign  = TextAnchor.MiddleCenter;
+            TerminalUI.AddHover(btn);
             btn.clicked += onCancel;
             return btn;
         }
