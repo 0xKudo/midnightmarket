@@ -27,10 +27,14 @@ namespace ArmsFair.Hosting
         // ── Public API ───────────────────────────────────────────────────────
 
         /// <summary>
-        /// Starts the bundled server on a free port, waits for it to be ready,
+        /// Starts the bundled server on a free port, waits indefinitely for it to be ready,
         /// then registers with the relay and returns the invite code.
+        /// Pass a CancellationToken to allow the player to cancel. Pass onStatus to receive
+        /// human-readable progress updates for the splash screen.
         /// </summary>
-        public async Task<string> StartAndGetInviteCodeAsync()
+        public async Task<string> StartAndGetInviteCodeAsync(
+            System.Threading.CancellationToken ct = default,
+            Action<string> onStatus = null)
         {
             _serverPort = FindFreePort();
 
@@ -58,13 +62,14 @@ namespace ArmsFair.Hosting
 
             UnityEngine.Debug.Log($"[ServerHostManager] Server started on port {_serverPort} (pid {_serverProcess.Id})");
 
-            await WaitForServerReadyAsync(_serverPort, timeoutMs: 15000);
+            onStatus?.Invoke("STARTING LOCAL SERVER...");
+            await WaitForServerReadyAsync(_serverPort, ct, onStatus);
 
             Network.NetworkConfig.ServerBaseUrl = $"http://localhost:{_serverPort}";
             Network.NetworkConfig.IsHost        = true;
 
-            // Server's RelayTunnelService registers with VPS in the background; poll until it has a code
-            var code = await WaitForRelayCodeAsync(_serverPort, timeoutMs: 15000);
+            onStatus?.Invoke("CONNECTING TO RELAY...");
+            var code = await WaitForRelayCodeAsync(_serverPort, ct, onStatus);
             Network.NetworkConfig.RelayCode = code;
 
             UnityEngine.Debug.Log($"[ServerHostManager] Relay code: {code}");
@@ -96,12 +101,13 @@ namespace ArmsFair.Hosting
                 Application.streamingAssetsPath, "Server~", "ArmsFair.Server.exe");
         }
 
-        private static async Task<string> WaitForRelayCodeAsync(int port, int timeoutMs)
+        private static async Task<string> WaitForRelayCodeAsync(
+            int port, System.Threading.CancellationToken ct, Action<string> onStatus)
         {
-            var url      = $"http://localhost:{port}/relay-code";
-            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            var url     = $"http://localhost:{port}/relay-code";
+            var started = DateTime.UtcNow;
 
-            while (DateTime.UtcNow < deadline)
+            while (!ct.IsCancellationRequested)
             {
                 try
                 {
@@ -116,18 +122,22 @@ namespace ArmsFair.Hosting
                 }
                 catch { /* not ready yet */ }
 
-                await Task.Delay(500);
+                var elapsed = (int)(DateTime.UtcNow - started).TotalSeconds;
+                onStatus?.Invoke($"CONNECTING TO RELAY... {elapsed}s");
+                await Task.Delay(500, ct);
             }
 
-            throw new Exception("Server did not receive a relay code within the timeout. Check VPS connection.");
+            ct.ThrowIfCancellationRequested();
+            return null;
         }
 
-        private static async Task WaitForServerReadyAsync(int port, int timeoutMs)
+        private static async Task WaitForServerReadyAsync(
+            int port, System.Threading.CancellationToken ct, Action<string> onStatus)
         {
-            var url      = $"http://localhost:{port}/health";
-            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            var url     = $"http://localhost:{port}/health";
+            var started = DateTime.UtcNow;
 
-            while (DateTime.UtcNow < deadline)
+            while (!ct.IsCancellationRequested)
             {
                 try
                 {
@@ -138,10 +148,12 @@ namespace ArmsFair.Hosting
                 }
                 catch { /* not ready yet */ }
 
-                await Task.Delay(500);
+                var elapsed = (int)(DateTime.UtcNow - started).TotalSeconds;
+                onStatus?.Invoke($"STARTING LOCAL SERVER... {elapsed}s");
+                await Task.Delay(500, ct);
             }
 
-            throw new Exception($"Server did not become ready within {timeoutMs}ms");
+            ct.ThrowIfCancellationRequested();
         }
 
         private static int FindFreePort()

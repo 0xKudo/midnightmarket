@@ -4,7 +4,7 @@
   <ui:VisualElement name="LoginScreen" class="screen-root" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background-color:rgb(13,13,13);">
     <ui:VisualElement class="term-panel term-panel--narrow" style="background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:20px; flex-direction:column; width:400px;">
       <ui:Label text="THE ARMS FAIR" class="term-title" style="font-size:20px; color:rgb(212,207,184); -unity-font-style:bold; margin-bottom:4px; white-space:nowrap;" />
-      <ui:Label text="SECURE TERMINAL ACCESS" class="term-subtitle" style="font-size:14px; color:rgb(138,134,112); margin-bottom:16px; white-space:nowrap;" />
+      <ui:Label text="SECURE TERMINAL v1.0" class="term-subtitle" style="font-size:14px; color:rgb(138,134,112); margin-bottom:16px; white-space:nowrap;" />
       <ui:VisualElement class="term-divider" style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
       <ui:Label text="USERNAME" class="term-field-label" style="font-size:14px; color:rgb(138,134,112); margin-bottom:4px; white-space:nowrap;" />
       <ui:TextField name="UsernameField" class="term-input" style="margin-bottom:12px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px;" />

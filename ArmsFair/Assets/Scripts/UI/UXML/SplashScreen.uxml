@@ -1,0 +1,28 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+  <ui:Style src="../USS/variables.uss" />
+  <ui:Style src="../USS/terminal.uss" />
+  <ui:VisualElement name="SplashScreen" class="screen-root" style="display:flex; position:absolute; left:0; top:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background-color:rgb(13,13,13);">
+    <ui:VisualElement style="flex-direction:column; align-items:flex-start; width:420px;">
+
+      <!-- Title -->
+      <ui:Label text="THE ARMS FAIR" style="font-size:20px; color:rgb(212,207,184); -unity-font-style:bold; letter-spacing:2px; margin-bottom:4px; white-space:nowrap;" />
+      <ui:Label text="SECURE TERMINAL v1.0" style="font-size:14px; color:rgb(138,134,112); letter-spacing:2px; margin-bottom:28px; white-space:nowrap;" />
+
+      <!-- Status line -->
+      <ui:Label name="StatusLabel" text="INITIALIZING..." style="font-size:13px; color:rgb(138,134,112); letter-spacing:1px; margin-bottom:10px; white-space:nowrap;" />
+
+      <!-- Loading bar track -->
+      <ui:VisualElement style="width:100%; height:16px; background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; padding:2px;">
+        <!-- Fill — width driven by C# -->
+        <ui:VisualElement name="LoadingBarFill" style="height:100%; width:0%; background-color:rgb(138,184,112);" />
+      </ui:VisualElement>
+
+      <!-- Percent label -->
+      <ui:Label name="PercentLabel" text="0%" style="font-size:13px; color:rgb(138,184,112); letter-spacing:1px; margin-top:6px; align-self:flex-end; white-space:nowrap;" />
+
+      <!-- Cancel / Retry -->
+      <ui:Button name="CancelBtn" text="CANCEL" style="display:none; margin-top:20px; align-self:flex-start; font-size:13px; color:rgb(138,134,112); background-color:transparent; border-color:rgb(58,58,42); border-width:1px; padding-top:5px; padding-bottom:5px; padding-left:12px; padding-right:12px;" />
+
+    </ui:VisualElement>
+  </ui:VisualElement>
+</ui:UXML>

@@ -121,8 +121,8 @@ namespace ArmsFair.UI
         private Dictionary<WeaponCategory, int> _salesOrder      = new();
         private Dictionary<SaleType, Button> _saleTypeBtns       = new();
 
-        // Ready button
-        private Button _readyBtn;
+        // Ready buttons (one per phase panel)
+        private List<Button> _readyBtns = new();
 
         // Timer state
         private long _phaseEndsAt;
@@ -181,8 +181,12 @@ namespace ArmsFair.UI
             leaveBtn.style.paddingRight  = 12;
             leaveBtn.style.fontSize      = 15;
 
-            _readyBtn = _root.Q<Button>("ReadyBtn");
-            if (_readyBtn != null) { _readyBtn.clicked += OnReadyClicked; TerminalUI.AddHover(_readyBtn); }
+            _root.Query<Button>("ReadyBtn").ForEach(btn =>
+            {
+                btn.clicked += OnReadyClicked;
+                TerminalUI.AddHover(btn);
+                _readyBtns.Add(btn);
+            });
 
             _inventoryBar   = _root.Q("InventoryBar");
             _inventoryItems = _root.Q("InventoryItems");
@@ -193,6 +197,8 @@ namespace ArmsFair.UI
             _procErrorLabel   = _root.Q<Label>("ProcErrorLabel");
             _confirmProcBtn   = _root.Q<Button>("ConfirmProcBtn");
             if (_confirmProcBtn != null) { _confirmProcBtn.clicked += OnConfirmProcurement; TerminalUI.AddHover(_confirmProcBtn); }
+            var skipProcBtn = _root.Q<Button>("SkipProcBtn");
+            if (skipProcBtn != null) { skipProcBtn.clicked += OnReadyClicked; TerminalUI.AddHover(skipProcBtn); }
 
             _salesPanel        = _root.Q("SalesPanel");
             _saleTypeRow       = _root.Q("SaleTypeRow");
@@ -227,25 +233,17 @@ namespace ArmsFair.UI
             if (negoIntelBtn  != null) { negoIntelBtn.clicked  += () => SwitchNegoTab(0); TerminalUI.AddHover(negoIntelBtn); }
             if (negoPeaceBtn  != null) { negoPeaceBtn.clicked  += () => SwitchNegoTab(1); TerminalUI.AddHover(negoPeaceBtn); }
             if (negoTreatyBtn != null) { negoTreatyBtn.clicked += () => SwitchNegoTab(2); TerminalUI.AddHover(negoTreatyBtn); }
+            var skipNegoBtn = _root.Q<Button>("SkipNegoBtn");
+            if (skipNegoBtn != null) { skipNegoBtn.clicked += OnReadyClicked; TerminalUI.AddHover(skipNegoBtn); }
 
             _revealPanel = _root.Q("RevealPanel");
             _revealList  = _root.Q<ScrollView>("RevealList");
-            var revealCloseBtn = _root.Q<Button>("RevealCloseBtn");
-            if (revealCloseBtn != null) { revealCloseBtn.clicked += () =>
-            {
-                if (_revealPanel != null) _revealPanel.style.display = DisplayStyle.None;
-            }; TerminalUI.AddHover(revealCloseBtn); }
 
             _consequencesPanel = _root.Q("ConsequencesPanel");
             _profitList        = _root.Q<ScrollView>("ProfitList");
             _blowbackList      = _root.Q<ScrollView>("BlowbackList");
             _sharePriceList    = _root.Q<ScrollView>("SharePriceList");
             _repList           = _root.Q<ScrollView>("RepList");
-            var consequencesCloseBtn = _root.Q<Button>("ConsequencesCloseBtn");
-            if (consequencesCloseBtn != null) { consequencesCloseBtn.clicked += () =>
-            {
-                if (_consequencesPanel != null) _consequencesPanel.style.display = DisplayStyle.None;
-            }; TerminalUI.AddHover(consequencesCloseBtn); }
 
             BuildWorldUpdatePanel();
 
@@ -424,11 +422,7 @@ namespace ArmsFair.UI
 
             ShowPanel(msg.Phase);
 
-            if (_readyBtn != null)
-            {
-                _readyBtn.text    = "READY";
-                _readyBtn.SetEnabled(true);
-            }
+            foreach (var btn in _readyBtns) { btn.text = "READY"; btn.SetEnabled(true); }
         }
 
         private void OnGameEnding(GameEndingMessage msg)
@@ -532,11 +526,7 @@ namespace ArmsFair.UI
 
         private async void OnReadyClicked()
         {
-            if (_readyBtn != null)
-            {
-                _readyBtn.SetEnabled(false);
-                _readyBtn.text = "READY";
-            }
+            foreach (var btn in _readyBtns) { btn.SetEnabled(false); btn.text = "READY"; }
             await GameClient.Instance.MarkReadyAsync();
         }
 
@@ -1016,8 +1006,8 @@ namespace ArmsFair.UI
                 row.style.flexDirection     = FlexDirection.Row;
                 row.style.justifyContent    = Justify.SpaceBetween;
                 row.style.alignItems        = Align.Center;
-                row.style.paddingTop        = 7;
-                row.style.paddingBottom     = 7;
+                row.style.paddingTop        = 8;
+                row.style.paddingBottom     = 8;
                 row.style.borderBottomColor = new StyleColor(new Color(58f/255f, 58f/255f, 42f/255f));
                 row.style.borderBottomWidth = 1;
 
@@ -1173,6 +1163,7 @@ namespace ArmsFair.UI
             field.style.width      = 55;
             field.style.height     = 26;
             field.style.flexShrink = 0;
+            field.style.alignSelf  = Align.Center;
             field.style.marginLeft = field.style.marginRight = 2;
 
             var inner = field.Q<VisualElement>(className: "unity-base-text-field__input");
@@ -1562,7 +1553,7 @@ namespace ArmsFair.UI
             }
 
             var overlay = MakeModalOverlay();
-            var panel   = MakeModalPanel(380);
+            var panel   = MakeModalPanel(420);
             panel.Add(MakeModalTitle("Select Weapon + Quantity"));
 
             // Persist quantities across tab switches
@@ -1637,10 +1628,22 @@ namespace ArmsFair.UI
                     row.style.borderBottomWidth = 1;
                     row.style.marginBottom      = 4;
 
-                    var nameLabel = new Label($"{entry.DisplayName}  (max {maxQty})");
-                    nameLabel.style.color    = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                    nameLabel.style.fontSize = 16;
-                    nameLabel.style.flexGrow = 1;
+                    var nameCol = new VisualElement();
+                    nameCol.style.flexDirection = FlexDirection.Column;
+                    nameCol.style.flexGrow      = 1;
+
+                    var nameLabel = new Label(entry.DisplayName);
+                    nameLabel.style.color      = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+                    nameLabel.style.fontSize   = 16;
+                    nameLabel.style.whiteSpace = WhiteSpace.NoWrap;
+
+                    var subLabel = new Label($"x{maxQty}");
+                    subLabel.style.color      = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                    subLabel.style.fontSize   = 13;
+                    subLabel.style.whiteSpace = WhiteSpace.NoWrap;
+
+                    nameCol.Add(nameLabel);
+                    nameCol.Add(subLabel);
 
                     var qtyField = MakeQtyField(pending[cat]);
                     var maxBtn   = MakeMaxButton();
@@ -1667,7 +1670,7 @@ namespace ArmsFair.UI
                         if (clamped != evt.newValue) qtyField.SetValueWithoutNotify(clamped);
                     });
 
-                    row.Add(nameLabel);
+                    row.Add(nameCol);
                     row.Add(maxBtn);
                     row.Add(minusBtn);
                     row.Add(qtyField);
@@ -1690,11 +1693,12 @@ namespace ArmsFair.UI
                 var btn = new Button(() => BuildPickerRows(capturedTab));
                 btn.text          = label;
                 btn.name          = $"SalesTab_{tab}";
-                btn.style.flexGrow      = 1;
-                btn.style.marginRight   = 3;
-                btn.style.paddingTop    = 5;
-                btn.style.paddingBottom = 5;
-                btn.style.fontSize      = 13;
+                btn.style.flexGrow       = 1;
+                btn.style.marginRight    = 3;
+                btn.style.paddingTop     = 5;
+                btn.style.paddingBottom  = 5;
+                btn.style.fontSize       = 13;
+                btn.style.unityTextAlign = TextAnchor.MiddleCenter;
                 TerminalUI.AddHover(btn);
                 tabBar.Add(btn);
             }
@@ -1714,12 +1718,14 @@ namespace ArmsFair.UI
             btnRow.style.flexDirection = FlexDirection.Row;
 
             var cancelBtn = MakeModalCancelBtn(() => CloseModal(overlay));
-            cancelBtn.style.flexGrow    = 1;
-            cancelBtn.style.marginRight = 8;
+            cancelBtn.style.flexGrow        = 1;
+            cancelBtn.style.marginRight     = 8;
+            cancelBtn.style.unityTextAlign  = TextAnchor.MiddleCenter;
 
             var selectBtn = new Button { text = "SELECT" };
             selectBtn.style.flexGrow        = 1;
             selectBtn.style.paddingTop      = selectBtn.style.paddingBottom = 8;
+            selectBtn.style.unityTextAlign  = TextAnchor.MiddleCenter;
             selectBtn.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
             selectBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 25f/255f, 8f/255f));
             selectBtn.style.borderTopColor  = selectBtn.style.borderBottomColor =
@@ -2261,7 +2267,18 @@ namespace ArmsFair.UI
             btn.style.paddingTop    = 5; btn.style.paddingBottom = 5;
             btn.style.paddingLeft   = 8; btn.style.paddingRight  = 8;
             btn.style.marginRight   = 6;
+            btn.style.unityTextAlign = TextAnchor.MiddleCenter;
             StyleSaleToggleBtn(btn, false);
+
+            bool isActive = false;
+            btn.RegisterCallback<MouseEnterEvent>(_ =>
+            {
+                btn.style.backgroundColor = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
+                btn.style.color           = new StyleColor(new Color(13f/255f, 13f/255f, 13f/255f));
+            });
+            btn.RegisterCallback<MouseLeaveEvent>(_ => StyleSaleToggleBtn(btn, isActive));
+            btn.RegisterCallback<ClickEvent>(_ => isActive = !isActive);
+
             return btn;
         }
 

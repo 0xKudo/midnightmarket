@@ -7,10 +7,8 @@
       <ui:Label name="WelcomeLabel" text="OPERATIVE: —" class="term-subtitle" style="font-size:14px; color:rgb(138,134,112); margin-bottom:16px; white-space:nowrap;" />
       <ui:VisualElement class="term-divider" style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
       <ui:Button name="CreateRoomBtn" text="CREATE ROOM" class="term-btn" style="color:rgb(212,207,184); -unity-text-color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:18px; -unity-text-align:middle-center;" />
-      <ui:Label name="HostStatusLabel" text="" style="font-size:13px; color:rgb(138,184,112); display:none; margin-bottom:8px; -unity-text-align:middle-center;" />
       <ui:Button name="JoinRoomBtn"   text="JOIN ROOM"   class="term-btn" style="color:rgb(212,207,184); -unity-text-color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:18px; -unity-text-align:middle-center;" />
       <ui:Button name="ProfileBtn"    text="PROFILE"     class="term-btn" style="color:rgb(212,207,184); -unity-text-color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:18px; -unity-text-align:middle-center;" />
-      <ui:Label name="ErrorLabel" text="" style="font-size:13px; color:rgb(192,144,144); display:none; margin-bottom:8px; -unity-text-align:middle-center;" />
       <ui:VisualElement class="term-divider" style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
       <ui:Button name="LogoutBtn"     text="DISCONNECT"  class="term-btn term-btn--danger" style="color:rgb(192,144,144); -unity-text-color:rgb(192,144,144); background-color:rgb(15,15,8); border-color:rgb(90,42,42); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:18px; -unity-text-align:middle-center;" />
     </ui:VisualElement>
