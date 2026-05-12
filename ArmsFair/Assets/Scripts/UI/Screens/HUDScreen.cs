@@ -1334,6 +1334,7 @@ namespace ArmsFair.UI
                 new StyleColor(new Color(90f/255f, 42f/255f, 42f/255f));
             cancelBtn.style.borderTopWidth  = cancelBtn.style.borderBottomWidth =
             cancelBtn.style.borderLeftWidth = cancelBtn.style.borderRightWidth  = 1;
+            cancelBtn.style.unityTextAlign  = TextAnchor.MiddleCenter;
 
             var confirmBtn = new Button { text = "CONFIRM" };
             confirmBtn.style.flexGrow        = 1;
@@ -1345,6 +1346,7 @@ namespace ArmsFair.UI
                 new StyleColor(new Color(58f/255f, 90f/255f, 42f/255f));
             confirmBtn.style.borderTopWidth  = confirmBtn.style.borderBottomWidth =
             confirmBtn.style.borderLeftWidth = confirmBtn.style.borderRightWidth  = 1;
+            confirmBtn.style.unityTextAlign  = TextAnchor.MiddleCenter;
 
             cancelBtn.clicked  += () => CloseModal(overlay);
             confirmBtn.clicked += () =>
@@ -2446,9 +2448,10 @@ namespace ArmsFair.UI
             _worldUpdatePanel.style.display        = DisplayStyle.None;
 
             var title = new Label("WORLD UPDATE");
-            title.style.fontSize   = 15;
-            title.style.color      = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
-            title.style.marginBottom = 10;
+            title.style.fontSize        = 18;
+            title.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+            title.style.unityFontStyleAndWeight = FontStyle.Bold;
+            title.style.marginBottom    = 14;
             _worldUpdatePanel.Add(title);
 
             _worldUpdateDeltaList = new ScrollView();

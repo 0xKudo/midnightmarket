@@ -17,8 +17,8 @@
       <ui:Label name="PhaseLabel" text="â€”" style="font-size:21px; color:rgb(138,184,112); -unity-font-style:bold; white-space:nowrap; flex-grow:1;" />
       <ui:Label name="TimerLabel" text="--:--" style="font-size:16px; color:rgb(212,207,184); white-space:nowrap; margin-right:16px;" />
       <ui:Label name="RoundLabel" text="ROUND --" style="font-size:15px; color:rgb(138,134,112); margin-right:14px; white-space:nowrap;" />
-      <ui:Button name="ReadyBtn" text="READY" style="color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:12px; padding-right:12px; font-size:15px; margin-right:8px;" />
-      <ui:Button name="LeaveGameBtn" text="LEAVE" style="color:rgb(192,144,144); background-color:rgb(15,15,8); border-color:rgb(90,42,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:12px; padding-right:12px; font-size:15px;" />
+      <ui:Button name="ReadyBtn" text="READY" style="color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:12px; padding-right:12px; font-size:15px; margin-right:8px; align-self:center;" />
+      <ui:Button name="LeaveGameBtn" text="LEAVE" style="color:rgb(192,144,144); background-color:rgb(15,15,8); border-color:rgb(90,42,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:12px; padding-right:12px; font-size:15px; align-self:center;" />
     </ui:VisualElement>
 
     <!-- World Tracks bar -->
@@ -111,7 +111,7 @@
         </ui:VisualElement>
 
         <!-- Consequences Phase Panel -->
-        <ui:VisualElement name="ConsequencesPanel" style="display:none; flex-direction:column; padding:16px; flex-grow:1; overflow:hidden;">
+        <ui:VisualElement name="ConsequencesPanel" style="display:none; flex-direction:column; padding:16px; overflow:hidden;">
           <ui:Label text="CONSEQUENCES" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
           <ui:Label text="PROFIT" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
           <ui:ScrollView name="ProfitList" style="height:88px; margin-bottom:8px;" />
