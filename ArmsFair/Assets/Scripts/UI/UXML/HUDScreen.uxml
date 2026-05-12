@@ -98,7 +98,7 @@
             <ui:Button name="VoteCeaseFireBtn" text="VOTE CEASE-FIRE" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
           </ui:VisualElement>
           <ui:VisualElement name=”NegoTreatyTab” style=”display:none; flex-direction:column;”>
-            <ui:Label text=”TREATY PROPOSALS -> COMING SOON” style=”font-size:15px; color:rgb(138,134,112);” />
+            <ui:Label text=”TREATY PROPOSALS — COMING SOON” style=”font-size:15px; color:rgb(138,134,112);” />
           </ui:VisualElement>
           <ui:VisualElement style=”height:1px; background-color:rgb(58,58,42); margin-top:10px; margin-bottom:10px;” />
           <ui:VisualElement style=”flex-direction:row;”>
