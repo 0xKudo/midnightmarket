@@ -138,16 +138,31 @@ namespace ArmsFair.UI
                 joinBtn.style.paddingRight     = 12;
                 joinBtn.style.fontSize         = 11;
 
-                joinBtn.RegisterCallback<PointerEnterEvent>(_ =>
+                if (r.isStarted)
                 {
-                    joinBtn.style.backgroundColor = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
-                    joinBtn.style.color           = new StyleColor(new Color(0.051f, 0.051f, 0.031f));
-                });
-                joinBtn.RegisterCallback<PointerLeaveEvent>(_ =>
+                    joinBtn.SetEnabled(false);
+                    joinBtn.style.opacity = 0.4f;
+                    joinBtn.RegisterCallback<PointerEnterEvent>(_ =>
+                    {
+                        _statusLabel.text          = "GAME ALREADY IN PROGRESS";
+                        _statusLabel.style.display = DisplayStyle.Flex;
+                    });
+                    joinBtn.RegisterCallback<PointerLeaveEvent>(_ =>
+                        _statusLabel.style.display = DisplayStyle.None);
+                }
+                else
                 {
-                    joinBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
-                    joinBtn.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
-                });
+                    joinBtn.RegisterCallback<PointerEnterEvent>(_ =>
+                    {
+                        joinBtn.style.backgroundColor = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+                        joinBtn.style.color           = new StyleColor(new Color(0.051f, 0.051f, 0.031f));
+                    });
+                    joinBtn.RegisterCallback<PointerLeaveEvent>(_ =>
+                    {
+                        joinBtn.style.backgroundColor = new StyleColor(new Color(15f/255f, 15f/255f, 8f/255f));
+                        joinBtn.style.color           = new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
+                    });
+                }
 
                 row.Add(infoLabel);
                 row.Add(joinBtn);

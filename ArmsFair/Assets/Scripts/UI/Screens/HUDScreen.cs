@@ -93,6 +93,10 @@ namespace ArmsFair.UI
         private ScrollView    _repList;
         private ScrollView    _sharePriceList;
 
+        // WorldUpdate panel (built in code)
+        private VisualElement _worldUpdatePanel;
+        private ScrollView    _worldUpdateDeltaList;
+
         // Open modal overlays -- cleared on every phase transition
         private readonly List<VisualElement> _openModals = new();
 
@@ -236,6 +240,8 @@ namespace ArmsFair.UI
             {
                 if (_consequencesPanel != null) _consequencesPanel.style.display = DisplayStyle.None;
             }; TerminalUI.AddHover(consequencesCloseBtn); }
+
+            BuildWorldUpdatePanel();
 
             _countryInfoCard = _root.Q("CountryInfoCard");
             if (_countryInfoCard != null) _countryInfoCard.pickingMode = PickingMode.Position;
@@ -477,14 +483,20 @@ namespace ArmsFair.UI
             btnRow.style.justifyContent = Justify.Center;
 
             var menuBtn = new Button(() => UIManager.Instance.GoTo("MainMenu")) { text = "MAIN MENU" };
-            menuBtn.style.paddingLeft    = menuBtn.style.paddingRight  = 20;
-            menuBtn.style.paddingTop     = menuBtn.style.paddingBottom = 8;
+            menuBtn.style.paddingLeft    = menuBtn.style.paddingRight  = 32;
+            menuBtn.style.paddingTop     = menuBtn.style.paddingBottom = 14;
+            menuBtn.style.fontSize       = 16;
             menuBtn.style.marginRight    = 12;
             TerminalUI.StyleButton(menuBtn);
 
-            var lobbyBtn = new Button(() => UIManager.Instance.GoTo("RoomList")) { text = "LOBBY" };
-            lobbyBtn.style.paddingLeft    = lobbyBtn.style.paddingRight  = 20;
-            lobbyBtn.style.paddingTop     = lobbyBtn.style.paddingBottom = 8;
+            var lobbyBtn = new Button(() =>
+            {
+                UIManager.Instance.GoTo("MainMenu");
+                UIManager.Instance.Push("RoomList");
+            }) { text = "LOBBY" };
+            lobbyBtn.style.paddingLeft    = lobbyBtn.style.paddingRight  = 32;
+            lobbyBtn.style.paddingTop     = lobbyBtn.style.paddingBottom = 14;
+            lobbyBtn.style.fontSize       = 16;
             TerminalUI.StyleButton(lobbyBtn);
 
             btnRow.Add(menuBtn);
@@ -596,7 +608,7 @@ namespace ArmsFair.UI
                         var name = _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.CompanyName
                                 ?? _lastState.Players.FirstOrDefault(p => p.Id == b.PlayerId)?.Username
                                 ?? b.PlayerId;
-                        _blowbackList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {b.Weapon}  ->  {b.CountryIso}  TRACED"));
+                        _blowbackList.Add(MakeOverlayRowLabel($"{name.ToUpper()}  {WeaponDisplay(b.Weapon).ToUpper()}  ->  {b.CountryIso}  TRACED"));
                     }
                 }
             }
@@ -657,6 +669,42 @@ namespace ArmsFair.UI
             if (ArmsFair.Map.GlobeBridge.Instance != null && msg.CountryChanges != null)
                 foreach (var cc in msg.CountryChanges)
                     ArmsFair.Map.GlobeBridge.Instance.SetCountryStage(cc.Iso, (CountryStage)cc.NewStage);
+
+            PopulateWorldUpdateDeltas(msg);
+        }
+
+        private void PopulateWorldUpdateDeltas(WorldUpdateMessage msg)
+        {
+            if (_worldUpdateDeltaList == null) return;
+            _worldUpdateDeltaList.Clear();
+
+            var tracks = msg.NewTracks;
+            var deltas = msg.TrackDeltas;
+
+            void AddDeltaRow(string name, int delta, int newVal)
+            {
+                if (delta == 0) return;
+                var sign = delta > 0 ? "+" : "";
+                _worldUpdateDeltaList.Add(MakeOverlayRowLabel($"{name}  {sign}{delta}  →  {newVal}"));
+            }
+
+            AddDeltaRow("MARKET HEAT",    deltas.MarketHeat,    tracks.MarketHeat);
+            AddDeltaRow("CIVILIAN COST",  deltas.CivilianCost,  tracks.CivilianCost);
+            AddDeltaRow("INSTABILITY",    deltas.Instability,   tracks.Instability);
+            AddDeltaRow("SANCTIONS RISK", deltas.SanctionsRisk, tracks.SanctionsRisk);
+            AddDeltaRow("GEO TENSION",    deltas.GeoTension,    tracks.GeoTension);
+
+            if (msg.SpreadEvents != null)
+                foreach (var s in msg.SpreadEvents)
+                    _worldUpdateDeltaList.Add(MakeOverlayRowLabel(
+                        $"CONFLICT SPREADS: {s.FromIso} → {s.ToIso} (STAGE {s.NewStage})"));
+
+            if (msg.Events != null)
+                foreach (var e in msg.Events)
+                    _worldUpdateDeltaList.Add(MakeOverlayRowLabel(e.Description?.ToUpper() ?? "EVENT"));
+
+            if (_worldUpdateDeltaList.childCount == 0)
+                _worldUpdateDeltaList.Add(MakeOverlayRowLabel("NO SIGNIFICANT CHANGES"));
         }
 
         private void OnGlobeCountryClicked(string iso, Vector2 screenPos)
@@ -831,13 +879,19 @@ namespace ArmsFair.UI
             var isNegotiation  = phase == GamePhase.Negotiation;
             var isReveal       = phase == GamePhase.Reveal;
             var isConsequences = phase == GamePhase.Consequences;
-            var hasPanel       = isProcurement || isSales || isNegotiation || isReveal || isConsequences;
+            var isWorldUpdate  = phase == GamePhase.WorldUpdate;
+            var hasPanel       = isProcurement || isSales || isNegotiation || isReveal || isConsequences || isWorldUpdate;
 
             if (_procurementPanel  != null) _procurementPanel.style.display  = isProcurement  ? DisplayStyle.Flex : DisplayStyle.None;
             if (_salesPanel        != null) _salesPanel.style.display        = isSales        ? DisplayStyle.Flex : DisplayStyle.None;
             if (_negotiationPanel  != null) _negotiationPanel.style.display  = isNegotiation  ? DisplayStyle.Flex : DisplayStyle.None;
             if (_revealPanel       != null) _revealPanel.style.display       = isReveal       ? DisplayStyle.Flex : DisplayStyle.None;
             if (_consequencesPanel != null) _consequencesPanel.style.display = isConsequences ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_worldUpdatePanel  != null)
+            {
+                _worldUpdatePanel.style.display = isWorldUpdate ? DisplayStyle.Flex : DisplayStyle.None;
+                if (isWorldUpdate && _worldUpdateDeltaList != null) _worldUpdateDeltaList.Clear();
+            }
             if (_phaseStatusLabel  != null) _phaseStatusLabel.style.display  = hasPanel ? DisplayStyle.None : DisplayStyle.Flex;
 
             if (!isProcurement && _procTabBar != null)
@@ -2321,6 +2375,33 @@ namespace ArmsFair.UI
             _timerRunning = false;
             _lastState    = null;
             UIManager.Instance.GoTo("MainMenu");
+        }
+
+        private void BuildWorldUpdatePanel()
+        {
+            if (_root == null) return;
+
+            _worldUpdatePanel = new VisualElement();
+            _worldUpdatePanel.style.flexDirection  = FlexDirection.Column;
+            _worldUpdatePanel.style.paddingTop     = 16;
+            _worldUpdatePanel.style.paddingBottom  = 16;
+            _worldUpdatePanel.style.paddingLeft    = 16;
+            _worldUpdatePanel.style.paddingRight   = 16;
+            _worldUpdatePanel.style.display        = DisplayStyle.None;
+
+            var title = new Label("WORLD UPDATE");
+            title.style.fontSize   = 15;
+            title.style.color      = new StyleColor(new Color(0.831f, 0.812f, 0.722f));
+            title.style.marginBottom = 10;
+            _worldUpdatePanel.Add(title);
+
+            _worldUpdateDeltaList = new ScrollView();
+            _worldUpdateDeltaList.style.flexGrow   = 1;
+            _worldUpdateDeltaList.style.maxHeight  = 280;
+            _worldUpdatePanel.Add(_worldUpdateDeltaList);
+
+            var leftColumn = _root.Q("LeftColumn") ?? _root;
+            leftColumn.Add(_worldUpdatePanel);
         }
 
         private static string WeaponDisplay(WeaponCategory cat) => cat switch

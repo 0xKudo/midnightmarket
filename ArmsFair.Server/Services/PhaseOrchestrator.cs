@@ -19,6 +19,7 @@ public class PhaseOrchestrator(
     IHubContext<GameHub> hub,
     IServiceScopeFactory scopeFactory,
     GameStateService gameStateService,
+    LobbyService lobbyService,
     ILogger<PhaseOrchestrator> logger)
 {
     // Adjacency map loaded once at first use.
@@ -38,10 +39,8 @@ public class PhaseOrchestrator(
         var pending = gameStateService.GetAndClearPendingForGame(gameId, state.Players.Select(p => p.Id));
 
         var (newState, ending) = await AdvanceAsync(gameId, state, voters, pending);
-        gameStateService.Set(gameId, newState);
-
-        if (ending is not null)
-            gameStateService.Remove(gameId);
+        if (ending is null)
+            gameStateService.Set(gameId, newState);
     }
 
     /// <summary>
@@ -300,7 +299,7 @@ public class PhaseOrchestrator(
             p.Id, p.CompanyName ?? p.Username ?? p.Id,
             Profit    : p.Capital,
             Reputation: p.Reputation,
-            Composite : p.Capital * p.Reputation / 100L,
+            Composite : Math.Max(0, p.Capital) + (long)Math.Max(0, p.Reputation) * 1_000_000L,
             Legacy    : p.PeaceCredits * 10L)).ToList();
 
         await hub.Clients.Group(gameId).SendAsync("GameEnding",
@@ -319,6 +318,9 @@ public class PhaseOrchestrator(
                 await db.SaveChangesAsync();
             }
         }
+
+        lobbyService.Remove(gameId);
+        gameStateService.Remove(gameId);
 
         logger.LogInformation("Game {GameId} ended: {EndingType}", gameId, ending.Type);
     }

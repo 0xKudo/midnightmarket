@@ -19,6 +19,7 @@ public class GameHub(
     SeedService seedService,
     PhaseOrchestrator phaseOrchestrator,
     GameStateService gameStateService,
+    LobbyService lobbyService,
     TickerService ticker,
     ILogger<GameHub> logger) : Hub
 {
@@ -35,6 +36,19 @@ public class GameHub(
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        var gameId = GetGameId();
+        if (gameId is not null && gameStateService.TryGet(gameId, out var state))
+        {
+            var playerId  = GetPlayerId();
+            var remaining = state.Players.Where(p => p.Id != playerId).ToList();
+            if (remaining.Count == 0)
+            {
+                lobbyService.Remove(gameId);
+                gameStateService.Remove(gameId);
+                ticker.CancelPhaseTimer(gameId);
+            }
+        }
+
         await base.OnDisconnectedAsync(exception);
     }
 
