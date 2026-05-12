@@ -121,8 +121,8 @@ namespace ArmsFair.UI
         private Dictionary<WeaponCategory, int> _salesOrder      = new();
         private Dictionary<SaleType, Button> _saleTypeBtns       = new();
 
-        // Ready buttons (one per phase panel)
-        private List<Button> _readyBtns = new();
+        // Ready button
+        private Button _readyBtn;
 
         // Timer state
         private long _phaseEndsAt;
@@ -181,12 +181,8 @@ namespace ArmsFair.UI
             leaveBtn.style.paddingRight  = 12;
             leaveBtn.style.fontSize      = 15;
 
-            _root.Query<Button>(className: "phase-ready-btn").ForEach(btn =>
-            {
-                btn.clicked += OnReadyClicked;
-                TerminalUI.AddHover(btn);
-                _readyBtns.Add(btn);
-            });
+            _readyBtn = _root.Q<Button>("ReadyBtn");
+            if (_readyBtn != null) { _readyBtn.clicked += OnReadyClicked; TerminalUI.AddHover(_readyBtn); }
 
             _inventoryBar   = _root.Q("InventoryBar");
             _inventoryItems = _root.Q("InventoryItems");
@@ -197,8 +193,6 @@ namespace ArmsFair.UI
             _procErrorLabel   = _root.Q<Label>("ProcErrorLabel");
             _confirmProcBtn   = _root.Q<Button>("ConfirmProcBtn");
             if (_confirmProcBtn != null) { _confirmProcBtn.clicked += OnConfirmProcurement; TerminalUI.AddHover(_confirmProcBtn); }
-            var skipProcBtn = _root.Q<Button>("SkipProcBtn");
-            if (skipProcBtn != null) { skipProcBtn.clicked += OnReadyClicked; TerminalUI.AddHover(skipProcBtn); }
 
             _salesPanel        = _root.Q("SalesPanel");
             _saleTypeRow       = _root.Q("SaleTypeRow");
@@ -233,17 +227,25 @@ namespace ArmsFair.UI
             if (negoIntelBtn  != null) { negoIntelBtn.clicked  += () => SwitchNegoTab(0); TerminalUI.AddHover(negoIntelBtn); }
             if (negoPeaceBtn  != null) { negoPeaceBtn.clicked  += () => SwitchNegoTab(1); TerminalUI.AddHover(negoPeaceBtn); }
             if (negoTreatyBtn != null) { negoTreatyBtn.clicked += () => SwitchNegoTab(2); TerminalUI.AddHover(negoTreatyBtn); }
-            var skipNegoBtn = _root.Q<Button>("SkipNegoBtn");
-            if (skipNegoBtn != null) { skipNegoBtn.clicked += OnReadyClicked; TerminalUI.AddHover(skipNegoBtn); }
 
             _revealPanel = _root.Q("RevealPanel");
             _revealList  = _root.Q<ScrollView>("RevealList");
+            var revealCloseBtn = _root.Q<Button>("RevealCloseBtn");
+            if (revealCloseBtn != null) { revealCloseBtn.clicked += () =>
+            {
+                if (_revealPanel != null) _revealPanel.style.display = DisplayStyle.None;
+            }; TerminalUI.AddHover(revealCloseBtn); }
 
             _consequencesPanel = _root.Q("ConsequencesPanel");
             _profitList        = _root.Q<ScrollView>("ProfitList");
             _blowbackList      = _root.Q<ScrollView>("BlowbackList");
             _sharePriceList    = _root.Q<ScrollView>("SharePriceList");
             _repList           = _root.Q<ScrollView>("RepList");
+            var consequencesCloseBtn = _root.Q<Button>("ConsequencesCloseBtn");
+            if (consequencesCloseBtn != null) { consequencesCloseBtn.clicked += () =>
+            {
+                if (_consequencesPanel != null) _consequencesPanel.style.display = DisplayStyle.None;
+            }; TerminalUI.AddHover(consequencesCloseBtn); }
 
             BuildWorldUpdatePanel();
 
@@ -422,7 +424,11 @@ namespace ArmsFair.UI
 
             ShowPanel(msg.Phase);
 
-            foreach (var btn in _readyBtns) { btn.text = "READY"; btn.SetEnabled(true); }
+            if (_readyBtn != null)
+            {
+                _readyBtn.text    = "READY";
+                _readyBtn.SetEnabled(true);
+            }
         }
 
         private void OnGameEnding(GameEndingMessage msg)
@@ -526,7 +532,11 @@ namespace ArmsFair.UI
 
         private async void OnReadyClicked()
         {
-            foreach (var btn in _readyBtns) { btn.SetEnabled(false); btn.text = "READY"; }
+            if (_readyBtn != null)
+            {
+                _readyBtn.SetEnabled(false);
+                _readyBtn.text = "READY";
+            }
             await GameClient.Instance.MarkReadyAsync();
         }
 
@@ -1163,8 +1173,8 @@ namespace ArmsFair.UI
             field.style.width      = 55;
             field.style.height     = 26;
             field.style.flexShrink = 0;
-            field.style.alignSelf  = Align.Center;
             field.style.marginLeft = field.style.marginRight = 2;
+            field.style.alignSelf  = Align.Center;
 
             var inner = field.Q<VisualElement>(className: "unity-base-text-field__input");
             if (inner != null)
@@ -1629,8 +1639,8 @@ namespace ArmsFair.UI
                     row.style.marginBottom      = 4;
 
                     var nameCol = new VisualElement();
-                    nameCol.style.flexDirection = FlexDirection.Column;
                     nameCol.style.flexGrow      = 1;
+                    nameCol.style.flexDirection = FlexDirection.Column;
 
                     var nameLabel = new Label(entry.DisplayName);
                     nameLabel.style.color      = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
@@ -1638,9 +1648,8 @@ namespace ArmsFair.UI
                     nameLabel.style.whiteSpace = WhiteSpace.NoWrap;
 
                     var subLabel = new Label($"x{maxQty}");
-                    subLabel.style.color      = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
-                    subLabel.style.fontSize   = 13;
-                    subLabel.style.whiteSpace = WhiteSpace.NoWrap;
+                    subLabel.style.color    = new StyleColor(new Color(138f/255f, 134f/255f, 112f/255f));
+                    subLabel.style.fontSize = 12;
 
                     nameCol.Add(nameLabel);
                     nameCol.Add(subLabel);
@@ -1693,12 +1702,12 @@ namespace ArmsFair.UI
                 var btn = new Button(() => BuildPickerRows(capturedTab));
                 btn.text          = label;
                 btn.name          = $"SalesTab_{tab}";
-                btn.style.flexGrow       = 1;
-                btn.style.marginRight    = 3;
-                btn.style.paddingTop     = 5;
-                btn.style.paddingBottom  = 5;
-                btn.style.fontSize       = 13;
-                btn.style.unityTextAlign = TextAnchor.MiddleCenter;
+                btn.style.flexGrow      = 1;
+                btn.style.marginRight   = 3;
+                btn.style.paddingTop    = 5;
+                btn.style.paddingBottom = 5;
+                btn.style.fontSize        = 13;
+                btn.style.unityTextAlign  = TextAnchor.MiddleCenter;
                 TerminalUI.AddHover(btn);
                 tabBar.Add(btn);
             }
@@ -1718,9 +1727,9 @@ namespace ArmsFair.UI
             btnRow.style.flexDirection = FlexDirection.Row;
 
             var cancelBtn = MakeModalCancelBtn(() => CloseModal(overlay));
-            cancelBtn.style.flexGrow        = 1;
-            cancelBtn.style.marginRight     = 8;
-            cancelBtn.style.unityTextAlign  = TextAnchor.MiddleCenter;
+            cancelBtn.style.flexGrow       = 1;
+            cancelBtn.style.marginRight    = 8;
+            cancelBtn.style.unityTextAlign = TextAnchor.MiddleCenter;
 
             var selectBtn = new Button { text = "SELECT" };
             selectBtn.style.flexGrow        = 1;
@@ -2273,11 +2282,16 @@ namespace ArmsFair.UI
             bool isActive = false;
             btn.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                btn.style.backgroundColor = new StyleColor(new Color(212f/255f, 207f/255f, 184f/255f));
-                btn.style.color           = new StyleColor(new Color(13f/255f, 13f/255f, 13f/255f));
+                btn.style.borderTopColor  = btn.style.borderBottomColor =
+                btn.style.borderLeftColor = btn.style.borderRightColor  =
+                    new StyleColor(new Color(138f/255f, 184f/255f, 112f/255f));
             });
             btn.RegisterCallback<MouseLeaveEvent>(_ => StyleSaleToggleBtn(btn, isActive));
-            btn.RegisterCallback<ClickEvent>(_ => isActive = !isActive);
+            btn.RegisterCallback<ClickEvent>(_ =>
+            {
+                isActive = !isActive;
+                StyleSaleToggleBtn(btn, isActive);
+            });
 
             return btn;
         }
