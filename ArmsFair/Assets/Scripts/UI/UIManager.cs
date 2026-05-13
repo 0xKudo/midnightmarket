@@ -11,6 +11,7 @@ namespace ArmsFair.UI
         private readonly Dictionary<string, IScreen> _screens = new();
         private readonly Stack<string>               _history = new();
         private string _current;
+        private string _pendingGoTo;
 
         private void Awake()
         {
@@ -19,15 +20,24 @@ namespace ArmsFair.UI
             DontDestroyOnLoad(gameObject);
         }
 
-        public void Register(string name, IScreen screen) => _screens[name] = screen;
+        public void Register(string name, IScreen screen)
+        {
+            _screens[name] = screen;
+            if (_pendingGoTo == name)
+            {
+                _pendingGoTo = null;
+                GoTo(name);
+            }
+        }
 
         public void GoTo(string name)
         {
             if (!_screens.ContainsKey(name))
             {
-                Debug.LogError($"[UIManager] Screen '{name}' not registered");
+                _pendingGoTo = name;
                 return;
             }
+            _pendingGoTo = null;
             if (_current != null && _screens.TryGetValue(_current, out var old))
                 old.Hide();
             _history.Clear();
