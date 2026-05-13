@@ -69,6 +69,12 @@ namespace ArmsFair.UI
         private VisualElement _worldMapArea;
         private Camera        _globeCamera;
 
+        // Chat drawer
+        private VisualElement _chatDrawer;
+        private ScrollView    _chatLog;
+        private TextField     _chatInput;
+        private bool          _chatOpen;
+
         // Negotiation panel
         private VisualElement _negotiationPanel;
         private VisualElement _negoIntelTab;
@@ -264,6 +270,7 @@ namespace ArmsFair.UI
             // this handler only fires for left-panel / footer clicks.
             _root.RegisterCallback<PointerDownEvent>(_ => HideCountryInfoCard());
 
+            BuildChatDrawer();
             UIManager.Instance.Register("HUD", this);
         }
 
@@ -278,6 +285,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnPlayerReady.AddListener(OnPlayerReady);
             GameClient.Instance.OnCeaseFireVote.AddListener(OnCeaseFireVoteReceived);
             GameClient.Instance.OnGameEnding.AddListener(OnGameEnding);
+            GameClient.Instance.OnChatMessage.AddListener(AppendChatMessage);
 
             UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -336,6 +344,124 @@ namespace ArmsFair.UI
             _globeCamera.rect = new Rect(nx, ny, nw, nh);
         }
 
+        // ── Chat drawer ───────────────────────────────────────────────────────
+
+        private void BuildChatDrawer()
+        {
+            if (_worldMapArea == null) return;
+
+            _chatDrawer = new VisualElement();
+            _chatDrawer.style.position      = Position.Absolute;
+            _chatDrawer.style.bottom        = 0;
+            _chatDrawer.style.right         = 0;
+            _chatDrawer.style.width         = 280;
+            _chatDrawer.style.flexDirection = FlexDirection.Column;
+            _chatDrawer.style.backgroundColor = new StyleColor(new Color(0.051f, 0.051f, 0.031f, 0.92f));
+            _chatDrawer.style.borderTopColor  = new StyleColor(TerminalUI.BorderNormal);
+            _chatDrawer.style.borderLeftColor = new StyleColor(TerminalUI.BorderNormal);
+            _chatDrawer.style.borderTopWidth  = 1;
+            _chatDrawer.style.borderLeftWidth = 1;
+
+            _chatLog = new ScrollView();
+            _chatLog.style.height      = 200;
+            _chatLog.style.display     = DisplayStyle.None;
+            _chatLog.style.paddingLeft = _chatLog.style.paddingRight  = 8;
+            _chatLog.style.paddingTop  = _chatLog.style.paddingBottom = 6;
+
+            var inputRow = new VisualElement();
+            inputRow.style.flexDirection  = FlexDirection.Row;
+            inputRow.style.display        = DisplayStyle.None;
+            inputRow.style.borderTopColor = new StyleColor(TerminalUI.BorderNormal);
+            inputRow.style.borderTopWidth = 1;
+            inputRow.style.paddingLeft    = inputRow.style.paddingRight  = 6;
+            inputRow.style.paddingTop     = inputRow.style.paddingBottom = 5;
+
+            _chatInput = new TextField();
+            _chatInput.style.flexGrow    = 1;
+            _chatInput.style.marginRight = 6;
+            _chatInput.style.color       = new StyleColor(TerminalUI.TextPrimary);
+            _chatInput.style.fontSize    = 13;
+            _chatInput.RegisterCallback<GeometryChangedEvent>(_ =>
+            {
+                var inner = _chatInput.Q<VisualElement>(className: "unity-base-text-field__input");
+                if (inner == null) return;
+                inner.style.backgroundColor   = new StyleColor(new Color(0.08f, 0.08f, 0.05f));
+                inner.style.borderTopColor    = inner.style.borderRightColor  =
+                inner.style.borderBottomColor = inner.style.borderLeftColor   = new StyleColor(TerminalUI.BorderNormal);
+                inner.style.borderTopWidth    = inner.style.borderRightWidth  =
+                inner.style.borderBottomWidth = inner.style.borderLeftWidth   = 1;
+                inner.style.color             = new StyleColor(TerminalUI.TextPrimary);
+            });
+            _chatInput.RegisterCallback<KeyDownEvent>(e =>
+            {
+                if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
+                { SendChat(); e.StopPropagation(); }
+            });
+
+            var sendBtn = new Button(() => SendChat()) { text = "SEND" };
+            sendBtn.style.fontSize    = 13;
+            sendBtn.style.paddingTop  = sendBtn.style.paddingBottom = 4;
+            sendBtn.style.paddingLeft = sendBtn.style.paddingRight  = 8;
+            TerminalUI.StyleButton(sendBtn);
+            sendBtn.style.marginBottom = 0;
+
+            inputRow.Add(_chatInput);
+            inputRow.Add(sendBtn);
+
+            var toggleBtn = new Button { text = "CHAT ▲" };
+            toggleBtn.style.fontSize       = 13;
+            toggleBtn.style.paddingTop     = toggleBtn.style.paddingBottom = 5;
+            toggleBtn.style.unityTextAlign = TextAnchor.MiddleCenter;
+            toggleBtn.style.marginBottom   = 0;
+            TerminalUI.StyleButton(toggleBtn);
+            toggleBtn.clicked += () =>
+            {
+                _chatOpen = !_chatOpen;
+                _chatLog.style.display  = _chatOpen ? DisplayStyle.Flex : DisplayStyle.None;
+                inputRow.style.display  = _chatOpen ? DisplayStyle.Flex : DisplayStyle.None;
+                toggleBtn.text          = _chatOpen ? "CHAT ▼" : "CHAT ▲";
+                if (_chatOpen) _chatInput.Focus();
+            };
+
+            _chatDrawer.Add(_chatLog);
+            _chatDrawer.Add(inputRow);
+            _chatDrawer.Add(toggleBtn);
+            _worldMapArea.Add(_chatDrawer);
+        }
+
+        private void AppendChatMessage(ChatMessage msg)
+        {
+            if (_chatLog == null) return;
+
+            var senderName = msg.SenderId;
+            if (_lastState?.Players != null)
+            {
+                var p = _lastState.Players.FirstOrDefault(x => x.Id == msg.SenderId);
+                if (p != null) senderName = p.CompanyName ?? p.Username;
+            }
+
+            var line = new Label($"[{senderName}] {msg.Text}");
+            line.style.fontSize     = 13;
+            line.style.color        = new StyleColor(TerminalUI.TextPrimary);
+            line.style.whiteSpace   = WhiteSpace.Normal;
+            line.style.marginBottom = 3;
+
+            _chatLog.Add(line);
+            _chatLog.schedule.Execute(() =>
+                _chatLog.scrollOffset = new Vector2(0, float.MaxValue)).ExecuteLater(50);
+        }
+
+        private void SendChat()
+        {
+            if (_chatInput == null) return;
+            var text = _chatInput.value?.Trim();
+            if (string.IsNullOrEmpty(text)) return;
+            _chatInput.SetValueWithoutNotify(string.Empty);
+            _ = GameClient.Instance.SendChatAsync(text);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+
         private void OnDestroy()
         {
             if (GameClient.Instance == null) return;
@@ -347,6 +473,7 @@ namespace ArmsFair.UI
             GameClient.Instance.OnPlayerReady.RemoveListener(OnPlayerReady);
             GameClient.Instance.OnCeaseFireVote.RemoveListener(OnCeaseFireVoteReceived);
             GameClient.Instance.OnGameEnding.RemoveListener(OnGameEnding);
+            GameClient.Instance.OnChatMessage.RemoveListener(AppendChatMessage);
 
             UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
             if (_globeReadyCoroutine != null) StopCoroutine(_globeReadyCoroutine);
