@@ -409,7 +409,7 @@ namespace ArmsFair.UI
             inputRow.Add(sendBtn);
 
             var toggleBtn = new Button { text = "CHAT ▲" };
-            toggleBtn.style.fontSize       = 15;
+            toggleBtn.style.fontSize       = 13;
             toggleBtn.style.paddingTop     = toggleBtn.style.paddingBottom = 5;
             toggleBtn.style.unityTextAlign = TextAnchor.MiddleCenter;
             toggleBtn.style.marginBottom   = 0;
