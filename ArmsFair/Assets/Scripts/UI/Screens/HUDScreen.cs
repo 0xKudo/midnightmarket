@@ -354,7 +354,8 @@ namespace ArmsFair.UI
             _chatDrawer.style.position      = Position.Absolute;
             _chatDrawer.style.bottom        = 0;
             _chatDrawer.style.right         = 0;
-            _chatDrawer.style.width         = 280;
+            _chatDrawer.style.width = Length.Percent(100);
+
             _chatDrawer.style.flexDirection = FlexDirection.Column;
             _chatDrawer.style.backgroundColor = new StyleColor(new Color(0.051f, 0.051f, 0.031f, 0.92f));
             _chatDrawer.style.borderTopColor  = new StyleColor(TerminalUI.BorderNormal);
@@ -373,14 +374,14 @@ namespace ArmsFair.UI
             inputRow.style.display        = DisplayStyle.None;
             inputRow.style.borderTopColor = new StyleColor(TerminalUI.BorderNormal);
             inputRow.style.borderTopWidth = 1;
-            inputRow.style.paddingLeft    = inputRow.style.paddingRight  = 6;
-            inputRow.style.paddingTop     = inputRow.style.paddingBottom = 5;
+            inputRow.style.paddingLeft    = inputRow.style.paddingRight  = 4;
+            inputRow.style.paddingTop     = inputRow.style.paddingBottom = 8;
 
             _chatInput = new TextField();
             _chatInput.style.flexGrow    = 1;
             _chatInput.style.marginRight = 6;
             _chatInput.style.color       = new StyleColor(TerminalUI.TextPrimary);
-            _chatInput.style.fontSize    = 13;
+            _chatInput.style.fontSize    = 15;
             _chatInput.RegisterCallback<GeometryChangedEvent>(_ =>
             {
                 var inner = _chatInput.Q<VisualElement>(className: "unity-base-text-field__input");
@@ -399,7 +400,7 @@ namespace ArmsFair.UI
             });
 
             var sendBtn = new Button(() => SendChat()) { text = "SEND" };
-            sendBtn.style.fontSize    = 13;
+            sendBtn.style.fontSize    = 15;
             sendBtn.style.paddingTop  = sendBtn.style.paddingBottom = 4;
             sendBtn.style.paddingLeft = sendBtn.style.paddingRight  = 8;
             TerminalUI.StyleButton(sendBtn);
@@ -409,7 +410,7 @@ namespace ArmsFair.UI
             inputRow.Add(sendBtn);
 
             var toggleBtn = new Button { text = "CHAT ▲" };
-            toggleBtn.style.fontSize       = 13;
+            toggleBtn.style.fontSize       = 15;
             toggleBtn.style.paddingTop     = toggleBtn.style.paddingBottom = 5;
             toggleBtn.style.unityTextAlign = TextAnchor.MiddleCenter;
             toggleBtn.style.marginBottom   = 0;
@@ -441,7 +442,7 @@ namespace ArmsFair.UI
             }
 
             var line = new Label($"[{senderName}] {msg.Text}");
-            line.style.fontSize     = 13;
+            line.style.fontSize     = 15;
             line.style.color        = new StyleColor(TerminalUI.TextPrimary);
             line.style.whiteSpace   = WhiteSpace.Normal;
             line.style.marginBottom = 3;

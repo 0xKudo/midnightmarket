@@ -22,32 +22,40 @@
     </ui:VisualElement>
 
     <!-- World Tracks bar -->
-    <ui:VisualElement name="TracksBar" style="flex-direction:row; justify-content:center; flex-wrap:wrap; background-color:rgba(13,13,8,230); border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-top:5px; padding-bottom:5px; padding-left:16px; padding-right:16px;">
-      <ui:Label name="MarketHeatLabel"    text="MARKET HEAT: --"    style="font-size:16px; color:rgb(212,207,184); margin-right:24px; white-space:nowrap;" />
-      <ui:Label name="CivilianCostLabel"  text="CIVILIAN COST: --"  style="font-size:16px; color:rgb(212,207,184); margin-right:24px; white-space:nowrap;" />
-      <ui:Label name="InstabilityLabel"   text="INSTABILITY: --"    style="font-size:16px; color:rgb(212,207,184); margin-right:24px; white-space:nowrap;" />
-      <ui:Label name="SanctionsRiskLabel" text="SANCTIONS: --"      style="font-size:16px; color:rgb(212,207,184); margin-right:24px; white-space:nowrap;" />
-      <ui:Label name="GeoTensionLabel"    text="GEO TENSION: --"    style="font-size:16px; color:rgb(212,207,184); white-space:nowrap;" />
+    <ui:VisualElement name="TracksBar" style="flex-direction:row; justify-content:center; flex-wrap:wrap; background-color:rgba(17,17,8,210); border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-top:5px; padding-bottom:5px; padding-left:16px; padding-right:16px;">
+      <ui:Label name="MarketHeatLabel"    text="MARKET HEAT: "    style="font-size:16px; color:rgb(212,207,184); margin-right:24px; white-space:nowrap;" />
+      <ui:Label name="CivilianCostLabel"  text="CIVILIAN COST: "  style="font-size:16px; color:rgb(212,207,184); margin-right:24px; white-space:nowrap;" />
+      <ui:Label name="InstabilityLabel"   text="INSTABILITY: "    style="font-size:16px; color:rgb(212,207,184); margin-right:24px; white-space:nowrap;" />
+      <ui:Label name="SanctionsRiskLabel" text="SANCTIONS: "      style="font-size:16px; color:rgb(212,207,184); margin-right:24px; white-space:nowrap;" />
+      <ui:Label name="GeoTensionLabel"    text="GEO TENSION: "    style="font-size:16px; color:rgb(212,207,184); white-space:nowrap;" />
     </ui:VisualElement>
 
     <!-- Player stats bar -->
-    <ui:VisualElement name="PlayerStatsBar" style="flex-direction:row; align-items:center; background-color:rgba(17,17,8,210); border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-left:16px; padding-right:16px; padding-top:4px; padding-bottom:4px;">
-      <ui:Label text="BROKERAGE" style="font-size:13px; color:rgb(138,134,112); margin-right:5px; white-space:nowrap;" />
+    <ui:VisualElement name="PlayerStatsBar" style="flex-direction:row; justify-content:center; align-items:center; background-color:rgba(17,17,8,210); border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-left:16px; padding-right:16px; padding-top:4px; padding-bottom:4px;">
+      <ui:Label text="BROKERAGE: " style="font-size:15px; color:rgb(138,134,112); margin-right:5px; white-space:nowrap;" />
       <ui:Label name="CompanyLabel" text="â€”" style="font-size:15px; color:rgb(138,184,112); -unity-font-style:bold; margin-right:18px; white-space:nowrap;" />
       <ui:VisualElement style="width:1px; background-color:rgb(58,58,42); align-self:stretch; margin-right:18px;" />
-      <ui:Label text="CAPITAL" style="font-size:13px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
+      <ui:Label text="CAPITAL: " style="font-size:15px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
       <ui:Label name="CapitalLabel" text="$--M" style="font-size:15px; color:rgb(212,207,184); margin-right:18px; white-space:nowrap;" />
-      <ui:Label text="REP" style="font-size:13px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
+      <ui:Label text="REPUTATION: " style="font-size:15px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
       <ui:Label name="ReputationLabel" text="--" style="font-size:15px; color:rgb(212,207,184); margin-right:18px; white-space:nowrap;" />
-      <ui:Label text="SHARE" style="font-size:13px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
+      <ui:Label text="SHARE: " style="font-size:15px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
       <ui:Label name="SharePriceLabel" text="$--" style="font-size:15px; color:rgb(212,207,184); margin-right:18px; white-space:nowrap;" />
-      <ui:Label text="PEACE" style="font-size:13px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
+      <ui:Label text="PEACE: " style="font-size:15px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
       <ui:Label name="PeaceCreditsLabel" text="--" style="font-size:15px; color:rgb(212,207,184); margin-right:18px; white-space:nowrap;" />
-      <ui:Label text="LATENT RISK" style="font-size:13px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
+      <ui:Label text="LATENT RISK: " style="font-size:15px; color:rgb(138,134,112); margin-right:4px; white-space:nowrap;" />
       <ui:Label name="LatentRiskLabel" text="--" style="font-size:15px; color:rgb(192,144,144); white-space:nowrap;" />
     </ui:VisualElement>
 
-    <!-- â”€â”€ CENTRE ROW: left panels + right globe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    
+
+    <!-- Inventory bar -->
+    <ui:VisualElement name="InventoryBar" style="display:none; flex-direction:row; align-items:center; background-color:rgba(17,17,8,210); border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-left:16px; padding-right:16px; padding-top:4px; padding-bottom:4px;">
+      <ui:Label text="INVENTORY:" style="font-size:15px; color:rgb(138,134,112); margin-right:12px; white-space:nowrap;" />
+      <ui:VisualElement name="InventoryItems" style="flex-direction:row; flex-wrap:wrap;" />
+    </ui:VisualElement>
+
+    <!--  CENTER ROW: left panels + right globe -->
     <ui:VisualElement name="ContentRow" style="flex-grow:1; flex-direction:row; overflow:hidden;">
 
       <!-- Left column: phase panels stacked in a solid panel strip -->
@@ -98,7 +106,7 @@
             <ui:Button name="VoteCeaseFireBtn" text="VOTE CEASE-FIRE" style="font-size:15px; color:rgb(138,184,112); background-color:rgb(15,15,8); border-color:rgb(58,90,42); border-width:1px; padding-top:7px; padding-bottom:7px; -unity-text-align:middle-center;" />
           </ui:VisualElement>
           <ui:VisualElement name="NegoTreatyTab" style="display:none; flex-direction:column;">
-            <ui:Label text="TREATY PROPOSALS â€” COMING SOON" style="font-size:15px; color:rgb(138,134,112);" />
+            <ui:Label text="TREATY PROPOSALS COMING SOON" style="font-size:15px; color:rgb(138,134,112);" />
           </ui:VisualElement>
         </ui:VisualElement>
 
@@ -114,7 +122,7 @@
         <ui:VisualElement name="ConsequencesPanel" style="display:none; flex-direction:column; padding:16px;">
           <ui:Label text="CONSEQUENCES" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:14px;" />
           <ui:Label text="PROFIT" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
-          <ui:ScrollView name="ProfitList" style="height:88px; margin-bottom:8px;" />
+          <ui:ScrollView name="ProfitList" style="height:68px; margin-bottom:8px;" />
           <ui:Label text="BLOWBACK" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
           <ui:ScrollView name="BlowbackList" style="height:68px; margin-bottom:8px;" />
           <ui:Label text="REPUTATION" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
@@ -152,18 +160,12 @@
 
     </ui:VisualElement><!-- end ContentRow -->
 
-    <!-- â”€â”€ FULL-WIDTH FOOTER BARS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- FULL-WIDTH FOOTER BARS -->
 
     <!-- Operatives footer -->
     <ui:VisualElement name="PlayersFooterBar" style="flex-direction:row; align-items:center; background-color:rgba(17,17,8,210); border-top-color:rgb(58,58,42); border-top-width:1px; padding-left:16px; padding-right:16px; padding-top:4px; padding-bottom:4px; min-height:44px;">
       <ui:Label text="OPERATIVES" style="font-size:14px; color:rgb(138,134,112); margin-right:12px; white-space:nowrap; flex-shrink:0;" />
       <ui:ScrollView name="PlayerList" style="flex-grow:1;" />
-    </ui:VisualElement>
-
-    <!-- Inventory bar -->
-    <ui:VisualElement name="InventoryBar" style="display:none; flex-direction:row; align-items:center; background-color:rgba(13,13,8,210); border-top-color:rgb(58,58,42); border-top-width:1px; padding-left:16px; padding-right:16px; padding-top:4px; padding-bottom:4px;">
-      <ui:Label text="INVENTORY:" style="font-size:15px; color:rgb(138,134,112); margin-right:12px; white-space:nowrap;" />
-      <ui:VisualElement name="InventoryItems" style="flex-direction:row; flex-wrap:wrap;" />
     </ui:VisualElement>
 
     <!-- Status bar -->
