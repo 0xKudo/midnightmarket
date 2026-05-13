@@ -375,7 +375,7 @@ namespace ArmsFair.UI
             inputRow.style.borderTopColor = new StyleColor(TerminalUI.BorderNormal);
             inputRow.style.borderTopWidth = 1;
             inputRow.style.paddingLeft    = inputRow.style.paddingRight  = 4;
-            inputRow.style.paddingTop     = inputRow.style.paddingBottom = 8;
+            inputRow.style.paddingTop     = inputRow.style.paddingBottom = 6;
 
             _chatInput = new TextField();
             _chatInput.style.flexGrow    = 1;
@@ -392,6 +392,8 @@ namespace ArmsFair.UI
                 inner.style.borderTopWidth    = inner.style.borderRightWidth  =
                 inner.style.borderBottomWidth = inner.style.borderLeftWidth   = 1;
                 inner.style.color             = new StyleColor(TerminalUI.TextPrimary);
+                inner.style.paddingLeft    = inner.style.paddingRight  = 4;
+                inner.style.paddingTop     = inner.style.paddingBottom = 6;
             });
             _chatInput.RegisterCallback<KeyDownEvent>(e =>
             {
@@ -402,7 +404,7 @@ namespace ArmsFair.UI
             var sendBtn = new Button(() => SendChat()) { text = "SEND" };
             sendBtn.style.fontSize    = 15;
             sendBtn.style.paddingTop  = sendBtn.style.paddingBottom = 4;
-            sendBtn.style.paddingLeft = sendBtn.style.paddingRight  = 8;
+            sendBtn.style.paddingLeft = sendBtn.style.paddingRight  = 6;
             TerminalUI.StyleButton(sendBtn);
             sendBtn.style.marginBottom = 0;
 
