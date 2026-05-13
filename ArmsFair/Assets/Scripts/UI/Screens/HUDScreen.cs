@@ -411,7 +411,7 @@ namespace ArmsFair.UI
 
             var toggleBtn = new Button { text = "CHAT ▲" };
             toggleBtn.style.fontSize       = 15;
-            toggleBtn.style.paddingTop     = toggleBtn.style.paddingBottom = 5;
+            toggleBtn.style.paddingTop     = toggleBtn.style.paddingBottom = 4;
             toggleBtn.style.unityTextAlign = TextAnchor.MiddleCenter;
             toggleBtn.style.marginBottom   = 0;
             TerminalUI.StyleButton(toggleBtn);
@@ -434,7 +434,9 @@ namespace ArmsFair.UI
         {
             if (_chatLog == null) return;
 
-            var senderName = msg.SenderId;
+            var senderName = msg.SenderId != null && msg.SenderId.Length >= 4
+                ? msg.SenderId[..4].ToUpper()
+                : "???";
             if (_lastState?.Players != null)
             {
                 var p = _lastState.Players.FirstOrDefault(x => x.Id == msg.SenderId);

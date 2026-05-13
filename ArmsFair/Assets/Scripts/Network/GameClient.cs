@@ -72,6 +72,7 @@ namespace ArmsFair.Network
             RegisterHandlers();
 
             await _hub.StartAsync(_cts.Token);
+            PlayerId = ArmsFair.Auth.AccountManager.Instance?.LocalPlayer?.Id;
             Debug.Log($"[GameClient] Connected to {NetworkConfig.GameHubUrl}");
         }
 
