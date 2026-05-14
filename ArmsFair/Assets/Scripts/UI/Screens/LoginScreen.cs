@@ -10,6 +10,7 @@ namespace ArmsFair.UI
         private TextField     _usernameField;
         private TextField     _passwordField;
         private Label         _errorLabel;
+        private LoadingModal  _modal;
 
         private void Awake()
         {
@@ -41,6 +42,7 @@ namespace ArmsFair.UI
             _root.Q<Button>("LoginBtn").clicked    += OnLogin;
             _root.Q<Button>("RegisterBtn").clicked += () => UIManager.Instance.GoTo("Register");
 
+            _modal = new LoadingModal(_root);
             UIManager.Instance.Register("Login", this);
         }
 
@@ -50,13 +52,16 @@ namespace ArmsFair.UI
         private async void OnLogin()
         {
             _errorLabel.style.display = DisplayStyle.None;
+            _modal.Show("Signing in", onCancel: null, onRetry: () => OnLogin());
             try
             {
                 await AccountManager.Instance.LoginAsync(_usernameField.value, _passwordField.value);
+                _modal.Hide();
                 UIManager.Instance.GoTo("MainMenu");
             }
             catch (System.Exception ex)
             {
+                _modal.Hide();
                 _errorLabel.text = ex.Message.Contains("401") ? "INVALID CREDENTIALS" : "CONNECTION ERROR";
                 _errorLabel.style.display = DisplayStyle.Flex;
             }

@@ -16,6 +16,7 @@ namespace ArmsFair.UI
         private Button        _privateBtn;
         private Button        _aiFillBtn;
         private Label         _errorLabel;
+        private LoadingModal  _modal;
 
         private VisualElement _choiceModal;
         private Label         _choiceTitle;
@@ -102,6 +103,7 @@ namespace ArmsFair.UI
             _root.Q<Button>("BackBtn").clicked   += () => UIManager.Instance.Pop();
 
 
+            _modal = new LoadingModal(_root);
             UIManager.Instance.Register("CreateRoom", this);
         }
 
@@ -247,14 +249,17 @@ namespace ArmsFair.UI
                 gameMode     = gameModeInt,
             };
 
+            _modal.Show("Creating room", onCancel: null, onRetry: () => OnCreate());
             try
             {
                 var room = await Lobby.CreateRoomAsync(payload);
+                _modal.Hide();
                 LobbyState.PendingRoomId = room.roomId;
                 UIManager.Instance.GoTo("PreGameLobby");
             }
             catch (Exception ex)
             {
+                _modal.Hide();
                 _errorLabel.text = ex.Message.Contains("401") ? "SESSION EXPIRED — PLEASE LOG IN AGAIN"
                                  : ex.Message.Contains("400") ? "INVALID ROOM SETTINGS"
                                  : "CONNECTION ERROR";

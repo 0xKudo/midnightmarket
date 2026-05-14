@@ -13,6 +13,7 @@ namespace ArmsFair.UI
         private Label         _statusLabel;
         private ScrollView    _roomList;
         private Label         _errorLabel;
+        private LoadingModal  _modal;
 
         private LobbyApiClient Lobby => new LobbyApiClient(Network.NetworkConfig.ServerBaseUrl);
 
@@ -51,6 +52,7 @@ namespace ArmsFair.UI
             TerminalUI.StyleLabels(_root);
 
 
+            _modal = new LoadingModal(_root);
             UIManager.Instance.Register("RoomList", this);
         }
 
@@ -180,15 +182,17 @@ namespace ArmsFair.UI
             }
 
             _errorLabel.style.display = DisplayStyle.None;
-
+            _modal.Show("Joining room", onCancel: null, onRetry: () => OnJoin(roomIdOrCode));
             try
             {
                 var room = await Lobby.JoinRoomAsync(roomIdOrCode);
+                _modal.Hide();
                 LobbyState.PendingRoomId = room.roomId;
                 UIManager.Instance.GoTo("PreGameLobby");
             }
             catch (Exception ex)
             {
+                _modal.Hide();
                 _errorLabel.text = ex.Message.Contains("401") ? "SESSION EXPIRED — PLEASE LOG IN AGAIN"
                                  : ex.Message.Contains("404") ? "ROOM NOT FOUND"
                                  : ex.Message.Contains("400") ? "ROOM FULL OR ALREADY STARTED"
