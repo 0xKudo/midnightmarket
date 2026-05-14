@@ -90,14 +90,14 @@
         <ui:VisualElement name="NegotiationPanel" style="display:none; flex-direction:column; padding:16px;">
           <ui:Label text="NEGOTIATION" style="font-size:18px; color:rgb(138,184,112); -unity-font-style:bold; margin-bottom:10px;" />
           <ui:VisualElement name="NegoTabRow" style="flex-direction:row; margin-bottom:12px; border-bottom-color:rgb(58,58,42); border-bottom-width:1px; padding-bottom:8px;">
-            <ui:Button name="NegoIntelBtn"  text="INTEL"  style="margin-right:6px; font-size:14px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px; -unity-text-align:middle-center;" />
-            <ui:Button name="NegoPeaceBtn"  text="PEACE"  style="margin-right:6px; font-size:14px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px; -unity-text-align:middle-center;" />
-            <ui:Button name="NegoTreatyBtn" text="TREATY" style="font-size:14px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px; -unity-text-align:middle-center;" />
+            <ui:Button name="NegoIntelBtn"  text="INTEL"  style="margin-right:6px; font-size:15px; color:rgb(138,184,112); background-color:rgb(15,25,8); border-color:rgb(58,90,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px; -unity-text-align:middle-center;" />
+            <ui:Button name="NegoPeaceBtn"  text="PEACE"  style="margin-right:6px; font-size:15px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px; -unity-text-align:middle-center;" />
+            <ui:Button name="NegoTreatyBtn" text="TREATY" style="font-size:15px; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(58,58,42); border-width:1px; padding-top:4px; padding-bottom:4px; padding-left:8px; padding-right:8px; -unity-text-align:middle-center;" />
           </ui:VisualElement>
           <ui:VisualElement name="NegoIntelTab" style="flex-direction:column;">
-            <ui:Label text="WORLD TRACKS" style="font-size:13px; color:rgb(138,184,112); margin-bottom:3px;" />
+            <ui:Label text="WORLD TRACKS" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
             <ui:ScrollView name="NegoTracksList" style="height:72px; margin-bottom:10px;" />
-            <ui:Label text="LAST ROUND ACTIONS" style="font-size:13px; color:rgb(138,184,112); margin-bottom:3px;" />
+            <ui:Label text="LAST ROUND ACTIONS" style="font-size:15px; color:rgb(138,184,112); margin-bottom:3px;" />
             <ui:ScrollView name="NegoRevealList" style="height:120px;" />
           </ui:VisualElement>
           <ui:VisualElement name="NegoPeaceTab" style="display:none; flex-direction:column;">

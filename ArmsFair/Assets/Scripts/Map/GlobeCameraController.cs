@@ -19,6 +19,9 @@ namespace ArmsFair.Map
         public bool WasClick { get; private set; }
         public Vector2 ClickScreenPos { get; private set; }
 
+        // Set true while chat (or any UI scroll area) has focus to block globe zoom
+        public bool SuppressZoom { get; set; }
+
         private float   _distance;
         private float   _yaw;
         private float   _pitch;
@@ -107,6 +110,8 @@ namespace ArmsFair.Map
 
         private void HandleZoom(Mouse mouse, Touchscreen touch)
         {
+            if (SuppressZoom) return;
+
             if (mouse != null)
             {
                 float scroll = mouse.scroll.ReadValue().y;

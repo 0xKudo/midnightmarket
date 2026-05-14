@@ -70,10 +70,11 @@ namespace ArmsFair.UI
         private Camera        _globeCamera;
 
         // Chat drawer
-        private VisualElement _chatDrawer;
-        private ScrollView    _chatLog;
-        private TextField     _chatInput;
-        private bool          _chatOpen;
+        private VisualElement  _chatDrawer;
+        private ScrollView     _chatHistory;   // full scrollable history
+        private TextField      _chatInput;
+        private bool           _chatOpen;
+        private const int      ChatVisibleLines = 8;
 
         // Negotiation panel
         private VisualElement _negotiationPanel;
@@ -361,13 +362,21 @@ namespace ArmsFair.UI
             _chatDrawer.style.borderTopColor  = new StyleColor(TerminalUI.BorderNormal);
             _chatDrawer.style.borderLeftColor = new StyleColor(TerminalUI.BorderNormal);
             _chatDrawer.style.borderTopWidth  = 1;
-            _chatDrawer.style.borderLeftWidth = 1;
+            _chatDrawer.style.borderLeftWidth = 0;
 
-            _chatLog = new ScrollView();
-            _chatLog.style.height      = 200;
-            _chatLog.style.display     = DisplayStyle.None;
-            _chatLog.style.paddingLeft = _chatLog.style.paddingRight  = 8;
-            _chatLog.style.paddingTop  = _chatLog.style.paddingBottom = 6;
+            _chatHistory = new ScrollView(ScrollViewMode.Vertical);
+            _chatHistory.style.height      = ChatVisibleLines * 22;
+            _chatHistory.style.flexShrink  = 0;
+            _chatHistory.style.display     = DisplayStyle.None;
+            _chatHistory.style.paddingLeft = _chatHistory.style.paddingRight  = 8;
+            _chatHistory.style.paddingTop  = _chatHistory.style.paddingBottom = 6;
+            // Don't use FlexEnd — it creates a gap. Instead let content stack from top
+            // and auto-scroll keeps the bottom in view. Scrollbar appears when content overflows.
+            _chatHistory.RegisterCallback<GeometryChangedEvent>(_ =>
+            {
+                var vp = _chatHistory.Q<VisualElement>(className: "unity-scroll-view__content-viewport");
+                if (vp != null) vp.style.overflow = Overflow.Hidden;
+            });
 
             var inputRow = new VisualElement();
             inputRow.style.flexDirection  = FlexDirection.Row;
@@ -402,31 +411,37 @@ namespace ArmsFair.UI
             });
 
             var sendBtn = new Button(() => SendChat()) { text = "SEND" };
-            sendBtn.style.fontSize    = 15;
-            sendBtn.style.paddingTop  = sendBtn.style.paddingBottom = 4;
-            sendBtn.style.paddingLeft = sendBtn.style.paddingRight  = 6;
+            sendBtn.style.alignSelf = Align.Stretch;
             TerminalUI.StyleButton(sendBtn);
-            sendBtn.style.marginBottom = 0;
+            sendBtn.style.fontSize        = 15;
+            sendBtn.style.paddingTop      = sendBtn.style.paddingBottom = 0;
+            sendBtn.style.paddingLeft     = sendBtn.style.paddingRight  = 12;
+            sendBtn.style.marginBottom    = 0;
 
             inputRow.Add(_chatInput);
             inputRow.Add(sendBtn);
 
             var toggleBtn = new Button { text = "CHAT ▲" };
-            toggleBtn.style.fontSize       = 15;
-            toggleBtn.style.paddingTop     = toggleBtn.style.paddingBottom = 4;
-            toggleBtn.style.unityTextAlign = TextAnchor.MiddleCenter;
-            toggleBtn.style.marginBottom   = 0;
             TerminalUI.StyleButton(toggleBtn);
+            toggleBtn.style.fontSize        = 15;
+            toggleBtn.style.paddingTop      = toggleBtn.style.paddingBottom = 4;
+            toggleBtn.style.unityTextAlign  = TextAnchor.MiddleCenter;
+            toggleBtn.style.marginBottom    = 0;
+            toggleBtn.style.borderLeftWidth   = toggleBtn.style.borderRightWidth  = 0;
+            toggleBtn.style.borderBottomWidth = 0;
             toggleBtn.clicked += () =>
             {
                 _chatOpen = !_chatOpen;
-                _chatLog.style.display  = _chatOpen ? DisplayStyle.Flex : DisplayStyle.None;
-                inputRow.style.display  = _chatOpen ? DisplayStyle.Flex : DisplayStyle.None;
-                toggleBtn.text          = _chatOpen ? "CHAT ▼" : "CHAT ▲";
+                _chatHistory.style.display = _chatOpen ? DisplayStyle.Flex : DisplayStyle.None;
+                inputRow.style.display     = _chatOpen ? DisplayStyle.Flex : DisplayStyle.None;
+                toggleBtn.text             = _chatOpen ? "CHAT ▼" : "CHAT ▲";
                 if (_chatOpen) _chatInput.Focus();
+                // Block globe zoom while chat is open so scroll wheel doesn't fight
+                var ctrl = _globeCamera?.GetComponent<ArmsFair.Map.GlobeCameraController>();
+                if (ctrl != null) ctrl.SuppressZoom = _chatOpen;
             };
 
-            _chatDrawer.Add(_chatLog);
+            _chatDrawer.Add(_chatHistory);
             _chatDrawer.Add(inputRow);
             _chatDrawer.Add(toggleBtn);
             _worldMapArea.Add(_chatDrawer);
@@ -434,7 +449,7 @@ namespace ArmsFair.UI
 
         private void AppendChatMessage(ChatMessage msg)
         {
-            if (_chatLog == null) return;
+            if (_chatHistory == null) return;
 
             var senderName = msg.SenderId != null && msg.SenderId.Length >= 4
                 ? msg.SenderId[..4].ToUpper()
@@ -450,10 +465,12 @@ namespace ArmsFair.UI
             line.style.color        = new StyleColor(TerminalUI.TextPrimary);
             line.style.whiteSpace   = WhiteSpace.Normal;
             line.style.marginBottom = 3;
+            line.style.flexShrink   = 0; // prevent lines from compressing
 
-            _chatLog.Add(line);
-            _chatLog.schedule.Execute(() =>
-                _chatLog.scrollOffset = new Vector2(0, float.MaxValue)).ExecuteLater(50);
+            _chatHistory.Add(line);
+            // Defer scroll so layout has resolved the new line height
+            _chatHistory.schedule.Execute(() =>
+                _chatHistory.scrollOffset = new Vector2(0, float.MaxValue)).ExecuteLater(50);
         }
 
         private void SendChat()

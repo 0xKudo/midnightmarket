@@ -12,7 +12,7 @@
       <!-- Join by invite code -->
       <ui:Label text="INVITE CODE" style="font-size:14px; color:rgb(138,134,112); margin-bottom:4px;" />
       <ui:VisualElement style="flex-direction:row; margin-bottom:16px;">
-        <ui:TextField name="InviteCodeField" style="flex-grow:1; color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(74,74,48); border-width:1px; margin-right:8px;" />
+        <ui:TextField name="InviteCodeField" class="term-input" style="flex-grow:1; margin-right:8px;" />
         <ui:Button name="JoinByCodeBtn" text="JOIN BY CODE" style="color:rgb(212,207,184); background-color:rgb(15,15,8); border-color:rgb(90,90,58); border-width:1px; padding:6px 12px; font-size:16px; white-space:nowrap;" />
       </ui:VisualElement>
 
