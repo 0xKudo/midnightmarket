@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
-using System.Text.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -104,26 +104,26 @@ namespace ArmsFair.Update
 
         private static ReleaseInfo ParseRelease(string json)
         {
-            using var doc = JsonDocument.Parse(json);
-            var root      = doc.RootElement;
-            var tagName   = root.GetProperty("tag_name").GetString() ?? "";
-            var version   = tagName.TrimStart('v');
-            var name      = root.GetProperty("name").GetString() ?? tagName;
-            var body      = root.GetProperty("body").GetString() ?? "";
-            var pageUrl   = root.GetProperty("html_url").GetString() ?? "";
-            var notes     = body.Length > 200 ? body[..200] + "..." : body;
+            var root    = JObject.Parse(json);
+            var tagName = root["tag_name"]?.Value<string>() ?? "";
+            var version = tagName.TrimStart('v');
+            var name    = root["name"]?.Value<string>() ?? tagName;
+            var body    = root["body"]?.Value<string>() ?? "";
+            var pageUrl = root["html_url"]?.Value<string>() ?? "";
+            var notes   = body.Length > 200 ? body[..200] + "..." : body;
 
             string downloadUrl = "";
             bool   hasDirect   = false;
 
-            if (root.TryGetProperty("assets", out var assets))
+            var assets = root["assets"] as JArray;
+            if (assets != null)
             {
-                foreach (var asset in assets.EnumerateArray())
+                foreach (var asset in assets)
                 {
-                    var assetName = asset.GetProperty("name").GetString() ?? "";
+                    var assetName = asset["name"]?.Value<string>() ?? "";
                     if (assetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                     {
-                        downloadUrl = asset.GetProperty("browser_download_url").GetString() ?? "";
+                        downloadUrl = asset["browser_download_url"]?.Value<string>() ?? "";
                         hasDirect   = !string.IsNullOrEmpty(downloadUrl);
                         break;
                     }
