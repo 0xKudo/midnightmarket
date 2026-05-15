@@ -2,7 +2,7 @@
 #define MyAppVersion "0.0.0"
 #define MyAppPublisher "Studio Kudo"
 #define MyAppExeName "ArmsFair.exe"
-#define BuildDir "..\Builds"
+#define BuildDir "..\ArmsFair\Builds"
 #define OutputDir "..\installer\output"
 
 [Setup]
