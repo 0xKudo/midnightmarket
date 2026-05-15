@@ -1,4 +1,4 @@
-﻿<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
   <ui:Style src="../USS/variables.uss" />
   <ui:Style src="../USS/terminal.uss" />
   <ui:VisualElement name="MainMenuScreen" class="screen-root" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; background-color:rgb(13,13,13);">
@@ -12,5 +12,25 @@
       <ui:VisualElement class="term-divider" style="height:1px; background-color:rgb(58,58,42); margin-bottom:12px;" />
       <ui:Button name="LogoutBtn"     text="DISCONNECT"  class="term-btn term-btn--danger" style="color:rgb(192,144,144); -unity-text-color:rgb(192,144,144); background-color:rgb(15,15,8); border-color:rgb(90,42,42); border-width:1px; padding:8px 12px; margin-bottom:8px; font-size:18px; -unity-text-align:middle-center;" />
     </ui:VisualElement>
+
+    <!-- Update banner — hidden until UpdateChecker fires OnUpdateAvailable -->
+    <ui:VisualElement name="UpdateBanner" style="display:none; position:absolute; bottom:0; left:0; right:0; background-color:rgb(20,28,20); border-color:rgb(90,138,58); border-top-width:1px; padding:8px 16px; flex-direction:row; align-items:center;">
+      <!-- Left: info text + progress bar (swapped in via C#) -->
+      <ui:VisualElement name="UpdateInfoArea" style="flex:1; flex-direction:column;">
+        <ui:Label name="UpdateVersionLabel" text="" style="font-size:13px; color:rgb(138,184,112); letter-spacing:1px; white-space:nowrap;" />
+        <ui:Label name="UpdateNotesLabel"   text="" style="font-size:11px; color:rgb(138,134,112); white-space:normal;" />
+        <!-- Progress bar — hidden by default, shown during Downloading state -->
+        <ui:VisualElement name="UpdateProgressTrack" style="display:none; width:100%; height:8px; background-color:rgb(17,17,8); border-color:rgb(58,58,42); border-width:1px; margin-top:6px;">
+          <ui:VisualElement name="UpdateProgressFill" style="height:100%; width:0%; background-color:rgb(138,184,112);" />
+        </ui:VisualElement>
+        <ui:Label name="UpdateStatusLabel" text="" style="display:none; font-size:11px; color:rgb(138,184,112); margin-top:4px; white-space:nowrap;" />
+      </ui:VisualElement>
+      <!-- Right: action buttons -->
+      <ui:VisualElement style="flex-direction:row; align-items:center; margin-left:12px;">
+        <ui:Button name="UpdateActionBtn"  text="DOWNLOAD" style="font-size:13px; color:rgb(138,184,112); background-color:transparent; border-color:rgb(90,138,58); border-width:1px; padding:5px 12px; margin-right:6px;" />
+        <ui:Button name="UpdateDismissBtn" text="✕"        style="font-size:14px; color:rgb(138,134,112); background-color:transparent; border-width:0; padding:4px 8px;" />
+      </ui:VisualElement>
+    </ui:VisualElement>
+
   </ui:VisualElement>
 </ui:UXML>
