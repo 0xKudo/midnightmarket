@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Threading;
 using ArmsFair.Hosting;
+using ArmsFair.Update;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -14,6 +15,12 @@ namespace ArmsFair.UI
         private Label         _percentLabel;
         private VisualElement _barFill;
         private Button        _cancelBtn;
+
+        // Update banner
+        private VisualElement _updateBanner;
+        private Label         _updateVersionLabel;
+        private Label         _updateNotesLabel;
+        private Button        _updateDismissBtn;
 
         private float  _displayProgress = 0f;
         private bool   _serverReady     = false;
@@ -43,7 +50,43 @@ namespace ArmsFair.UI
 
             _cancelBtn.clicked += OnCancel;
 
+            _updateBanner       = _root.Q<VisualElement>("UpdateBanner");
+            _updateVersionLabel = _root.Q<Label>("UpdateVersionLabel");
+            _updateNotesLabel   = _root.Q<Label>("UpdateNotesLabel");
+            _updateDismissBtn   = _root.Q<Button>("UpdateDismissBtn");
+
+            if (_updateDismissBtn != null)
+                _updateDismissBtn.clicked += () => _updateBanner.style.display = DisplayStyle.None;
+
             UIManager.Instance.Register("Splash", this);
+        }
+
+        private void OnEnable()
+        {
+            UpdateChecker.OnUpdateAvailable += HandleUpdateAvailable;
+
+            // If check already completed before this screen enabled
+            if (UpdateChecker.Instance != null &&
+                UpdateChecker.Instance.State == UpdateState.UpdateAvailable &&
+                UpdateChecker.Instance.LatestRelease.HasValue)
+            {
+                HandleUpdateAvailable(UpdateChecker.Instance.LatestRelease.Value);
+            }
+        }
+
+        private void OnDisable()
+        {
+            UpdateChecker.OnUpdateAvailable -= HandleUpdateAvailable;
+        }
+
+        private void HandleUpdateAvailable(ReleaseInfo info)
+        {
+            if (_updateBanner == null) return;
+            if (_updateVersionLabel != null)
+                _updateVersionLabel.text = $"UPDATE AVAILABLE — v{info.Version}";
+            if (_updateNotesLabel != null)
+                _updateNotesLabel.text = info.ReleaseNotes;
+            _updateBanner.style.display = DisplayStyle.Flex;
         }
 
         private void Start()
@@ -64,13 +107,11 @@ namespace ArmsFair.UI
             _cancelBtn.style.display = DisplayStyle.None;
             UpdateBar();
 
-            // Show cancel after 3 seconds so it doesn't flash immediately
             yield return new WaitForSeconds(3f);
             _cancelBtn.style.display = DisplayStyle.Flex;
 
             LaunchServerAsync();
 
-            // Animate bar easing toward 0.85 while server starts
             while (!_serverReady && !_cancelled)
             {
                 _displayProgress = Mathf.MoveTowards(_displayProgress, 0.85f, Time.deltaTime * 0.12f);
@@ -90,7 +131,6 @@ namespace ArmsFair.UI
                 yield break;
             }
 
-            // Success — race to 100%
             _cancelBtn.style.display = DisplayStyle.None;
             _statusLabel.text        = "SERVER READY";
             while (_displayProgress < 1f)
