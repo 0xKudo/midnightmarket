@@ -14,6 +14,7 @@ public class GameStateService
     private readonly ConcurrentDictionary<string, List<PlayerAction>> _pending         = new();
     private readonly ConcurrentDictionary<string, HashSet<string>>    _ceaseFireVoters = new();
     private readonly ConcurrentDictionary<string, HashSet<string>>    _readyPlayers    = new();
+    private readonly ConcurrentDictionary<string, (string GameId, string PlayerId)> _connections = new();
 
     // ── Game state ────────────────────────────────────────────────────────────
 
@@ -28,10 +29,34 @@ public class GameStateService
 
     public IEnumerable<string> ActiveGameIds => _games.Keys;
 
+    // ── Connection tracking ───────────────────────────────────────────────────
+
+    public void TrackConnection(string connectionId, string gameId, string playerId) =>
+        _connections[connectionId] = (gameId, playerId);
+
+    public bool TryGetConnection(string connectionId, out string gameId, out string playerId)
+    {
+        if (_connections.TryGetValue(connectionId, out var entry))
+        {
+            gameId   = entry.GameId;
+            playerId = entry.PlayerId;
+            return true;
+        }
+        gameId = playerId = string.Empty;
+        return false;
+    }
+
+    public void RemoveConnection(string connectionId) =>
+        _connections.TryRemove(connectionId, out _);
+
     // ── Pending actions ───────────────────────────────────────────────────────
 
-    public void SetPendingActions(string connectionId, List<PlayerAction> actions) =>
-        _pending[connectionId] = actions;
+    public void AddPendingActions(string connectionId, List<PlayerAction> actions) =>
+        _pending.AddOrUpdate(connectionId, actions, (_, existing) =>
+        {
+            existing.AddRange(actions);
+            return existing;
+        });
 
     public List<PlayerAction> GetAndClearPendingForGame(string gameId, IEnumerable<string> playerIds)
     {

@@ -89,6 +89,16 @@ namespace ArmsFair.Network
             return await PostAsync<RoomInfo>($"/api/rooms/{id}/join", "{}");
         }
 
+        public async Task LeaveRoomAsync(string roomId)
+        {
+            var url     = _baseUrl + $"/api/rooms/{roomId}/leave";
+            var request = new UnityWebRequest(url, "DELETE");
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Authorization", $"Bearer {AccountManager.Instance.Token}");
+            await request.SendWebRequest();
+            // Don't throw — navigation should proceed regardless of server response
+        }
+
         private async Task<T> PostAsync<T>(string path, string json)
         {
             var url     = _baseUrl + path;

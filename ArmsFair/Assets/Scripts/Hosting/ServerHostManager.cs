@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -15,23 +16,20 @@ namespace ArmsFair.Hosting
 
         private Process _serverProcess;
         private int     _serverPort;
+        private IntPtr  _jobHandle = IntPtr.Zero;
 
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
+            // Kill server if Unity process exits without OnApplicationQuit (crash, force-close)
+            AppDomain.CurrentDomain.ProcessExit += (_, __) => StopServer();
         }
 
         private void OnApplicationQuit() => StopServer();
 
         // ── Public API ───────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Starts the bundled server on a free port, waits indefinitely for it to be ready,
-        /// then registers with the relay and returns the invite code.
-        /// Pass a CancellationToken to allow the player to cancel. Pass onStatus to receive
-        /// human-readable progress updates for the splash screen.
-        /// </summary>
         public async Task<string> StartAndGetInviteCodeAsync(
             System.Threading.CancellationToken ct = default,
             Action<string> onStatus = null)
@@ -60,6 +58,10 @@ namespace ArmsFair.Hosting
             _serverProcess.BeginOutputReadLine();
             _serverProcess.BeginErrorReadLine();
 
+            // Tie server lifetime to this process via a Windows Job Object so it
+            // dies even if Unity is force-killed or crashes before OnApplicationQuit fires.
+            AssignToJobObject(_serverProcess);
+
             UnityEngine.Debug.Log($"[ServerHostManager] Server started on port {_serverPort} (pid {_serverProcess.Id})");
 
             onStatus?.Invoke("STARTING LOCAL SERVER...");
@@ -78,20 +80,89 @@ namespace ArmsFair.Hosting
 
         public void StopServer()
         {
-            if (_serverProcess == null || _serverProcess.HasExited) return;
-            try   { _serverProcess.Kill(); }
-            catch { /* process may have already exited */ }
+            if (_serverProcess != null && !_serverProcess.HasExited)
+            {
+                try   { _serverProcess.Kill(); }
+                catch { /* process may have already exited */ }
+            }
             _serverProcess = null;
+
+            if (_jobHandle != IntPtr.Zero)
+            {
+                CloseHandle(_jobHandle);
+                _jobHandle = IntPtr.Zero;
+            }
         }
 
         public bool IsRunning => _serverProcess != null && !_serverProcess.HasExited;
+
+        // ── Windows Job Object — kills child when parent dies ─────────────────
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string lpName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetInformationJobObject(IntPtr hJob, int infoType,
+            ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION lpInfo, uint cbInfo);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+        {
+            public long  PerProcessUserTimeLimit, PerJobUserTimeLimit;
+            public uint  LimitFlags, MinimumWorkingSetSize, MaximumWorkingSetSize;
+            public uint  ActiveProcessLimit, Affinity, PriorityClass, SchedulingClass;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IO_COUNTERS
+        {
+            public ulong ReadOperationCount, WriteOperationCount, OtherOperationCount;
+            public ulong ReadTransferCount, WriteTransferCount, OtherTransferCount;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        {
+            public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+            public IO_COUNTERS IoInfo;
+            public UIntPtr ProcessMemoryLimit, JobMemoryLimit, PeakProcessMemoryUsed, PeakJobMemoryUsed;
+        }
+
+        private const int JobObjectExtendedLimitInformation = 9;
+        private const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000;
+
+        private void AssignToJobObject(Process process)
+        {
+            try
+            {
+                _jobHandle = CreateJobObject(IntPtr.Zero, null);
+                if (_jobHandle == IntPtr.Zero) return;
+
+                var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
+                info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+
+                SetInformationJobObject(_jobHandle, JobObjectExtendedLimitInformation,
+                    ref info, (uint)Marshal.SizeOf(info));
+
+                AssignProcessToJobObject(_jobHandle, process.Handle);
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogWarning($"[ServerHostManager] Job object setup failed: {ex.Message}");
+            }
+        }
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
         private static string GetServerExePath()
         {
 #if UNITY_EDITOR
-            // During editor play, look for a local dev build next to the project
             var devPath = Path.Combine(
                 Application.dataPath, "..", "..", "ArmsFair.Server",
                 "bin", "Release", "net8.0", "win-x64", "publish", "ArmsFair.Server.exe");

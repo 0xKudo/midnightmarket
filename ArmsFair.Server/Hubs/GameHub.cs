@@ -36,16 +36,31 @@ public class GameHub(
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var gameId = GetGameId();
-        if (gameId is not null && gameStateService.TryGet(gameId, out var state))
+        if (gameStateService.TryGetConnection(Context.ConnectionId, out var gameId, out var playerId))
         {
-            var playerId  = GetPlayerId();
-            var remaining = state.Players.Where(p => p.Id != playerId).ToList();
-            if (remaining.Count == 0)
+            gameStateService.RemoveConnection(Context.ConnectionId);
+
+            if (gameStateService.TryGet(gameId, out var state))
             {
-                lobbyService.Remove(gameId);
-                gameStateService.Remove(gameId);
-                ticker.CancelPhaseTimer(gameId);
+                var remaining = state.Players.Where(p => p.Id != playerId).ToList();
+                if (remaining.Count == 0)
+                {
+                    lobbyService.Remove(gameId);
+                    gameStateService.Remove(gameId);
+                    ticker.CancelPhaseTimer(gameId);
+                }
+                else
+                {
+                    lobbyService.TryLeave(gameId, playerId);
+                    state = state with { Players = remaining };
+                    gameStateService.Set(gameId, state);
+                    await Clients.Group(gameId).SendAsync("StateSync", new StateSync(state));
+                }
+            }
+            else
+            {
+                // Game already gone — still clean up lobby entry if present
+                lobbyService.TryLeave(gameId, playerId);
             }
         }
 
@@ -79,6 +94,7 @@ public class GameHub(
             gameStateService.Set(gameId, state);
         }
 
+        gameStateService.TrackConnection(Context.ConnectionId, gameId, playerId);
         await Clients.Caller.SendAsync("StateSync", new StateSync(state));
     }
 
@@ -147,6 +163,7 @@ public class GameHub(
         await db.SaveChangesAsync();
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+        gameStateService.TrackConnection(Context.ConnectionId, gameId, playerId);
         ticker.StartGame(gameId);
         await Clients.Group(gameId).SendAsync("StateSync", new StateSync(state));
     }
@@ -206,7 +223,7 @@ public class GameHub(
         if (state.Phase != GamePhase.Sales)
         { await SendError("WRONG_PHASE", "Actions can only be submitted during the Sales phase."); return; }
 
-        gameStateService.SetPendingActions(Context.ConnectionId, new List<PlayerAction>
+        gameStateService.AddPendingActions(Context.ConnectionId, new List<PlayerAction>
         {
             new PlayerAction
             {
@@ -247,7 +264,7 @@ public class GameHub(
                 Quantity       = Math.Max(1, w.Quantity)
             }).ToList();
 
-        gameStateService.SetPendingActions(Context.ConnectionId, actions);
+        gameStateService.AddPendingActions(Context.ConnectionId, actions);
         await Clients.Caller.SendAsync("ActionAcknowledged", new { playerId, gameId });
     }
 

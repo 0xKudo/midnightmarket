@@ -209,9 +209,10 @@ namespace ArmsFair.UI
             UIManager.Instance.GoTo("HUD");
         }
 
-        private void OnLeave()
+        private async void OnLeave()
         {
             CancelInvoke(nameof(PollRoom));
+            try { await Lobby.LeaveRoomAsync(_roomId); } catch { }
             UIManager.Instance.GoTo("MainMenu");
         }
     }

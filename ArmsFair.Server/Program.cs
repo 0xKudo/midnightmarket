@@ -235,6 +235,20 @@ app.MapPost("/api/rooms/{id}/join", (string id, HttpContext ctx, LobbyService lo
         : Results.Conflict(new { error = "Could not join room — try again." });
 }).RequireAuthorization();
 
+// DELETE /api/rooms/{id}/leave — remove a player from a room; deletes room if empty
+app.MapDelete("/api/rooms/{id}/leave", (string id, HttpContext ctx, LobbyService lobby) =>
+{
+    var playerId = ctx.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? ctx.User.FindFirst("sub")?.Value;
+    if (playerId is null) return Results.Unauthorized();
+
+    var room = lobby.GetByRoomId(id);
+    if (room is null) return Results.NotFound();
+
+    lobby.TryLeave(id, playerId);
+    return Results.NoContent();
+}).RequireAuthorization();
+
 // ── Health check ─────────────────────────────────────────────────────────────
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 

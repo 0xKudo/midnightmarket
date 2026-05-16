@@ -84,6 +84,23 @@ public class LobbyService
             _rooms[roomId] = room with { IsStarted = true };
     }
 
+    /// <summary>
+    /// Removes a player from the room. Deletes the room if it becomes empty.
+    /// Returns true if the room was deleted.
+    /// </summary>
+    public bool TryLeave(string roomId, string playerId)
+    {
+        if (!_rooms.TryGetValue(roomId, out var room)) return false;
+        var remaining = room.PlayerIds.Where(id => id != playerId).ToList();
+        if (remaining.Count == 0)
+        {
+            _rooms.TryRemove(roomId, out _);
+            return true;
+        }
+        _rooms[roomId] = room with { PlayerIds = remaining };
+        return false;
+    }
+
     public void Remove(string roomId) => _rooms.TryRemove(roomId, out _);
 
     private static RoomSummary ToSummary(RoomRecord r) => new(

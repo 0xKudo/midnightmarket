@@ -1,5 +1,5 @@
 #define MyAppName "ArmsFair"
-#define MyAppVersion "0.0.0"
+#define MyAppVersion "0.0.1"
 #define MyAppPublisher "Studio Kudo"
 #define MyAppExeName "ArmsFair.exe"
 #define BuildDir "..\ArmsFair\Builds"
@@ -14,7 +14,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir={#OutputDir}
-OutputBaseFilename=ArmsFairSetup-v0.0.0
+OutputBaseFilename=ArmsFairSetup-v0.0.1
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
